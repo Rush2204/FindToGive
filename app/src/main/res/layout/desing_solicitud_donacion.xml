@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pantalla de Creación de solicitud de donación de sangre -->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".SolicitudDonacion">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_navigation_bar">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="24dp">
+
+            <TextView
+                android:id="@+id/text_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Crear solicitud de donación"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:layout_marginTop="16dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <!-- Campo Título -->
+            <TextView
+                android:id="@+id/label_titulo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:text="título"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/text_title" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/input_layout_titulo"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:layout_constraintTop_toBottomOf="@+id/label_titulo">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_text_titulo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapSentences"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:lines="1"
+                    android:imeOptions="actionNext"
+                    android:hint="Introduce un título descriptivo para tu solicitud" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Campo Descripción -->
+            <TextView
+                android:id="@+id/label_descripcion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Descripción"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/input_layout_titulo" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/input_layout_descripcion"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:layout_constraintTop_toBottomOf="@+id/label_descripcion">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_text_descripcion"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:gravity="top"
+                    android:inputType="textMultiLine"
+                    android:imeOptions="actionNext"
+                    android:hint="Detalles sobre la donación de sangre" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Tipo de Sangre Requerido (Spinner) -->
+            <TextView
+                android:id="@+id/label_tipo_sangre"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Tipo de sangre requerido"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/input_layout_descripcion" />
+
+            <Spinner
+                android:id="@+id/spinner_tipo_sangre"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:entries="@array/tipos_sangre_array"
+                android:layout_marginTop="8dp"
+                android:minHeight="48dp"
+                android:padding="12dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/label_tipo_sangre" />
+<!--            android:background="@drawable/spinner_background" pa depues ya tu sabe-->
+
+
+            <!-- Ubicación -->
+            <TextView
+                android:id="@+id/label_ubicacion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Ubicación"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/spinner_tipo_sangre" />
+
+            <LinearLayout
+                android:id="@+id/layout_ubicacion_display"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                app:layout_constraintTop_toBottomOf="@+id/label_ubicacion">
+<!--                android:background="@drawable/location_background"-->
+
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                     />
+<!--                android:src=""-->
+<!--                android:contentDescription="Icono ubicación"-->
+
+                <TextView
+                    android:id="@+id/text_current_location"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Santa Ana"
+                    android:textColor="@android:color/black" />
+            </LinearLayout>
+
+            <!-- Adjuntar Imagen -->
+            <TextView
+                android:id="@+id/label_adjuntar_imagen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Adjuntar imagen"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/layout_ubicacion_display" />
+
+            <LinearLayout
+                android:id="@+id/layout_upload_image"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="32dp"
+                android:layout_marginTop="8dp"
+                app:layout_constraintTop_toBottomOf="@+id/label_adjuntar_imagen">
+<!--                android:background="@drawable/dotted_border_background"-->
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/logo_findtogive"
+                    android:contentDescription="cámara icono" />
+<!--                android:src="@drawable/ic_camera"-->
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Sube una imagen relacionada con tu solicitud"
+                    android:textAlignment="center"
+                    android:textColor="@color/light_gray" />
+            </LinearLayout>
+
+            <!-- Botón Enviar Solicitud -->
+            <Button
+                android:id="@+id/btn_enviar_solicitud"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:text="Enviar solicitud"
+                android:backgroundTint="@color/dark_gray"
+                app:layout_constraintTop_toBottomOf="@+id/layout_upload_image"
+                app:layout_constraintBottom_toBottomOf="parent"
+                android:layout_marginBottom="16dp"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+
+    <!-- Barra de Navegación Inferior (Bottom Navigation Bar) -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/windowBackground"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+<!--    app:itemIconTint="@color/bottom_nav_color"-->
+<!--    app:itemTextColor="@color/bottom_nav_color"-->
+<!--    app:menu="@menu/bottom_nav_menu"-->
+
+</androidx.constraintlayout.widget.ConstraintLayout>

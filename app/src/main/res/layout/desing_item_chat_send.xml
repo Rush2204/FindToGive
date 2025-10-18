@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Foto/Ícono de Perfil del Receptor -->
+
+    <!-- Nombre del Receptor/Título del Chat -->
+    <ImageView
+        android:id="@+id/img_profile_chat"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="4dp"
+        android:contentDescription="Foto de Perfil del Usuario"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0"
+        tools:src="@drawable/logo_findtogive" />
+
+    <TextView
+        android:id="@+id/text_chat_user_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="8dp"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        tools:text="Usuario Chat (Donante)"
+        app:layout_constraintStart_toEndOf="@+id/img_profile_chat"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/text_last_message_time" />
+
+    <!-- Último Mensaje (contenido_ultimo_mensaje de chat) -->
+
+    <!-- Hora del Último Mensaje (hora_ultimo_mensaje de chat) -->
+    <TextView
+        android:id="@+id/text_last_message_content"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:maxLines="5"
+        android:textColor="#6B7280"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/text_chat_user_name"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/text_chat_user_name"
+        app:layout_constraintTop_toBottomOf="@+id/text_chat_user_name"
+        app:layout_constraintVertical_bias="0.011"
+        tools:text="Quiero ayudar, donde se realizará la donacion?" />
+
+    <TextView
+        android:id="@+id/text_last_message_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="#9CA3AF"
+        tools:text="14:30"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

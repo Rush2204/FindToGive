@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingVertical="12dp"
+    android:paddingHorizontal="4dp">
+
+    <!-- Indicador de No Leído (Si estado = 'Pendiente') -->
+    <View
+        android:id="@+id/noLeido"
+        android:layout_width="6dp"
+        android:layout_height="6dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="4dp"
+        android:layout_marginStart="4dp"
+        tools:visibility="visible"/>
+    <!-- La visibilidad se controla en el código (estado de la BD) -->
+
+    <!-- Icono de la Notificación (ej: corazón para donación, chat para mensaje) -->
+    <!--    android:src="@drawable/ic_notification_default"-->
+
+
+    <!-- Título de la Notificación (titulo de la BD) -->
+    <ImageView
+        android:id="@+id/img_notification_icon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="24dp"
+        android:contentDescription="Icono de Notificación"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.014" />
+
+    <TextView
+        android:id="@+id/text_notification_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="8dp"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:maxLines="1"
+        android:ellipsize="end"
+        tools:text="Nueva respuesta a tu solicitud"
+        app:layout_constraintStart_toEndOf="@+id/img_notification_icon"
+        app:layout_constraintEnd_toStartOf="@+id/text_notification_date"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Descripción/Contenido (descripcion de la BD) -->
+    <TextView
+        android:id="@+id/text_notification_content"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="#6b7280"
+        android:textSize="14sp"
+        android:maxLines="2"
+        android:ellipsize="end"
+        tools:text="Un donante se ha ofrecido para tu solicitud de sangre O+."
+        app:layout_constraintStart_toStartOf="@+id/text_notification_title"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_notification_title" />
+
+    <!-- Fecha/Hora (fecha de la BD) -->
+    <TextView
+        android:id="@+id/text_notification_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:textColor="#9ca3af"
+        android:textSize="12sp"
+        tools:text="5 min"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/text_notification_title"
+        app:layout_constraintBottom_toTopOf="@+id/text_notification_content"
+        app:layout_constraintVertical_bias="0.5"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#e5e7eb"
+        android:layout_marginTop="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_notification_content"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

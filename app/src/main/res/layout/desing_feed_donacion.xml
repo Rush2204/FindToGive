@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pantalla de Feed de la comunidad / Vista de peticiones -->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".FeedDonacion">
+
+    <!-- Título Principal (Reemplaza al Toolbar) -->
+    <TextView
+        android:id="@+id/text_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Solicitudes de Donación"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:layout_marginTop="24dp"
+        android:layout_marginStart="24dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Botón de Filtrar/Buscar -->
+    <ImageButton
+        android:id="@+id/btn_filter_search"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="Buscar o Filtrar"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="24dp"
+        android:padding="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="TouchTargetSizeCheck" />
+    <!--            android:src=""-->
+
+
+    <!-- 1. Contenedor para la Lista de Solicitudes (VISIBLE cuando hay datos) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_solicitudes"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:paddingHorizontal="12dp"
+        android:clipToPadding="false"
+        app:layout_constraintTop_toBottomOf="@+id/text_title"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_navigation_bar"
+        tools:listitem="@layout/desing_item_solicitud"
+        tools:itemCount="5"
+        android:visibility="gone"
+        tools:visibility="visible"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+
+<!--    tools:visibility="visible" es para ver como se verian varias de solicitudes-->
+
+    <!-- 2. Contenedor de Estado Vacío (VISIBLE cuando NO hay datos) -->
+    <LinearLayout
+        android:id="@+id/layout_empty_state"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:visibility="visible"
+        tools:visibility="gone"
+        app:layout_constraintBaseline_toBottomOf="@id/bottom_navigation_bar"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_navigation_bar">
+
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center" />
+        <!--        android:src=""-->
+        <!--        android:contentDescription="Icono de Corazón Vacío"-->
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:text="¡No hay solicitudes activas por ahora!"
+            android:textColor="#374151"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="Parece que todos están cubiertos. ¡Vuelve pronto o crea una si lo necesitas!"
+            android:textColor="#6b7280"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/btn_create_first_request"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="24dp"
+            android:backgroundTint="#2563EB"
+            android:text="Crear Solicitud"
+            android:textColor="@android:color/white" />
+
+    </LinearLayout>
+
+    <!-- Barra de Navegación Inferior (Bottom Navigation Bar) -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/windowBackground"
+        app:menu="@menu/menu_navegacion"
+        app:labelVisibilityMode="labeled"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+<!--    app:itemIconTint="@color/bottom_nav_color"-->
+<!--    app:itemTextColor="@color/bottom_nav_color"-->
+
+</androidx.constraintlayout.widget.ConstraintLayout>

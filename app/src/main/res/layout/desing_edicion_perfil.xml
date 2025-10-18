@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".EdicionPerfil">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="24dp">
+
+            <TextView
+                android:id="@+id/text_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Editar Perfil"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <!-- Nombre (nombre de la BD) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/input_layout_nombre"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:hint="Nombre"
+                app:boxStrokeColor="#DC2626"
+                app:hintTextColor="#DC2626"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/text_title">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_text_nombre"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName"
+                    android:textColor="@android:color/black"
+                    tools:text="Sofía" /> <!-- Dato precargado -->
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Apellido (apellido de la BD) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/input_layout_apellido"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="Apellido"
+                app:boxStrokeColor="#DC2626"
+                app:hintTextColor="#DC2626"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/input_layout_nombre">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_text_apellido"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName"
+                    android:textColor="@android:color/black"
+                    tools:text="Martínez" /> <!-- Dato precargado -->
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Teléfono (telefono de la BD) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/input_layout_telefono"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="Teléfono (9 dígitos)"
+                app:boxStrokeColor="#DC2626"
+                app:hintTextColor="#DC2626"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/input_layout_apellido">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_text_telefono"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="phone"
+                    android:maxLength="9"
+                    android:textColor="@android:color/black"
+                    tools:text="7777-7777" /> <!-- Dato precargado, tiene que ser el de la BD-->
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Ubicación (ubicacion de la BD) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/input_layout_ubicacion"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="Ubicación"
+                app:boxStrokeColor="#DC2626"
+                app:hintTextColor="#DC2626"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/input_layout_telefono">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_text_ubicacion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:textColor="@android:color/black"
+                    tools:text="San Salvador, El Salvador" /> <!-- Dato precargado -->
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Spinner Rol (rolid de la BD) -->
+            <TextView
+                android:id="@+id/label_rol"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Cambiar Rol"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/input_layout_ubicacion" />
+
+            <Spinner
+                android:id="@+id/spinner_rol"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="8dp"
+                android:entries="@array/roles_array"
+                app:layout_constraintTop_toBottomOf="@+id/label_rol"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <!-- Spinner Tipo de Sangre (tiposangreid de la BD) -->
+            <TextView
+                android:id="@+id/label_tipo_sangre"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Cambiar Tipo de Sangre"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/spinner_rol" />
+
+            <Spinner
+                android:id="@+id/spinner_tipo_sangre"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="8dp"
+                android:entries="@array/tipos_sangre_array"
+                app:layout_constraintTop_toBottomOf="@+id/label_tipo_sangre"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <!-- Botón Guardar Cambios -->
+            <Button
+                android:id="@+id/btn_guardar_cambios"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:text="Guardar Cambios"
+                android:backgroundTint="#DC2626"
+                android:textColor="@android:color/white"
+                app:layout_constraintTop_toBottomOf="@+id/spinner_tipo_sangre"
+                app:layout_constraintBottom_toBottomOf="parent"
+                android:layout_marginBottom="16dp" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
