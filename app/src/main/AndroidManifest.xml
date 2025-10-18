@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FindToGive">
         <activity
-            android:name=".SplashScreen"
+            android:name=".Mensajeria"
             android:exported="false" />
         <activity
             android:name=".Chat"
@@ -42,7 +42,7 @@
             android:name=".Login"
             android:exported="false" />
         <activity
-            android:name=".Mensajeria"
+            android:name=".SplashScreen"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
