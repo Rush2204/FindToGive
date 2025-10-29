@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".Notificaciones">
+    tools:context=".ClasesDiseño.Notificaciones">
 
     <TextView
         android:id="@+id/text_title"
@@ -31,7 +31,7 @@
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         app:layout_constraintBottom_toTopOf="@+id/bottom_navigation_bar"
         app:layout_constraintTop_toBottomOf="@+id/text_title"
-        tools:listitem="@layout/desing_item_notificaion"
+        tools:listitem="@layout/desing_item_notification"
         tools:itemCount="5"
         android:visibility="gone"
         tools:visibility="visible"

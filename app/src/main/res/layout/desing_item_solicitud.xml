@@ -5,140 +5,129 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="8dp"
-    android:layout_marginVertical="8dp"
+    android:layout_margin="8dp"
     app:cardCornerRadius="8dp"
     app:cardElevation="2dp"
     app:strokeColor="#f3f4f6"
-    app:strokeWidth="1dp"
-    android:clickable="true"
-    android:focusable="true">
+    app:strokeWidth="1dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- 1. Sección de Encabezado de la Publicación (Usuario y Tiempo) -->
-
-        <!-- Foto/Ícono de Perfil (usuarioid de solicitud_donacion) -->
-        <ImageView
-            android:id="@+id/img_profile"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="8dp"
-            tools:src="@drawable/logo_findtogive"
-            android:contentDescription="Foto de Perfil del Usuario"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-<!--        android:src=""-->
-
-        <!-- Nombre del Usuario (usuarioid de solicitud_donacion) -->
-        <TextView
-            android:id="@+id/text_user_name"
-            android:layout_width="wrap_content"
+        <!-- 1. Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black"
-            tools:text="María G."
-            app:layout_constraintStart_toEndOf="@+id/img_profile"
-            app:layout_constraintTop_toTopOf="@+id/img_profile" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-        <!-- Tiempo de Publicación (fecha_publicacion de solicitud_donacion) -->
-        <TextView
-            android:id="@+id/text_time_ago"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#9ca3af"
-            android:textSize="12sp"
-            tools:text="hace 2 horas"
-            app:layout_constraintStart_toStartOf="@+id/text_user_name"
-            app:layout_constraintTop_toBottomOf="@+id/text_user_name" />
+            <ImageView
+                android:id="@+id/img_profile"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                tools:src="@drawable/logo_findtogive"
+                android:contentDescription="Foto de perfil" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/text_user_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Usuario"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/black" />
+
+                <TextView
+                    android:id="@+id/text_time_ago"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="hace 2 horas"
+                    android:textColor="#9ca3af"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
 
         <!-- 2. Título y Descripción -->
-
-        <!-- Título de la Solicitud (titulo de solicitud_donacion) -->
         <TextView
             android:id="@+id/text_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
+            android:text="Título de solicitud"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="#DC2626"
-            tools:text="Urgente: Donación de sangre O+"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/img_profile" />
-<!--        tools:text="" - este tipo de herramienta sirve para ver como queda en el diseño
-            pero no se muestra como tal asi como android:text="" -->
+            android:textColor="#DC2626" />
 
-
-
-        <!-- Descripción (descripcion de solicitud_donacion) -->
         <TextView
             android:id="@+id/text_description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:maxLines="4"
-            android:ellipsize="end"
+            android:text="Descripción de la solicitud..."
             android:textColor="#374151"
-            android:textSize="14sp"
-            tools:text="Paciente en el Hospital San Juan de Dios necesita urgentemente sangre tipo O positivo. Cualquier ayuda es valiosa. Por favor, contacten si pueden donar."
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/text_title" />
+            android:textSize="14sp" />
 
-        <!-- 3. Detalles y Acción -->
+        <!-- 3. IMAGEN ADJUNTA - SIMPLE Y FUNCIONAL -->
+        <ImageView
+            android:id="@+id/img_adjunta"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginTop="12dp"
+            android:scaleType="centerCrop"
+            android:background="#f5f5f5"
+            android:visibility="gone"
+            android:contentDescription="Imagen adjunta"
+            tools:visibility="visible" />
 
-        <!-- Badge de Tipo de Sangre (tiposangreid de solicitud_donacion) -->
-        <TextView
-            android:id="@+id/text_blood_type_badge"
-            android:layout_width="wrap_content"
+        <!-- 4. Footer -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="6dp"
-            tools:text="O Positivo"
-            android:textColor="@android:color/black"
-            android:textSize="14sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/text_description" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-        <!-- Ubicación (ubicacion de solicitud_donacion) -->
-        <TextView
-            android:id="@+id/text_location_details"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:layout_marginStart="8dp"
-            android:drawablePadding="4dp"
-            android:textColor="#6b7280"
-            android:textSize="14sp"
-            tools:text="Santa Ana"
-            app:layout_constraintStart_toEndOf="@+id/text_blood_type_badge"
-            app:layout_constraintEnd_toStartOf="@+id/btnchatear"
-            app:layout_constraintTop_toTopOf="@+id/text_blood_type_badge"
-            app:layout_constraintBottom_toBottomOf="@+id/text_blood_type_badge" />
+            <TextView
+                android:id="@+id/text_blood_type_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:background="@drawable/badge_background_red"
+                android:text="O+"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-        <!-- Botón de Chat (Chat con el solicitante) -->
-        <Button
-            android:id="@+id/btnchatear"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minHeight="0dp"
-            android:paddingVertical="8dp"
-            android:paddingHorizontal="16dp"
-            android:text="Chatear"
-            android:drawableTint="@android:color/white"
-            android:backgroundTint="#4b5563"
-            android:textColor="@android:color/white"
-            app:cornerRadius="8dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/text_blood_type_badge"
-            app:layout_constraintBottom_toBottomOf="@+id/text_blood_type_badge"
-            app:layout_constraintVertical_bias="1.0" />
+            <TextView
+                android:id="@+id/text_location_details"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Santa Ana"
+                android:textColor="#6b7280"
+                android:textSize="14sp" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            <Button
+                android:id="@+id/btnchatear"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Chatear"
+                android:backgroundTint="#4b5563"
+                android:textColor="@android:color/white" />
+
+        </LinearLayout>
+
+    </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

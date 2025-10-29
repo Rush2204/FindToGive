@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Diseño de cada ítem del historial de donaciones, usando datos de la tabla 'historial_donacion' -->
+    <!-- Diseño de cada ítem del historial de donaciones, usando datos de la tabla 'historial_donacion' -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -27,6 +27,19 @@
             android:contentDescription="Gota de sangre"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Botón de Eliminar -->
+        <ImageButton
+            android:id="@+id/btn_delete_history"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Eliminar registro"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
+            app:tint="#DC2626"
+            tools:ignore="TouchTargetSizeCheck" />
 
         <!-- Título/Tipo de Donación (tipo_donacion de historial_donacion) -->
         <TextView

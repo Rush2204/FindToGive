@@ -2,6 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -12,37 +18,38 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FindToGive">
         <activity
-            android:name=".Mensajeria"
+            android:name=".ClasesDiseño.Mensajeria"
             android:exported="false" />
         <activity
-            android:name=".Chat"
+            android:name=".ClasesDiseño.ChatC"
             android:exported="false" />
         <activity
-            android:name=".HistorialDonaciones"
+            android:name=".ClasesDiseño.HistorialDonaciones"
             android:exported="false" />
         <activity
-            android:name=".Notificaciones"
+            android:name=".ClasesDiseño.Notificaciones"
             android:exported="false" />
         <activity
-            android:name=".EdicionPerfil"
+            android:name=".ClasesDiseño.EdicionPerfil"
             android:exported="false" />
         <activity
-            android:name=".PerfilUsuario"
+            android:name=".ClasesDiseño.PerfilUsuario"
             android:exported="false" />
         <activity
-            android:name=".FeedDonacion"
+            android:name=".ClasesDiseño.FeedDonacion"
             android:exported="false" />
         <activity
-            android:name=".SolicitudDonacion"
+            android:name=".ClasesDiseño.SolicitudDonacionC"
+            android:windowSoftInputMode="adjustResize|stateHidden"
             android:exported="false" />
         <activity
-            android:name=".Registro"
+            android:name=".ClasesDiseño.Registro"
             android:exported="false" />
         <activity
-            android:name=".Login"
+            android:name=".ClasesDiseño.Login"
             android:exported="false" />
         <activity
-            android:name=".SplashScreen"
+            android:name=".ClasesDiseño.SplashScreen"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

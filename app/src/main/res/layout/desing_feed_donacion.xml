@@ -6,7 +6,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".FeedDonacion">
+    tools:context=".ClasesDiseño.FeedDonacion">
 
     <!-- Título Principal (Reemplaza al Toolbar) -->
     <TextView
@@ -36,7 +36,6 @@
         tools:ignore="TouchTargetSizeCheck" />
     <!--            android:src=""-->
 
-
     <!-- 1. Contenedor para la Lista de Solicitudes (VISIBLE cuando hay datos) -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_solicitudes"
@@ -52,29 +51,30 @@
         tools:visibility="visible"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
 
-<!--    tools:visibility="visible" es para ver como se verian varias de solicitudes-->
-
     <!-- 2. Contenedor de Estado Vacío (VISIBLE cuando NO hay datos) -->
     <LinearLayout
         android:id="@+id/layout_empty_state"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center_vertical"
+        android:layout_height="0dp"
+        android:gravity="center"
         android:orientation="vertical"
         android:padding="32dp"
         android:visibility="visible"
         tools:visibility="gone"
-        app:layout_constraintBaseline_toBottomOf="@id/bottom_navigation_bar"
-        app:layout_constraintBottom_toTopOf="@+id/bottom_navigation_bar">
+        app:layout_constraintTop_toBottomOf="@+id/text_title"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_navigation_bar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <ImageView
             android:layout_width="100dp"
             android:layout_height="100dp"
-            android:layout_gravity="center" />
-        <!--        android:src=""-->
-        <!--        android:contentDescription="Icono de Corazón Vacío"-->
+            android:layout_gravity="center"
+            tools:src="@drawable/logo_findtogive"
+            android:contentDescription="Icono de estado vacío" />
 
         <TextView
+            android:id="@+id/text_empty_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
@@ -85,6 +85,7 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/text_empty_message"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -116,8 +117,5 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
-
-<!--    app:itemIconTint="@color/bottom_nav_color"-->
-<!--    app:itemTextColor="@color/bottom_nav_color"-->
 
 </androidx.constraintlayout.widget.ConstraintLayout>
