@@ -104,9 +104,13 @@ public class PerfilUsuario extends AppCompatActivity {
                 }
                 return true;
             } else if (itemId == R.id.nav_notificaciones) {
+                startActivity(new Intent(this, Notificaciones.class));
+                finish();
                 Toast.makeText(this, "Avisos y notificaciones", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (itemId == R.id.nav_historial) {
+                Intent intent = new Intent(this, HistorialDonaciones.class);
+                startActivity(intent);
                 Toast.makeText(this, "Historial de donaciones", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (itemId == R.id.nav_perfil) {

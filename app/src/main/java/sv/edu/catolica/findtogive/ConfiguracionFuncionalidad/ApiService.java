@@ -15,7 +15,9 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import sv.edu.catolica.findtogive.Modelado.Chat;
+import sv.edu.catolica.findtogive.Modelado.HistorialDonacion;
 import sv.edu.catolica.findtogive.Modelado.Mensaje;
+import sv.edu.catolica.findtogive.Modelado.Notificacion;
 import sv.edu.catolica.findtogive.Modelado.SolicitudDonacion;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 
@@ -584,6 +586,202 @@ public class ApiService {
             callback.onError("Error de red: " + e.getMessage());
         }
     }
+
+    // ========== SOLICITUDES POR USUARIO ==========
+    public static void getSolicitudesByUsuarioId(int usuarioId, ListCallback<SolicitudDonacion> callback) {
+        String url = SupabaseClient.URLs.solicitudDonacion() +
+                "?usuarioid=eq." + usuarioId +
+                "&order=fecha_publicacion.desc";
+        getList(url, new TypeToken<List<SolicitudDonacion>>(){}.getType(), callback);
+    }
+    public static void deleteHistorialDonacion(int historialId, ApiCallback<Void> callback) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                // DELETE: .../historial_donacion?historialid=eq.X
+                String url = SupabaseClient.URLs.historialDonacion() +
+                        "?historialid=eq." + historialId;
+
+                Request request = new Request.Builder()
+                        .url(url)
+                        .delete() // Usamos el método DELETE
+                        // Asegúrate de que las cabeceras estén correctas
+                        .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
+                        .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
+                        .addHeader("Prefer", "return=minimal")
+                        .build();
+
+                try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
+                    if (response.isSuccessful()) {
+                        // Código 200 o 204 significa éxito en DELETE
+                        callback.onSuccess(null);
+                    } else {
+                        String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
+                        callback.onError("Error al eliminar: " + response.code() + " - " + errorBody);
+                    }
+                }
+
+            } catch (Exception e) {
+                callback.onError("Error de red: " + e.getMessage());
+            }
+        });
+    }
+
+    // ========== ACTUALIZAR ESTADO DE SOLICITUD ==========
+    public static void updateSolicitudEstado(int solicitudId, String nuevoEstado, ApiCallback<SolicitudDonacion> callback) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                String json = "{\"estado\":\"" + nuevoEstado + "\"}";
+
+                RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
+
+                String url = SupabaseClient.URLs.solicitudDonacion() + "?solicitudid=eq." + solicitudId;
+
+                Request request = new Request.Builder()
+                        .url(url)
+                        .patch(body)
+                        .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
+                        .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("Prefer", "return=representation")
+                        .build();
+
+                try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String responseBody = response.body().string();
+                        System.out.println("✅ UPDATE estado solicitud exitoso: " + responseBody);
+
+                        Type listType = new TypeToken<List<SolicitudDonacion>>(){}.getType();
+                        List<SolicitudDonacion> solicitudesActualizadas = gson.fromJson(responseBody, listType);
+
+                        if (solicitudesActualizadas != null && !solicitudesActualizadas.isEmpty()) {
+                            callback.onSuccess(solicitudesActualizadas.get(0));
+                        } else {
+                            callback.onError("No se pudo obtener la solicitud actualizada");
+                        }
+                    } else {
+                        String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
+                        System.out.println("❌ Error en UPDATE estado solicitud: " + response.code() + " - " + errorBody);
+                        callback.onError("Error al actualizar estado: " + response.code());
+                    }
+                }
+
+            } catch (Exception e) {
+                System.out.println("❌ Exception en updateSolicitudEstado: " + e.getMessage());
+                callback.onError("Error: " + e.getMessage());
+            }
+        });
+    }
+
+    // ========== NOTIFICACIONES ==========
+    public static void createNotificacion(Notificacion notificacion, ApiCallback<Notificacion> callback) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                // Obtener fecha actual desde la app
+                java.time.format.DateTimeFormatter formatter =
+                        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
+                String fechaActual = java.time.LocalDateTime.now().format(formatter);
+
+                String json = "{" +
+                        "\"usuarioid\":" + notificacion.getUsuarioid() + "," +
+                        "\"titulo\":\"" + notificacion.getTitulo() + "\"," +
+                        "\"mensaje\":\"" + notificacion.getMensaje() + "\"," +
+                        "\"fecha_envio\":\"" + fechaActual + "\"," +
+                        "\"leida\":" + notificacion.isLeida() +
+                        "}";
+
+                System.out.println("📤 JSON Notificación: " + json);
+
+                RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
+
+                Request request = new Request.Builder()
+                        .url(SupabaseClient.URLs.notificacion())
+                        .post(body)
+                        .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
+                        .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("Prefer", "return=representation")
+                        .build();
+
+                try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String responseBody = response.body().string();
+                        System.out.println("✅ Notificación creada: " + responseBody);
+
+                        Type listType = new TypeToken<List<Notificacion>>(){}.getType();
+                        List<Notificacion> notificacionesCreadas = gson.fromJson(responseBody, listType);
+
+                        if (notificacionesCreadas != null && !notificacionesCreadas.isEmpty()) {
+                            callback.onSuccess(notificacionesCreadas.get(0));
+                        } else {
+                            callback.onError("Notificación creada pero no retornada");
+                        }
+                    } else {
+                        String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
+                        System.out.println("❌ Error creando notificación: " + response.code() + " - " + errorBody);
+                        callback.onError("Error al crear notificación: " + response.code());
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("❌ Exception en createNotificacion: " + e.getMessage());
+                callback.onError("Error: " + e.getMessage());
+            }
+        });
+    }
+
+    public static void getNotificacionesByUsuario(int usuarioId, ListCallback<Notificacion> callback) {
+        String url = SupabaseClient.URLs.notificacion() +
+                "?usuarioid=eq." + usuarioId +
+                "&order=fecha_envio.desc";
+        getList(url, new TypeToken<List<Notificacion>>(){}.getType(), callback);
+    }
+
+    public static void updateNotificacionLeida(int notificacionId, ApiCallback<Notificacion> callback) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                String json = "{\"leida\":true}";
+
+                RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
+
+                String url = SupabaseClient.URLs.notificacion() + "?notificacionid=eq." + notificacionId;
+
+                Request request = new Request.Builder()
+                        .url(url)
+                        .patch(body)
+                        .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
+                        .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("Prefer", "return=representation")
+                        .build();
+
+                try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String responseBody = response.body().string();
+                        Type listType = new TypeToken<List<Notificacion>>(){}.getType();
+                        List<Notificacion> notificacionesActualizadas = gson.fromJson(responseBody, listType);
+
+                        if (notificacionesActualizadas != null && !notificacionesActualizadas.isEmpty()) {
+                            callback.onSuccess(notificacionesActualizadas.get(0));
+                        } else {
+                            callback.onError("No se pudo obtener la notificación actualizada");
+                        }
+                    } else {
+                        callback.onError("Error al actualizar notificación: " + response.code());
+                    }
+                }
+            } catch (Exception e) {
+                callback.onError("Error: " + e.getMessage());
+            }
+        });
+    }
+
+    public static void getNotificacionesNoLeidas(int usuarioId, ListCallback<Notificacion> callback) {
+        String url = SupabaseClient.URLs.notificacion() +
+                "?usuarioid=eq." + usuarioId +
+                "&leida=eq.false" +
+                "&order=fecha_envio.desc";
+        getList(url, new TypeToken<List<Notificacion>>(){}.getType(), callback);
+    }
+
 }
 
 

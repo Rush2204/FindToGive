@@ -359,7 +359,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
                 mostrarDatosUsuario(usuario);
             } else {
                 textUserName.setText("Cargando...");
-                imgProfile.setImageResource(R.drawable.logo_findtogive);
+                imgProfile.setImageResource(R.drawable.ico_logo_findtogive);
             }
 
             // MOSTRAR MENSAJE Y TIEMPO (calculado en tiempo real)
@@ -403,12 +403,12 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
             if (usuario.getFotoUrl() != null && !usuario.getFotoUrl().isEmpty()) {
                 Glide.with(context)
                         .load(usuario.getFotoUrl())
-                        .placeholder(R.drawable.logo_findtogive)
-                        .error(R.drawable.logo_findtogive)
+                        .placeholder(R.drawable.ico_logo_findtogive)
+                        .error(R.drawable.ico_logo_findtogive)
                         .apply(RequestOptions.circleCropTransform())
                         .into(imgProfile);
             } else {
-                imgProfile.setImageResource(R.drawable.logo_findtogive);
+                imgProfile.setImageResource(R.drawable.ico_logo_findtogive);
             }
         }
     }

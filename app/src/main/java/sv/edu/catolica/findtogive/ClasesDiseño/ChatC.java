@@ -1,5 +1,13 @@
 package sv.edu.catolica.findtogive.ClasesDiseño;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.widget.EditText;
@@ -10,6 +18,7 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -22,6 +31,7 @@ import java.util.List;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.ApiService;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.MensajesAdapter;
 import sv.edu.catolica.findtogive.Modelado.Mensaje;
+import sv.edu.catolica.findtogive.Modelado.Notificacion;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 import sv.edu.catolica.findtogive.R;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.SharedPreferencesManager;
@@ -46,6 +56,7 @@ public class ChatC extends AppCompatActivity {
     private Handler pollingHandler;
     private Runnable pollingRunnable;
     private static final long POLLING_INTERVAL = 3000; // 3 segundos
+    private SharedPreferences notificacionPrefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +69,8 @@ public class ChatC extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        notificacionPrefs = getSharedPreferences("chat_notifications", Context.MODE_PRIVATE);
 
         initializeViews();
         setupRecyclerView();
@@ -217,6 +230,8 @@ public class ChatC extends AppCompatActivity {
                     // Agregar el mensaje localmente para mejor UX
                     mensajesAdapter.agregarMensaje(mensaje);
                     recyclerViewChat.smoothScrollToPosition(mensajesAdapter.getItemCount() - 1);
+
+                    verificarSiEsPrimerMensaje(mensaje);
                 });
             }
 
@@ -228,6 +243,90 @@ public class ChatC extends AppCompatActivity {
             }
         });
     }
+
+    //Para Notificaciones
+    // REEMPLAZA el método verificarSiEsPrimerMensaje:
+    private void verificarSiEsPrimerMensaje(Mensaje mensaje) {
+        // Verificar ANTES de crear la notificación
+        boolean yaNotificado = notificacionPrefs.getBoolean("chat_" + chatId, false);
+
+        if (yaNotificado) {
+            System.out.println("⏭️ Chat " + chatId + " ya fue notificado, omitiendo...");
+            return;
+        }
+
+        // Verificar si realmente es el primer mensaje del chat
+        ApiService.getMensajesByChat(chatId, new ApiService.ListCallback<Mensaje>() {
+            @Override
+            public void onSuccess(List<Mensaje> mensajes) {
+                if (mensajes != null) {
+                    // Contar mensajes de este usuario actual en este chat
+                    long mensajesDelUsuario = mensajes.stream()
+                            .filter(m -> m.getEmisorioid() == usuarioActual.getUsuarioid())
+                            .count();
+
+                    // Solo crear notificación si es el PRIMER mensaje del usuario actual
+                    if (mensajesDelUsuario == 1) {
+                        System.out.println("🎉 ¡Es el primer mensaje del usuario! Creando notificación...");
+                        crearNotificacionNuevaConversacion();
+                    } else {
+                        System.out.println("ℹ️ No es el primer mensaje del usuario (" + mensajesDelUsuario + " mensajes), no se crea notificación");
+                        // Marcar como notificado para evitar futuras verificaciones
+                        notificacionPrefs.edit().putBoolean("chat_" + chatId, true).apply();
+                    }
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                System.out.println("❌ Error verificando mensajes: " + error);
+            }
+        });
+    }
+
+    // REEMPLAZA el método crearNotificacionNuevaConversacion:
+    private void crearNotificacionNuevaConversacion() {
+        // Verificar UNA VEZ MÁS por si acaso (doble verificación)
+        boolean yaNotificado = notificacionPrefs.getBoolean("chat_" + chatId, false);
+        if (yaNotificado) {
+            System.out.println("🚫 Notificación cancelada - chat " + chatId + " ya notificado");
+            return;
+        }
+
+        String nombreUsuarioActual = usuarioActual.getNombre() + " " + usuarioActual.getApellido();
+        String titulo = "Tienes un nuevo mensaje";
+        String mensajeNotificacion = nombreUsuarioActual + " quiere hablar contigo";
+
+        System.out.println("🎯 Creando notificación ÚNICA para chat: " + chatId);
+
+        Notificacion notificacion = new Notificacion(otroUsuarioId, titulo, mensajeNotificacion);
+
+        ApiService.createNotificacion(notificacion, new ApiService.ApiCallback<Notificacion>() {
+            @Override
+            public void onSuccess(Notificacion result) {
+                System.out.println("✅ Notificación ÚNICA creada para chat: " + chatId);
+
+                // MARCAR INMEDIATAMENTE como ya notificado
+                SharedPreferences.Editor editor = notificacionPrefs.edit();
+                editor.putBoolean("chat_" + chatId, true);
+                editor.apply(); // Usar apply() en lugar de commit() para async
+
+                System.out.println("📝 Chat " + chatId + " marcado como notificado");
+
+                // Verificación inmediata
+                boolean guardado = notificacionPrefs.getBoolean("chat_" + chatId, false);
+                System.out.println("🔍 Verificación - chat_" + chatId + " guardado: " + guardado);
+            }
+
+            @Override
+            public void onError(String error) {
+                System.out.println("❌ Error creando notificación: " + error);
+                // Si falla, NO marcar como notificado para reintentar después
+            }
+        });
+    }
+
+
 
     @Override
     protected void onDestroy() {

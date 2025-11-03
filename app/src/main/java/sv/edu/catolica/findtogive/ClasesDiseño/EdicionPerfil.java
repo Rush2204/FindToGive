@@ -1,5 +1,6 @@
 package sv.edu.catolica.findtogive.ClasesDiseño;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -17,7 +18,11 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.ApiService;
+import sv.edu.catolica.findtogive.Modelado.Notificacion;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 import sv.edu.catolica.findtogive.R;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.SharedPreferencesManager;
@@ -29,6 +34,12 @@ public class EdicionPerfil extends AppCompatActivity {
     private TextInputLayout inputLayoutNombre, inputLayoutApellido, inputLayoutMail, inputLayoutTelefono, inputLayoutUbicacion;
     private Spinner spinnerRol, spinnerTipoSangre;
     private Button btnGuardarCambios;
+
+    private SharedPreferences cambiosPrefs;
+
+    // Variables para guardar los valores originales
+    private String nombreOriginal, apellidoOriginal, emailOriginal, telefonoOriginal;
+    private int rolOriginal, tipoSangreOriginal;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +55,7 @@ public class EdicionPerfil extends AppCompatActivity {
 
         initViews();
         loadUserData();
+        guardarValoresOriginales();
         setupSpinners();
         setupInputValidations();
         setupClickListeners();
@@ -90,6 +102,17 @@ public class EdicionPerfil extends AppCompatActivity {
         } else {
             Toast.makeText(this, "Error: No se pudo cargar la información del usuario", Toast.LENGTH_SHORT).show();
             finish();
+        }
+    }
+
+    private void guardarValoresOriginales() {
+        if (usuarioActual != null) {
+            nombreOriginal = usuarioActual.getNombre();
+            apellidoOriginal = usuarioActual.getApellido();
+            emailOriginal = usuarioActual.getEmail();
+            telefonoOriginal = usuarioActual.getTelefono();
+            rolOriginal = usuarioActual.getRolid();
+            tipoSangreOriginal = usuarioActual.getTiposangreid();
         }
     }
 
@@ -305,6 +328,15 @@ public class EdicionPerfil extends AppCompatActivity {
             return;
         }
 
+        // Detectar qué campos cambiaron
+        List<String> camposCambiados = detectarCambios(nombre, apellido, email, telefono);
+
+        // Si no hay cambios, mostrar mensaje y salir
+        if (camposCambiados.isEmpty()) {
+            Toast.makeText(this, "No se detectaron cambios para guardar", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         // Crear usuario actualizado
         Usuario usuarioActualizado = new Usuario();
         usuarioActualizado.setUsuarioid(usuarioActual.getUsuarioid());
@@ -331,7 +363,13 @@ public class EdicionPerfil extends AppCompatActivity {
                     // Actualizar SharedPreferences con todos los datos, incluyendo el email
                     SharedPreferencesManager.saveUser(EdicionPerfil.this, usuarioActualizado);
 
+                    // Crear notificaciones para los campos cambiados
+                    crearNotificacionesCambios(camposCambiados);
+
                     Toast.makeText(EdicionPerfil.this, "Perfil actualizado exitosamente", Toast.LENGTH_SHORT).show();
+
+                    // Actualizar valores originales
+                    guardarValoresOriginales();
 
                     // Notificar a PerfilUsuario que los datos cambiaron
                     setResult(RESULT_OK);
@@ -354,6 +392,85 @@ public class EdicionPerfil extends AppCompatActivity {
                 });
             }
         });
+    }
+
+    private List<String> detectarCambios(String nombre, String apellido, String email, String telefono) {
+        List<String> cambios = new ArrayList<>();
+
+        // Verificar cambios en cada campo
+        if (!nombre.equals(nombreOriginal)) {
+            cambios.add("nombre");
+        }
+        if (!apellido.equals(apellidoOriginal)) {
+            cambios.add("apellido");
+        }
+        if (!email.equals(emailOriginal)) {
+            cambios.add("email");
+        }
+        if (!telefono.equals(telefonoOriginal)) {
+            cambios.add("teléfono");
+        }
+
+        // Verificar cambios en spinners
+        int nuevoRol = spinnerRol.getSelectedItemPosition() + 1;
+        int nuevoTipoSangre = spinnerTipoSangre.getSelectedItemPosition() + 1;
+
+        if (nuevoRol != rolOriginal) {
+            cambios.add("rol");
+        }
+        if (nuevoTipoSangre != tipoSangreOriginal) {
+            cambios.add("tipo de sangre");
+        }
+
+        System.out.println("🔍 Campos cambiados detectados: " + cambios);
+        return cambios;
+    }
+
+    private void crearNotificacionesCambios(List<String> camposCambiados) {
+        if (camposCambiados.isEmpty() || usuarioActual == null) {
+            return;
+        }
+
+        System.out.println("🎯 Creando notificaciones para cambios en perfil");
+
+        // Crear una notificación por cada campo cambiado
+        for (String campo : camposCambiados) {
+            String titulo = "Cambios en el perfil";
+            String mensaje = generarMensajeCambio(campo);
+
+            Notificacion notificacion = new Notificacion(usuarioActual.getUsuarioid(), titulo, mensaje);
+
+            ApiService.createNotificacion(notificacion, new ApiService.ApiCallback<Notificacion>() {
+                @Override
+                public void onSuccess(Notificacion result) {
+                    System.out.println("✅ Notificación creada para cambio en: " + campo);
+                }
+
+                @Override
+                public void onError(String error) {
+                    System.out.println("❌ Error creando notificación para " + campo + ": " + error);
+                }
+            });
+        }
+    }
+
+    private String generarMensajeCambio(String campo) {
+        switch (campo) {
+            case "nombre":
+                return "Tu nombre ha sido actualizado";
+            case "apellido":
+                return "Tu apellido ha sido actualizado";
+            case "email":
+                return "Tu email ha sido actualizado";
+            case "teléfono":
+                return "Tu teléfono ha sido actualizado";
+            case "rol":
+                return "Tu rol ha sido actualizado";
+            case "tipo de sangre":
+                return "Tu tipo de sangre ha sido actualizado";
+            default:
+                return "Un campo de tu perfil ha sido actualizado";
+        }
     }
 
     private boolean isEmailDuplicateError(String error) {

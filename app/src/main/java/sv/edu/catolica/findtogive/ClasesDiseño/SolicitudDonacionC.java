@@ -380,16 +380,14 @@ public class SolicitudDonacionC extends AppCompatActivity {
                 Toast.makeText(this, "Crear solicitud", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (itemId == R.id.nav_notificaciones) {
-                // Navegar a notificaciones/avisos
+                startActivity(new Intent(this, Notificaciones.class));
+                finish();
                 Toast.makeText(this, "Avisos y notificaciones", Toast.LENGTH_SHORT).show();
-                // Intent intent = new Intent(this, NotificacionesActivity.class);
-                // startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_historial) {
-                // Navegar a historial
+                Intent intent = new Intent(this, HistorialDonaciones.class);
+                startActivity(intent);
                 Toast.makeText(this, "Historial de donaciones", Toast.LENGTH_SHORT).show();
-                // Intent intent = new Intent(this, HistorialActivity.class);
-                // startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_perfil) {
                 // Navegar a perfil
