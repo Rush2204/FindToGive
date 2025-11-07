@@ -13,7 +13,7 @@ public class SolicitudesRealtimeService {
     private List<SolicitudListener> listeners = new ArrayList<>();
     private boolean isPolling = false;
     private Handler pollingHandler;
-    private static final long POLLING_INTERVAL = 5000; // 5 segundos
+    private static final long POLLING_INTERVAL = 1000;
 
     public interface SolicitudListener {
         void onNuevaSolicitud(SolicitudDonacion solicitud);

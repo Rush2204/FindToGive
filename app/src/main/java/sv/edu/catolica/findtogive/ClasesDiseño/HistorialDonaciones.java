@@ -47,7 +47,7 @@ public class HistorialDonaciones extends AppCompatActivity implements HistorialA
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+
         setContentView(R.layout.desing_historial_donaciones);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {

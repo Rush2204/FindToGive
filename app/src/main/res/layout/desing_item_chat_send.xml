@@ -9,7 +9,7 @@
 
     <!-- Layout para mensajes enviados (alineados a la derecha) -->
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="80dp"
         android:layout_marginEnd="16dp"
@@ -17,16 +17,21 @@
         android:paddingHorizontal="12dp"
         android:paddingVertical="8dp"
         android:orientation="vertical"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- Mensaje -->
+        <!-- Mensaje - CAMBIO IMPORTANTE: match_parent y breakStrategy -->
         <TextView
             android:id="@+id/text_message_content"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@android:color/white"
             android:textSize="14sp"
+            android:breakStrategy="high_quality"
+            android:hyphenationFrequency="full"
+            android:ellipsize="none"
+            android:maxLines="100"
             tools:text="Este es un mensaje que envías" />
 
         <!-- Hora -->

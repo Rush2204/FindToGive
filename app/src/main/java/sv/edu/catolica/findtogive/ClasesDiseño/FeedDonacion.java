@@ -11,7 +11,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -25,13 +24,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.ApiService;
+import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.FiltroBusquedaDialog;
+import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.AppNotificationManager;
 import sv.edu.catolica.findtogive.Modelado.SolicitudDonacion;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 import sv.edu.catolica.findtogive.R;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.SharedPreferencesManager;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.SolicitudesAdapter;
 
-public class FeedDonacion extends AppCompatActivity {
+public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDialog.FiltroBusquedaListener {
 
     private RecyclerView rvSolicitudes;
     private LinearLayout layoutEmptyState;
@@ -48,11 +49,19 @@ public class FeedDonacion extends AppCompatActivity {
     private Runnable autoRefreshRunnable;
     private static final long AUTO_REFRESH_INTERVAL = 500; // 0.5 segundos
 
+    // Variables para filtros
+    private String currentQuery = "";
+    private int currentTipoSangreId = -1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+
         setContentView(R.layout.desing_feed_donacion);
+
+        if (AppNotificationManager.areNotificationsEnabled(this)) {
+            AppNotificationManager.startNotificationService(this);
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -163,8 +172,14 @@ public class FeedDonacion extends AppCompatActivity {
         });
 
         btnFilterSearch.setOnClickListener(v -> {
-            Toast.makeText(this, "Buscar y filtrar", Toast.LENGTH_SHORT).show();
+            mostrarDialogoFiltroBusqueda();
         });
+    }
+
+    private void mostrarDialogoFiltroBusqueda() {
+        FiltroBusquedaDialog dialog = new FiltroBusquedaDialog(this, this);
+        dialog.setFiltrosActuales(currentQuery, currentTipoSangreId);
+        dialog.show();
     }
 
     private void setupBottomNavigation() {
@@ -215,48 +230,199 @@ public class FeedDonacion extends AppCompatActivity {
     }
 
     private void loadSolicitudes() {
-        Log.d("FeedDonacion", "🔄 Cargando solicitudes y usuarios...");
+        // Si hay filtros activos, usar búsqueda filtrada
+        if (!currentQuery.isEmpty() || currentTipoSangreId != -1) {
+            cargarSolicitudesConFiltros();
+        } else {
+            Log.d("FeedDonacion", "🔄 Cargando todas las solicitudes...");
 
-        ApiService.getSolicitudesActivas(new ApiService.ListCallback<SolicitudDonacion>() {
-            @Override
-            public void onSuccess(List<SolicitudDonacion> solicitudes) {
-                Log.d("FeedDonacion", "✅ Solicitudes cargadas: " + (solicitudes != null ? solicitudes.size() : 0));
+            ApiService.getSolicitudesActivas(new ApiService.ListCallback<SolicitudDonacion>() {
+                @Override
+                public void onSuccess(List<SolicitudDonacion> solicitudes) {
+                    Log.d("FeedDonacion", "✅ Solicitudes cargadas: " + (solicitudes != null ? solicitudes.size() : 0));
 
-                runOnUiThread(() -> {
-                    if (solicitudes != null && !solicitudes.isEmpty()) {
-                        // Log detallado
-                        for (SolicitudDonacion solicitud : solicitudes) {
-                            Log.d("FeedDonacion",
-                                    "📋 ID: " + solicitud.getSolicitudid() +
-                                            " | UsuarioID: " + solicitud.getUsuarioid() +
-                                            " | Título: " + solicitud.getTitulo() +
-                                            " | Imagen: " + (solicitud.getImagenUrl() != null ? "SI" : "NO"));
-                        }
+                    runOnUiThread(() -> {
+                        if (solicitudes != null && !solicitudes.isEmpty()) {
+                            // Log detallado
+                            for (SolicitudDonacion solicitud : solicitudes) {
+                                Log.d("FeedDonacion",
+                                        "📋 ID: " + solicitud.getSolicitudid() +
+                                                " | UsuarioID: " + solicitud.getUsuarioid() +
+                                                " | Título: " + solicitud.getTitulo() +
+                                                " | Imagen: " + (solicitud.getImagenUrl() != null ? "SI" : "NO"));
+                            }
 
-                        adapter.updateData(solicitudes);
-                        showSolicitudesList();
+                            adapter.updateData(solicitudes);
+                            showSolicitudesList();
 
-                        // FORZAR ACTUALIZACIÓN INMEDIATA después de cargar datos
-                        forceImmediateRedraw();
-
-                        // Forzar otra actualización después de 1 segundo para asegurar
-                        new Handler().postDelayed(() -> {
+                            // FORZAR ACTUALIZACIÓN INMEDIATA después de cargar datos
                             forceImmediateRedraw();
-                        }, 1000);
 
-                    } else {
-                        Log.d("FeedDonacion", "📭 No hay solicitudes activas");
-                        showEmptyState();
+                            // Forzar otra actualización después de 1 segundo para asegurar
+                            new Handler().postDelayed(() -> {
+                                forceImmediateRedraw();
+                            }, 1000);
+
+                        } else {
+                            Log.d("FeedDonacion", "📭 No hay solicitudes activas");
+                            showEmptyState();
+                        }
+                    });
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.e("FeedDonacion", "❌ Error cargando solicitudes: " + error);
+                    runOnUiThread(() -> showEmptyState());
+                }
+            });
+        }
+    }
+
+    private void cargarSolicitudesConFiltros() {
+        Log.d("FeedDonacion", "🔍 Cargando solicitudes con filtros - Query: '" + currentQuery + "', TipoSangre: " + currentTipoSangreId);
+
+        showLoadingState();
+
+        ApiService.buscarSolicitudes(currentQuery,
+                currentTipoSangreId != -1 ? currentTipoSangreId : null,
+                new ApiService.ListCallback<SolicitudDonacion>() {
+                    @Override
+                    public void onSuccess(List<SolicitudDonacion> solicitudes) {
+                        Log.d("FeedDonacion", "✅ Solicitudes filtradas cargadas: " + (solicitudes != null ? solicitudes.size() : 0));
+
+                        runOnUiThread(() -> {
+                            if (solicitudes != null && !solicitudes.isEmpty()) {
+                                adapter.updateData(solicitudes);
+                                showSolicitudesList();
+                                forceImmediateRedraw();
+
+                                // Mostrar mensaje de resultados
+                                mostrarMensajeResultados(solicitudes.size());
+                            } else {
+                                Log.d("FeedDonacion", "📭 No hay solicitudes que coincidan con los filtros");
+                                showEmptyState();
+                                personalizarMensajeEmptyStateConFiltros();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("FeedDonacion", "❌ Error cargando solicitudes filtradas: " + error);
+                        runOnUiThread(() -> {
+                            showEmptyState();
+                            Toast.makeText(FeedDonacion.this, "Error al buscar solicitudes", Toast.LENGTH_SHORT).show();
+                        });
                     }
                 });
+    }
+
+    private void mostrarMensajeResultados(int cantidad) {
+        StringBuilder mensaje = new StringBuilder("Se encontraron " + cantidad + " solicitudes");
+
+        if (!currentQuery.isEmpty()) {
+            mensaje.append(" con '").append(currentQuery).append("'");
+        }
+
+        if (currentTipoSangreId != -1) {
+            if (!currentQuery.isEmpty()) {
+                mensaje.append(" y");
+            }
+            mensaje.append(" de tipo ").append(convertirTipoSangreIdANombre(currentTipoSangreId));
+        }
+
+        Toast.makeText(this, mensaje.toString(), Toast.LENGTH_SHORT).show();
+    }
+
+    private void personalizarMensajeEmptyStateConFiltros() {
+        TextView emptyStateTitle = findViewById(R.id.text_empty_title);
+        TextView emptyStateMessage = findViewById(R.id.text_empty_message);
+
+        if (emptyStateTitle != null && emptyStateMessage != null) {
+            emptyStateTitle.setText("No se encontraron resultados");
+
+            StringBuilder mensaje = new StringBuilder("No hay solicitudes que coincidan con ");
+
+            if (!currentQuery.isEmpty() && currentTipoSangreId != -1) {
+                mensaje.append("'").append(currentQuery).append("' y tipo de sangre ").append(convertirTipoSangreIdANombre(currentTipoSangreId));
+            } else if (!currentQuery.isEmpty()) {
+                mensaje.append("'").append(currentQuery).append("'");
+            } else if (currentTipoSangreId != -1) {
+                mensaje.append("el tipo de sangre ").append(convertirTipoSangreIdANombre(currentTipoSangreId));
             }
 
-            @Override
-            public void onError(String error) {
-                Log.e("FeedDonacion", "❌ Error cargando solicitudes: " + error);
-                runOnUiThread(() -> showEmptyState());
-            }
-        });
+            emptyStateMessage.setText(mensaje.toString());
+        }
+    }
+
+    private String convertirTipoSangreIdANombre(int tipoSangreId) {
+        switch (tipoSangreId) {
+            case 1: return "A+";
+            case 2: return "A-";
+            case 3: return "B+";
+            case 4: return "B-";
+            case 5: return "AB+";
+            case 6: return "AB-";
+            case 7: return "O+";
+            case 8: return "O-";
+            default: return "Desconocido";
+        }
+    }
+
+    // ========== IMPLEMENTACIÓN DE FILTROBUSQUEDALISTENER ==========
+
+    @Override
+    public void onAplicarFiltros(String query, int tipoSangreId) {
+        currentQuery = query;
+        currentTipoSangreId = tipoSangreId;
+
+        // Mostrar indicador de filtros activos
+        mostrarIndicadorFiltros();
+
+        // Cargar solicitudes con filtros
+        cargarSolicitudesConFiltros();
+    }
+
+    @Override
+    public void onLimpiarFiltros() {
+        currentQuery = "";
+        currentTipoSangreId = -1;
+
+        // Ocultar indicador de filtros
+        ocultarIndicadorFiltros();
+
+        // Cargar todas las solicitudes
+        loadSolicitudes();
+
+        Toast.makeText(this, "Filtros limpiados", Toast.LENGTH_SHORT).show();
+    }
+
+    private void mostrarIndicadorFiltros() {
+        StringBuilder filtros = new StringBuilder("Filtros activos: ");
+        boolean tieneFiltros = false;
+
+        if (!currentQuery.isEmpty()) {
+            filtros.append("'").append(currentQuery).append("'");
+            tieneFiltros = true;
+        }
+
+        if (currentTipoSangreId != -1) {
+            if (tieneFiltros) filtros.append(", ");
+            filtros.append(convertirTipoSangreIdANombre(currentTipoSangreId));
+            tieneFiltros = true;
+        }
+
+        if (tieneFiltros) {
+            // Cambiar el título para mostrar filtros activos
+            textTitle.setText("Solicitudes Filtradas");
+            textTitle.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+        }
+    }
+
+    private void ocultarIndicadorFiltros() {
+        textTitle.setText("Solicitudes de Donación");
+        textTitle.setTextColor(getResources().getColor(android.R.color.black));
     }
 
     private void startAggressiveAutoRefresh() {

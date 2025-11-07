@@ -21,7 +21,7 @@
 
     <!-- Layout para mensajes recibidos (alineados a la izquierda) -->
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="80dp"
@@ -30,15 +30,20 @@
         android:paddingVertical="8dp"
         android:orientation="vertical"
         app:layout_constraintStart_toEndOf="@+id/img_profile"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- Mensaje -->
+        <!-- Mensaje - CAMBIO IMPORTANTE: match_parent y breakStrategy -->
         <TextView
             android:id="@+id/text_message_content"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@android:color/black"
             android:textSize="14sp"
+            android:breakStrategy="high_quality"
+            android:hyphenationFrequency="full"
+            android:ellipsize="none"
+            android:maxLines="100"
             tools:text="Este es un mensaje que recibes" />
 
         <!-- Hora -->

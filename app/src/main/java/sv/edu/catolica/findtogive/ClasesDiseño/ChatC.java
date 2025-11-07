@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -55,13 +56,12 @@ public class ChatC extends AppCompatActivity {
 
     private Handler pollingHandler;
     private Runnable pollingRunnable;
-    private static final long POLLING_INTERVAL = 3000; // 3 segundos
+    private static final long POLLING_INTERVAL = 1000; // 3 segundos
     private SharedPreferences notificacionPrefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.desing_chat);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -95,7 +95,8 @@ public class ChatC extends AppCompatActivity {
 
         textChatName.setText(chatNombre != null ? chatNombre : "Chat");
 
-        btnBack.setOnClickListener(v -> finish());
+        //btnBack.setOnClickListener(v -> finish());
+
         btnSend.setOnClickListener(v -> enviarMensaje());
     }
 
@@ -346,5 +347,11 @@ public class ChatC extends AppCompatActivity {
         startPolling();
         // Recargar mensajes inmediatamente al volver
         loadMensajes();
+    }
+
+    public void back(View view) {
+        Intent ventana = new Intent(ChatC.this, Mensajeria.class);
+        startActivity(ventana);
+        finish();
     }
 }

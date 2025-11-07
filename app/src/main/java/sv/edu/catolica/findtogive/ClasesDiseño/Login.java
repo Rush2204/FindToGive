@@ -6,7 +6,6 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -16,6 +15,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.ApiService;
+import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.AppNotificationManager;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 import sv.edu.catolica.findtogive.R;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.SharedPreferencesManager;
@@ -30,7 +30,7 @@ public class Login extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+
         setContentView(R.layout.desing_login);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -41,6 +41,10 @@ public class Login extends AppCompatActivity {
 
         // Verificar si ya está logueado
         if (SharedPreferencesManager.isLoggedIn(this)) {
+            // 🔥 AGREGAR ESTO - Iniciar servicio si ya está logueado
+            if (AppNotificationManager.areNotificationsEnabled(this)) {
+                AppNotificationManager.startNotificationService(this);
+            }
             navigateToFeedDonacion();
             return;
         }
@@ -145,6 +149,11 @@ public class Login extends AppCompatActivity {
         SharedPreferencesManager.saveUser(Login.this, usuario);
 
         Toast.makeText(Login.this, "¡Bienvenido " + usuario.getNombre() + "!", Toast.LENGTH_SHORT).show();
+
+        // 🔥 AGREGAR ESTA LÍNEA - Iniciar servicio de notificaciones
+        if (AppNotificationManager.areNotificationsEnabled(Login.this)) {
+            AppNotificationManager.startNotificationService(Login.this);
+        }
 
         navigateToFeedDonacion();
     }

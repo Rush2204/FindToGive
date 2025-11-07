@@ -325,6 +325,52 @@ public class ApiService {
         });
     }
 
+    // ========== MÉTODOS DE BÚSQUEDA Y FILTRADO ==========
+    // ========== MÉTODOS DE BÚSQUEDA Y FILTRADO ==========
+    public static void buscarSolicitudes(String query, Integer tipoSangreId, ListCallback<SolicitudDonacion> callback) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                // Construir URL base
+                StringBuilder urlBuilder = new StringBuilder(SupabaseClient.URLs.solicitudDonacion());
+                urlBuilder.append("?estado=eq.activa");
+
+                // Agregar filtros
+                List<String> filters = new ArrayList<>();
+
+                if (query != null && !query.trim().isEmpty()) {
+                    // Usar ilike para búsqueda case-insensitive
+                    filters.add("titulo=ilike.%25" + query.trim() + "%25");
+                }
+
+                if (tipoSangreId != null && tipoSangreId > 0) {
+                    filters.add("tiposangreid=eq." + tipoSangreId);
+                }
+
+                // Combinar filtros
+                if (!filters.isEmpty()) {
+                    urlBuilder.append("&").append(String.join("&", filters));
+                }
+
+                // Ordenar por fecha de publicación
+                urlBuilder.append("&order=fecha_publicacion.desc");
+
+                String finalUrl = urlBuilder.toString();
+                System.out.println("🔍 URL de búsqueda: " + finalUrl);
+
+                getList(finalUrl, new TypeToken<List<SolicitudDonacion>>(){}.getType(), callback);
+
+            } catch (Exception e) {
+                System.out.println("❌ Error en buscarSolicitudes: " + e.getMessage());
+                callback.onError("Error en búsqueda: " + e.getMessage());
+            }
+        });
+    }
+
+    // Método para obtener todas las solicitudes sin filtros (reset)
+    public static void getSolicitudesSinFiltros(ListCallback<SolicitudDonacion> callback) {
+        getSolicitudesActivas(callback);
+    }
+
     private static void buscarSolicitudRecienCreada(int usuarioId, ApiCallback<SolicitudDonacion> callback) {
         try {
             // Pequeño delay para asegurar consistencia
@@ -780,6 +826,21 @@ public class ApiService {
                 "&leida=eq.false" +
                 "&order=fecha_envio.desc";
         getList(url, new TypeToken<List<Notificacion>>(){}.getType(), callback);
+    }
+
+    // Método para obtener solo mensajes no leídos
+    public static void getMensajesNoLeidos(int usuarioId, ListCallback<Mensaje> callback) {
+        String url = SupabaseClient.URLs.mensaje() +
+                "?leido=eq.false" +
+                "&emisorioid=neq." + usuarioId + // Mensajes de otros usuarios
+                "&order=fecha_envio.desc";
+        getList(url, new TypeToken<List<Mensaje>>(){}.getType(), callback);
+    }
+
+    // ========== CHATS - MÉTODOS ADICIONALES ==========
+    public static void getChatById(int chatId, ApiCallback<Chat> callback) {
+        String url = SupabaseClient.URLs.chat() + "?chatid=eq." + chatId + "&limit=1";
+        getSingle(url, new TypeToken<List<Chat>>(){}.getType(), callback);
     }
 
 }

@@ -41,13 +41,13 @@ public class Mensajeria extends AppCompatActivity {
     private Handler messagesPollingHandler;
     private Runnable autoRefreshRunnable;
     private Runnable messagesPollingRunnable;
-    private static final long AUTO_REFRESH_INTERVAL = 10; // 1 segundo para actualizar tiempos
-    private static final long MESSAGES_POLLING_INTERVAL = 5000; // 5 segundos para mensajes nuevos
+    private static final long AUTO_REFRESH_INTERVAL = 100;
+    private static final long MESSAGES_POLLING_INTERVAL = 5000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+
         setContentView(R.layout.desing_mensajeria);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
