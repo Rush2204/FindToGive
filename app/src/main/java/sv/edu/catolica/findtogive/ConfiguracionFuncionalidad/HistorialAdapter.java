@@ -24,15 +24,20 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
 
     private List<SolicitudDonacion> solicitudList;
     private OnItemDeleteListener deleteListener;
+    private OnItemCompleteListener completeListener;
     private Map<Integer, Usuario> usuariosMap; // Cache para usuarios
 
     public interface OnItemDeleteListener {
         void onDeleteClick(SolicitudDonacion solicitud, int position);
     }
+    public interface OnItemCompleteListener {
+        void onCompleteClick(SolicitudDonacion solicitud, int position);
+    }
 
-    public HistorialAdapter(List<SolicitudDonacion> solicitudList, OnItemDeleteListener deleteListener) {
+    public HistorialAdapter(List<SolicitudDonacion> solicitudList, OnItemDeleteListener deleteListener, OnItemCompleteListener completeListener) {
         this.solicitudList = solicitudList;
         this.deleteListener = deleteListener;
+        this.completeListener = completeListener;
         this.usuariosMap = new HashMap<>();
     }
 
@@ -77,19 +82,21 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
     // VIEW HOLDER
     class HistorialViewHolder extends RecyclerView.ViewHolder {
 
-        private ImageView iconDonation; // ImageView para la foto de perfil
+        //private ImageView iconDonation; // ImageView para la foto de perfil
         private TextView textTypeDonation, textDateDonation, textPlaceDonation, textTypebDonation;
-        private ImageButton btnDeleteHistory;
+        private ImageButton btnDeleteHistory, btnCheckHistory ;
 
         public HistorialViewHolder(@NonNull View itemView) {
             super(itemView);
 
-            iconDonation = itemView.findViewById(R.id.icon_donation); // Este es el ImageView
+            //iconDonation = itemView.findViewById(R.id.icon_donation); // Este es el ImageView
             textTypeDonation = itemView.findViewById(R.id.text_type_donation);
             textDateDonation = itemView.findViewById(R.id.text_date_donation);
             textPlaceDonation = itemView.findViewById(R.id.text_place_donation);
             textTypebDonation = itemView.findViewById(R.id.text_typeb_donation);
             btnDeleteHistory = itemView.findViewById(R.id.btn_delete_history);
+            btnCheckHistory = itemView.findViewById(R.id.btn_check_history);
+
         }
 
         public void bind(SolicitudDonacion solicitud, int position) {
@@ -100,12 +107,18 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
             textTypebDonation.setText("Tipo sangre: " + obtenerTipoSangreCompleto(solicitud.getTiposangreid()));
 
             // Cargar foto de perfil del usuario
-            cargarFotoPerfil(solicitud.getUsuarioid());
+            //cargarFotoPerfil(solicitud.getUsuarioid());
 
             // Configurar botón de eliminar
             btnDeleteHistory.setOnClickListener(v -> {
                 if (deleteListener != null) {
                     deleteListener.onDeleteClick(solicitud, position);
+                }
+            });
+            // Configurar botón de eliminar
+            btnCheckHistory.setOnClickListener(v -> {
+                if (completeListener != null) {
+                    completeListener.onCompleteClick(solicitud, position);
                 }
             });
 
@@ -115,7 +128,7 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
             });
         }
 
-        private void cargarFotoPerfil(int usuarioId) {
+        /*private void cargarFotoPerfil(int usuarioId) {
             // Verificar si tenemos el usuario en cache
             Usuario usuario = usuariosMap.get(usuarioId);
             if (usuario != null && usuario.getFotoUrl() != null && !usuario.getFotoUrl().isEmpty()) {
@@ -135,9 +148,9 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                     cargarUsuarioDesdeApi(usuarioId);
                 }
             }
-        }
+        }*/
 
-        private void cargarUsuarioDesdeApi(int usuarioId) {
+        /*private void cargarUsuarioDesdeApi(int usuarioId) {
             ApiService.getUsuarioById(usuarioId, new ApiService.ApiCallback<Usuario>() {
                 @Override
                 public void onSuccess(Usuario usuario) {
@@ -156,7 +169,7 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                     // Mantener la foto por defecto
                 }
             });
-        }
+        }*/
 
         private String obtenerTipoSangreCompleto(int tiposangreid) {
             switch (tiposangreid) {

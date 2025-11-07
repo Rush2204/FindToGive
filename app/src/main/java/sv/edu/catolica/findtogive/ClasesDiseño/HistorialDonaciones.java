@@ -30,7 +30,7 @@ import sv.edu.catolica.findtogive.Modelado.SolicitudDonacion;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 import sv.edu.catolica.findtogive.R;
 
-public class HistorialDonaciones extends AppCompatActivity implements HistorialAdapter.OnItemDeleteListener {
+public class HistorialDonaciones extends AppCompatActivity implements HistorialAdapter.OnItemDeleteListener, HistorialAdapter.OnItemCompleteListener {
 
     private static final String TAG = "HistorialDonaciones";
     private static final String PREF_ELIMINADOS = "historial_eliminados";
@@ -42,7 +42,7 @@ public class HistorialDonaciones extends AppCompatActivity implements HistorialA
     private List<SolicitudDonacion> solicitudList;
     private HistorialAdapter historialAdapter;
     private Usuario usuarioActual;
-    private Set<Integer> solicitudesEliminadas; // Para guardar IDs eliminados localmente
+    private Set<Integer> solicitudesEliminadas, solicitudesCompletadas; // Para guardar IDs eliminados localmente
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,10 +93,11 @@ public class HistorialDonaciones extends AppCompatActivity implements HistorialA
 
         solicitudList = new ArrayList<>();
         solicitudesEliminadas = new HashSet<>();
+        solicitudesCompletadas = new HashSet<>();
     }
 
     private void setupRecyclerView() {
-        historialAdapter = new HistorialAdapter(solicitudList, this);
+        historialAdapter = new HistorialAdapter(solicitudList, this, this);
         recyclerViewHistorial.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewHistorial.setAdapter(historialAdapter);
     }
@@ -199,8 +200,14 @@ public class HistorialDonaciones extends AppCompatActivity implements HistorialA
      */
     @Override
     public void onDeleteClick(SolicitudDonacion solicitud, int position) {
-        Snackbar.make(recyclerViewHistorial, "¿Eliminar esta solicitud de tu historial?", Snackbar.LENGTH_LONG)
+        Snackbar.make(recyclerViewHistorial, "¿Desea eliminar esta solicitud del historial?", Snackbar.LENGTH_LONG)
                 .setAction("ELIMINAR", view -> eliminarDelHistorial(solicitud, position))
+                .show();
+    }
+
+    public void onCompleteClick(SolicitudDonacion solicitud, int position) {
+        Snackbar.make(recyclerViewHistorial, "¿Tu solicitud ha sido completada?", Snackbar.LENGTH_LONG)
+                .setAction("COMPLETAR", view -> completarDelHistorial(solicitud, position))
                 .show();
     }
 
@@ -232,6 +239,38 @@ public class HistorialDonaciones extends AppCompatActivity implements HistorialA
                 runOnUiThread(() -> {
                     Log.e(TAG, "❌ Error al cambiar estado: " + error);
                     Toast.makeText(HistorialDonaciones.this, "Error al eliminar solicitud: " + error, Toast.LENGTH_LONG).show();
+                    updateUIState();
+                });
+            }
+        });
+    }
+
+    private void completarDelHistorial(SolicitudDonacion solicitud, int position) {
+        showLoadingState();
+
+        Log.d(TAG, "🔄 Cambiando estado de solicitud " + solicitud.getSolicitudid() + " a: completada");
+
+
+        ApiService.updateSolicitudEstado(solicitud.getSolicitudid(), "completada", new ApiService.ApiCallback<SolicitudDonacion>() {
+            @Override
+            public void onSuccess(SolicitudDonacion result) {
+                runOnUiThread(() -> {
+
+                    // Remover de la lista local
+                    if (position >= 0 && position < solicitudList.size()) {
+                        solicitudList.remove(position);
+                        historialAdapter.notifyItemRemoved(position);
+                    }
+
+                    Snackbar.make(recyclerViewHistorial, "Solicitud completada", Snackbar.LENGTH_SHORT).show();
+                    updateUIState();
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                runOnUiThread(() -> {
+                    Toast.makeText(HistorialDonaciones.this, "Error al completar solicitud: " + error, Toast.LENGTH_LONG).show();
                     updateUIState();
                 });
             }

@@ -18,16 +18,6 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <!-- Icono de Donación -->
-        <ImageView
-            android:id="@+id/icon_donation"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            tools:src=""
-            android:contentDescription="Gota de sangre"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
         <!-- Botón de Eliminar -->
         <ImageButton
             android:id="@+id/btn_delete_history"
@@ -41,10 +31,22 @@
             app:tint="#DC2626"
             tools:ignore="TouchTargetSizeCheck" />
 
+        <ImageButton
+            android:id="@+id/btn_check_history"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Eliminar registro"
+            app:layout_constraintEnd_toStartOf="@id/btn_delete_history"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@android:drawable/arrow_down_float"
+            app:tint="#10B981"
+            tools:ignore="TouchTargetSizeCheck" />
+
         <!-- Título/Tipo de Donación (tipo_donacion de historial_donacion) -->
         <TextView
             android:id="@+id/text_type_donation"
-            android:layout_width="220dp"
+            android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="8dp"
@@ -52,9 +54,8 @@
             android:textStyle="bold"
             android:textColor="@android:color/black"
             tools:text="Donación de Sangre Completa"
-            app:layout_constraintStart_toEndOf="@+id/icon_donation"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <!-- Fecha de Donación (fecha_donacion de historial_donacion) -->
         <TextView
