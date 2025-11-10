@@ -16,6 +16,7 @@ import com.google.android.material.textfield.TextInputLayout;
 
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.ApiService;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.AppNotificationManager;
+import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.NotificationPermissionManager;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 import sv.edu.catolica.findtogive.R;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.SharedPreferencesManager;
@@ -41,9 +42,14 @@ public class Login extends AppCompatActivity {
 
         // Verificar si ya está logueado
         if (SharedPreferencesManager.isLoggedIn(this)) {
-            // 🔥 AGREGAR ESTO - Iniciar servicio si ya está logueado
-            if (AppNotificationManager.areNotificationsEnabled(this)) {
-                AppNotificationManager.startNotificationService(this);
+            // Solicitar permisos si no los tiene
+            if (!NotificationPermissionManager.areNotificationsEnabled(this)) {
+                NotificationPermissionManager.requestNotificationPermission(this);
+            } else {
+                // Ya tiene permisos, iniciar servicio
+                if (AppNotificationManager.areNotificationsEnabled(this)) {
+                    AppNotificationManager.startNotificationService(this);
+                }
             }
             navigateToFeedDonacion();
             return;
@@ -184,6 +190,21 @@ public class Login extends AppCompatActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    // Agregar método para manejar resultado de permisos
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (NotificationPermissionManager.handlePermissionResult(requestCode, grantResults)) {
+            // Permiso concedido, iniciar servicio si está logueado
+            if (SharedPreferencesManager.isLoggedIn(this) &&
+                    AppNotificationManager.areNotificationsEnabled(this)) {
+                AppNotificationManager.startNotificationService(this);
+            }
+        }
+        // Si se deniegan los permisos, continuar sin notificaciones
     }
 
     @Override

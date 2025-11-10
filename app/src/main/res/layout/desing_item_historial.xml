@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-    <!-- Diseño de cada ítem del historial de donaciones, usando datos de la tabla 'historial_donacion' -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -8,6 +7,9 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
     android:layout_marginVertical="8dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
     app:cardCornerRadius="12dp"
     app:cardElevation="4dp"
     app:strokeColor="#e5e7eb"
@@ -18,7 +20,107 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <!-- Botón de Eliminar -->
+        <!-- Área clickeable principal (excluye botones) -->
+        <LinearLayout
+            android:id="@+id/clickable_area"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/btn_check_history"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <!-- Fila superior: Icono de rol + Tipo de donación -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <!-- Icono de rol (donante/receptor) -->
+                <ImageView
+                    android:id="@+id/img_rol_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginEnd="8dp"
+                    android:contentDescription="Icono de rol"
+                    tools:src="@drawable/ico_donante" />
+
+                <!-- Tipo de donación -->
+                <TextView
+                    android:id="@+id/text_type_donation"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/black"
+                    tools:text="Donación de Sangre Completa" />
+
+            </LinearLayout>
+
+            <!-- Indicador de mensajes nuevos -->
+            <TextView
+                android:id="@+id/text_new_messages"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/badge_new_messages"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:text="💬 Hay nuevos mensajes"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/text_date_donation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="#6b7280"
+                android:textSize="14sp"
+                tools:text="Fecha: 15/Mayo/2025" />
+
+            <TextView
+                android:id="@+id/text_place_donation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="#6b7280"
+                android:textSize="14sp"
+                tools:text="Lugar: Cruz Roja Salvadoreña" />
+
+            <TextView
+                android:id="@+id/text_typeb_donation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="#6b7280"
+                android:textSize="14sp"
+                tools:text="Tipo de sangre: O+" />
+
+        </LinearLayout>
+
+        <!-- Botones de acción -->
+        <ImageButton
+            android:id="@+id/btn_check_history"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Completar solicitud"
+            app:layout_constraintEnd_toStartOf="@id/btn_delete_history"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@android:drawable/arrow_down_float"
+            app:tint="#10B981"
+            tools:ignore="TouchTargetSizeCheck" />
+
         <ImageButton
             android:id="@+id/btn_delete_history"
             android:layout_width="30dp"
@@ -30,75 +132,6 @@
             app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
             app:tint="#DC2626"
             tools:ignore="TouchTargetSizeCheck" />
-
-        <ImageButton
-            android:id="@+id/btn_check_history"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Eliminar registro"
-            app:layout_constraintEnd_toStartOf="@id/btn_delete_history"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@android:drawable/arrow_down_float"
-            app:tint="#10B981"
-            tools:ignore="TouchTargetSizeCheck" />
-
-        <!-- Título/Tipo de Donación (tipo_donacion de historial_donacion) -->
-        <TextView
-            android:id="@+id/text_type_donation"
-            android:layout_width="250dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="8dp"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black"
-            tools:text="Donación de Sangre Completa"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <!-- Fecha de Donación (fecha_donacion de historial_donacion) -->
-        <TextView
-            android:id="@+id/text_date_donation"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:drawablePadding="4dp"
-            android:textColor="#6b7280"
-            android:textSize="14sp"
-            tools:text="Fecha: 15/Mayo/2025"
-            app:layout_constraintStart_toStartOf="@+id/text_type_donation"
-            app:layout_constraintEnd_toEndOf="@+id/text_type_donation"
-            app:layout_constraintTop_toBottomOf="@+id/text_type_donation" />
-
-        <!-- Lugar de Donación (lugar de historial_donacion) -->
-        <TextView
-            android:id="@+id/text_place_donation"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:drawablePadding="4dp"
-            android:textColor="#6b7280"
-            android:textSize="14sp"
-            tools:text="Lugar: Cruz Roja Salvadoreña"
-            app:layout_constraintStart_toStartOf="@+id/text_type_donation"
-            app:layout_constraintEnd_toEndOf="@+id/text_type_donation"
-            app:layout_constraintTop_toBottomOf="@+id/text_date_donation" />
-
-        <TextView
-            android:id="@+id/text_typeb_donation"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:drawablePadding="4dp"
-            android:textColor="#6b7280"
-            android:textSize="14sp"
-            tools:text="Tipo de sangre: O+"
-            app:layout_constraintStart_toStartOf="@+id/text_type_donation"
-            app:layout_constraintEnd_toEndOf="@+id/text_type_donation"
-            app:layout_constraintTop_toBottomOf="@+id/text_place_donation" />
-
-
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

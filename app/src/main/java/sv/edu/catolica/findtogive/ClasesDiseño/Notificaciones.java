@@ -97,10 +97,6 @@ public class Notificaciones extends AppCompatActivity {
                 startActivity(new Intent(this, PerfilUsuario.class));
                 finish();
                 return true;
-            } else if (itemId == R.id.nav_mensajeria) {
-                startActivity(new Intent(this, Mensajeria.class));
-                finish();
-                return true;
             }
             return false;
         });

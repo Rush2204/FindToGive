@@ -26,6 +26,7 @@ import java.util.List;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.ApiService;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.FiltroBusquedaDialog;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.AppNotificationManager;
+import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.NotificationPermissionManager;
 import sv.edu.catolica.findtogive.Modelado.SolicitudDonacion;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 import sv.edu.catolica.findtogive.R;
@@ -69,10 +70,14 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
             return insets;
         });
 
-        // Verificar si hay usuario logueado
-        if (!SharedPreferencesManager.isLoggedIn(this)) {
-            navigateToLogin();
-            return;
+        // Verificar permisos y solicitar si es necesario
+        if (!NotificationPermissionManager.areNotificationsEnabled(this)) {
+            NotificationPermissionManager.requestNotificationPermission(this);
+        } else {
+            // Solo iniciar servicio si tiene permisos
+            if (AppNotificationManager.areNotificationsEnabled(this)) {
+                AppNotificationManager.startNotificationService(this);
+            }
         }
 
         usuarioActual = SharedPreferencesManager.getCurrentUser(this);
@@ -201,20 +206,13 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
             } else if (itemId == R.id.nav_notificaciones) {
                 startActivity(new Intent(this, Notificaciones.class));
                 finish();
-                Toast.makeText(this, "Avisos y notificaciones", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (itemId == R.id.nav_historial) {
                 Intent intent = new Intent(this, HistorialDonaciones.class);
                 startActivity(intent);
-                Toast.makeText(this, "Historial de donaciones", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (itemId == R.id.nav_perfil) {
                 Intent intent = new Intent(this, PerfilUsuario.class);
-                startActivity(intent);
-                Toast.makeText(this, "Perfil de usuario", Toast.LENGTH_SHORT).show();
-                return true;
-            } else if (itemId == R.id.nav_mensajeria) {
-                Intent intent = new Intent(this, Mensajeria.class);
                 startActivity(intent);
                 return true;
             }
@@ -227,6 +225,22 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
         }
 
         bottomNavigation.setSelectedItemId(R.id.nav_inicio);
+    }
+
+    // Agregar manejo de resultado de permisos
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (NotificationPermissionManager.handlePermissionResult(requestCode, grantResults)) {
+            // Permiso concedido, iniciar servicio
+            if (AppNotificationManager.areNotificationsEnabled(this)) {
+                AppNotificationManager.startNotificationService(this);
+            }
+            Toast.makeText(this, "Notificaciones activadas", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Las notificaciones estarán desactivadas", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void loadSolicitudes() {

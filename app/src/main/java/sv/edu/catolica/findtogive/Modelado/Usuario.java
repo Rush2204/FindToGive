@@ -1,5 +1,7 @@
 package sv.edu.catolica.findtogive.Modelado;
 
+import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.SecurityHelper;
+
 public class Usuario {
     private int usuarioid;
     private String nombre;
@@ -87,11 +89,14 @@ public class Usuario {
 
     // Método para crear JSON sin usuarioid
     public String toJsonForRegistration() {
+        // Hashear la contraseña antes de enviarla
+        String hashedPassword = SecurityHelper.hashPassword(contrasena);
+
         return "{" +
                 "\"nombre\":\"" + nombre + "\"," +
                 "\"apellido\":\"" + apellido + "\"," +
                 "\"email\":\"" + email + "\"," +
-                "\"contrasena\":\"" + contrasena + "\"," +
+                "\"contrasena\":\"" + hashedPassword + "\"," + // ← Contraseña hasheada
                 "\"edad\":" + edad + "," +
                 "\"telefono\":\"" + telefono + "\"," +
                 "\"rolid\":" + rolid + "," +
@@ -129,7 +134,7 @@ public class Usuario {
     public void updateFrom(Usuario updatedUser) {
         this.nombre = updatedUser.getNombre();
         this.apellido = updatedUser.getApellido();
-        this.email =updatedUser.getEmail();
+        this.email = updatedUser.getEmail();
         this.telefono = updatedUser.getTelefono();
         this.ubicacion = updatedUser.getUbicacion();
         this.edad = updatedUser.getEdad();

@@ -22,6 +22,9 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.ApiService;
+import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.AppNotificationManager;
+import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.NotificationPermissionManager;
+import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.SecurityHelper;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 import sv.edu.catolica.findtogive.R;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.SharedPreferencesManager;
@@ -324,6 +327,7 @@ public class Registro extends AppCompatActivity {
         });
     }
 
+    // En tu Registro.java, modifica SOLO el método validateInputs:
     private boolean validateInputs(String nombre, String apellido, String email, String password,
                                    String edadStr, String telefono) {
         boolean isValid = true;
@@ -367,14 +371,14 @@ public class Registro extends AppCompatActivity {
             tilEmail.setError(null);
         }
 
-        // Validar contraseña
+        // Validar contraseña - MODIFICADO para usar SecurityHelper
         if (password.isEmpty()) {
             tilPassword.setError("La contraseña es requerida");
             isValid = false;
         } else if (password.length() < 8) {
             tilPassword.setError("La contraseña debe tener al menos 8 caracteres");
             isValid = false;
-        } else if (!isValidPassword(password)) {
+        } else if (!SecurityHelper.isPasswordStrong(password)) {
             tilPassword.setError("La contraseña debe incluir mayúsculas, minúsculas y números");
             isValid = false;
         } else {
@@ -437,11 +441,37 @@ public class Registro extends AppCompatActivity {
         return telefono.matches(telefonoPattern);
     }
 
+    // Registro.java - Agregar en onRegisterSuccess
     private void onRegisterSuccess(Usuario usuario) {
         Toast.makeText(this, "¡Registro exitoso! Bienvenido " + usuario.getNombre(), Toast.LENGTH_SHORT).show();
 
-        // Guardar usuario y navegar al feed de donaciones
+        // Guardar usuario
         SharedPreferencesManager.saveUser(this, usuario);
+
+        // Solicitar permisos de notificación después del registro exitoso
+        if (!NotificationPermissionManager.areNotificationsEnabled(this)) {
+            NotificationPermissionManager.requestNotificationPermission(this);
+        } else {
+            // Ya tiene permisos, iniciar servicio
+            if (AppNotificationManager.areNotificationsEnabled(this)) {
+                AppNotificationManager.startNotificationService(this);
+            }
+            navigateToFeedDonacion();
+        }
+    }
+
+    // Agregar método para manejar resultado de permisos
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (NotificationPermissionManager.handlePermissionResult(requestCode, grantResults)) {
+            // Permiso concedido, iniciar servicio
+            if (AppNotificationManager.areNotificationsEnabled(this)) {
+                AppNotificationManager.startNotificationService(this);
+            }
+        }
+        // Navegar al feed independientemente de los permisos
         navigateToFeedDonacion();
     }
 

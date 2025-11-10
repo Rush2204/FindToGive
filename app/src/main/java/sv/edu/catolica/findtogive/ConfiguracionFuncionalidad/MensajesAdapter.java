@@ -1,5 +1,6 @@
 package sv.edu.catolica.findtogive.ConfiguracionFuncionalidad;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,7 +28,7 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
 
     private List<Mensaje> mensajesList;
     private int usuarioActualId;
-    private int otroUsuarioId; // ID del otro usuario en el chat
+    private int otroUsuarioId;
     private Map<Integer, Usuario> usuariosMap;
 
     public MensajesAdapter(List<Mensaje> mensajesList, int usuarioActualId, int otroUsuarioId) {
@@ -70,7 +71,6 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
     }
 
     // Método para agregar un nuevo mensaje
-    // En MensajesAdapter.java
     public void agregarMensaje(Mensaje mensaje) {
         // Verificar que el mensaje no exista ya
         for (Mensaje existing : mensajesList) {
@@ -107,10 +107,39 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
         }
     }
 
+    // NUEVO MÉTODO: Actualizar estado de leído de un mensaje específico
+    public void actualizarEstadoLeido(int mensajeId, boolean leido) {
+        for (int i = 0; i < mensajesList.size(); i++) {
+            Mensaje mensaje = mensajesList.get(i);
+            if (mensaje.getMensajeid() == mensajeId) {
+                mensaje.setLeido(leido);
+                notifyItemChanged(i);
+                break;
+            }
+        }
+    }
+
+    // NUEVO MÉTODO: Actualizar estado de leído para todos los mensajes del otro usuario
+    public void marcarTodosComoLeidos() {
+        boolean changed = false;
+        for (int i = 0; i < mensajesList.size(); i++) {
+            Mensaje mensaje = mensajesList.get(i);
+            // Solo marcar mensajes del otro usuario que no estén leídos
+            if (mensaje.getEmisorioid() != usuarioActualId && !mensaje.isLeido()) {
+                mensaje.setLeido(true);
+                changed = true;
+            }
+        }
+        if (changed) {
+            notifyDataSetChanged();
+        }
+    }
+
     public class MensajeViewHolder extends RecyclerView.ViewHolder {
 
         private TextView textMessageContent;
         private TextView textMessageTime;
+        private TextView textLeidoStatus; // NUEVO: Para mostrar estado de leído
         private ImageView imgProfile;
         private int viewType;
 
@@ -120,6 +149,11 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
 
             textMessageContent = itemView.findViewById(R.id.text_message_content);
             textMessageTime = itemView.findViewById(R.id.text_message_time);
+
+            // NUEVO: Inicializar TextView para estado de leído (solo en mensajes enviados)
+            if (viewType == TYPE_SEND) {
+                textLeidoStatus = itemView.findViewById(R.id.text_leido_status);
+            }
 
             if (viewType == TYPE_RECEIVE) {
                 imgProfile = itemView.findViewById(R.id.img_profile);
@@ -137,13 +171,26 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
                 textMessageTime.setText("");
             }
 
+            // NUEVO: Mostrar estado de leído para mensajes enviados
+            if (viewType == TYPE_SEND && textLeidoStatus != null) {
+                if (mensaje.isLeido()) {
+                    textLeidoStatus.setText("✓✓"); // Doble check para leído
+                    textLeidoStatus.setTextColor(Color.parseColor("#4CAF50")); // Verde
+                    textLeidoStatus.setAlpha(1.0f); // Totalmente visible
+                } else {
+                    textLeidoStatus.setText("✓"); // Check simple para enviado
+                    textLeidoStatus.setTextColor(Color.parseColor("#CCFFFFFF")); // Blanco semitransparente
+                    textLeidoStatus.setAlpha(0.7f); // Semitransparente
+                }
+                textLeidoStatus.setVisibility(View.VISIBLE);
+            }
+
             // Para mensajes recibidos, cargar la foto del OTRO usuario
             if (viewType == TYPE_RECEIVE && imgProfile != null) {
                 cargarFotoPerfil();
             }
         }
 
-        // Agrega este método en MensajesAdapter
         private String calcularTiempoMensaje(String fechaMensaje) {
             if (fechaMensaje == null || fechaMensaje.isEmpty()) {
                 return "";
@@ -176,6 +223,7 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
                 return "";
             }
         }
+
         private void cargarFotoPerfil() {
             // Siempre cargar la foto del OTRO usuario del chat
             Usuario usuario = usuariosMap.get(otroUsuarioId);

@@ -4,7 +4,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -22,12 +25,11 @@ import java.util.List;
 
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.ApiService;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.ChatsAdapter;
+import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.SharedPreferencesManager;
 import sv.edu.catolica.findtogive.Modelado.Chat;
 import sv.edu.catolica.findtogive.Modelado.Mensaje;
-import sv.edu.catolica.findtogive.Modelado.Notificacion;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 import sv.edu.catolica.findtogive.R;
-import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.SharedPreferencesManager;
 
 public class Mensajeria extends AppCompatActivity {
 
@@ -44,6 +46,10 @@ public class Mensajeria extends AppCompatActivity {
     private static final long AUTO_REFRESH_INTERVAL = 100;
     private static final long MESSAGES_POLLING_INTERVAL = 5000;
 
+    // Variables para filtro
+    private boolean filterBySolicitud = false;
+    private int filteredSolicitudId = -1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,10 +62,20 @@ public class Mensajeria extends AppCompatActivity {
             return insets;
         });
 
+        // Obtener parámetros del intent
+        Intent intent = getIntent();
+        if (intent != null) {
+            filterBySolicitud = intent.getBooleanExtra("filter_by_solicitud", false);
+            filteredSolicitudId = intent.getIntExtra("solicitud_id", -1);
+        }
+
         usuarioActual = SharedPreferencesManager.getCurrentUser(this);
         initializeViews();
         setupRecyclerView();
         setupBottomNavigation();
+
+        // Actualizar título según el contexto
+        updateTitle();
 
         // Cargar datos inmediatamente
         loadChats();
@@ -86,8 +102,11 @@ public class Mensajeria extends AppCompatActivity {
 
     private void setupBottomNavigation() {
         BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation_bar);
+        bottomNavigation.setSelectedItemId(R.id.nav_historial);
         bottomNavigation.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
+
+
 
             if (itemId == R.id.nav_inicio) {
                 Intent intent = new Intent(this, FeedDonacion.class);
@@ -106,19 +125,15 @@ public class Mensajeria extends AppCompatActivity {
             } else if (itemId == R.id.nav_notificaciones) {
                 startActivity(new Intent(this, Notificaciones.class));
                 finish();
-                Toast.makeText(this, "Avisos y notificaciones", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (itemId == R.id.nav_historial) {
                 Intent intent = new Intent(this, HistorialDonaciones.class);
                 startActivity(intent);
-                Toast.makeText(this, "Historial de donaciones", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (itemId == R.id.nav_perfil) {
                 Intent intent = new Intent(this, PerfilUsuario.class);
                 startActivity(intent);
                 finish();
-                return true;
-            } else if (itemId == R.id.nav_mensajeria) {
                 return true;
             }
             return false;
@@ -127,9 +142,9 @@ public class Mensajeria extends AppCompatActivity {
         if (usuarioActual != null && usuarioActual.getRolid() == 1) {
             bottomNavigation.getMenu().findItem(R.id.nav_crear).setVisible(false);
         }
-
-        bottomNavigation.setSelectedItemId(R.id.nav_mensajeria);
     }
+
+    // En Mensajeria.java, modifica el método loadChats() o donde cargas los chats:
 
     private void loadChats() {
         if (usuarioActual == null) {
@@ -145,7 +160,21 @@ public class Mensajeria extends AppCompatActivity {
                 runOnUiThread(() -> {
                     if (chats != null && !chats.isEmpty()) {
                         System.out.println("✅ " + chats.size() + " chats cargados exitosamente");
-                        chatsAdapter.actualizarChats(chats);
+
+                        // Aplicar filtro si es necesario
+                        List<Chat> filteredChats = chats;
+                        if (filterBySolicitud && filteredSolicitudId != -1) {
+                            filteredChats = new ArrayList<>();
+                            for (Chat chat : chats) {
+                                if (chat.getSolicitudid() == filteredSolicitudId) {
+                                    filteredChats.add(chat);
+                                }
+                            }
+                            System.out.println("🔍 Filtrado: " + filteredChats.size() + " chats para solicitud " + filteredSolicitudId);
+                            // ELIMINAR la llamada a bloquearMensajeria() de aquí
+                        }
+
+                        chatsAdapter.actualizarChats(filteredChats);
                         showChatsList();
                     } else {
                         System.out.println("ℹ️ No hay chats disponibles");
@@ -162,6 +191,18 @@ public class Mensajeria extends AppCompatActivity {
                 });
             }
         });
+    }
+
+
+
+    // NUEVO MÉTODO: Actualizar título según el contexto
+    private void updateTitle() {
+        TextView textTitle = findViewById(R.id.text_title_mensajeria);
+        if (filterBySolicitud) {
+            textTitle.setText("Chats de Solicitud");
+        } else {
+            textTitle.setText("Mensajería");
+        }
     }
 
     // NUEVO MÉTODO: Actualizar solo los mensajes de los chats existentes
@@ -264,6 +305,9 @@ public class Mensajeria extends AppCompatActivity {
         super.onResume();
         System.out.println("🔄 Mensajeria onResume");
 
+        // Actualizar título
+        updateTitle();
+
         // Recargar chats inmediatamente
         loadChats();
 
@@ -271,8 +315,9 @@ public class Mensajeria extends AppCompatActivity {
         startTimeRefresh();
         startMessagesPolling();
 
-        BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation_bar);
-        bottomNavigation.setSelectedItemId(R.id.nav_mensajeria);
+
+
+
     }
 
     @Override

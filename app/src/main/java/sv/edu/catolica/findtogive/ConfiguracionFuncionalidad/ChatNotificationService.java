@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sv.edu.catolica.findtogive.ClasesDiseño.ChatC;
+import sv.edu.catolica.findtogive.ClasesDiseño.FeedDonacion;
 import sv.edu.catolica.findtogive.ClasesDiseño.Mensajeria;
 import sv.edu.catolica.findtogive.Modelado.Chat;
 import sv.edu.catolica.findtogive.Modelado.Mensaje;
@@ -91,19 +92,18 @@ public class ChatNotificationService extends Service {
     }
 
     private Notification createServiceNotification() {
-        Intent notificationIntent = new Intent(this, Mensajeria.class);
+        Intent notificationIntent = new Intent(this, FeedDonacion.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this, 0, notificationIntent,
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
         );
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("FindToGive - Mensajería")
-                .setContentText("Monitoreando chats y mensajes nuevos")
+                .setContentTitle("¡Las emergencias no esperan!")
                 .setSmallIcon(R.drawable.ico_logo_findtogive)
                 .setContentIntent(pendingIntent)
                 .setOngoing(false)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
                 .build();
     }
 

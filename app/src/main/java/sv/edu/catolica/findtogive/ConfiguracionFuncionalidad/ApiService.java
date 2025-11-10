@@ -21,7 +21,6 @@ import sv.edu.catolica.findtogive.Modelado.Notificacion;
 import sv.edu.catolica.findtogive.Modelado.SolicitudDonacion;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 
-
 public class ApiService {
     private static final Gson gson = new Gson();
 
@@ -34,6 +33,165 @@ public class ApiService {
         void onSuccess(List<T> result);
         void onError(String error);
     }
+
+    // ========== USUARIO - LOGIN MODIFICADO ==========
+    public static void loginUser(String email, String password, ApiCallback<Usuario> callback) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                // Primero obtener el usuario por email
+                String url = SupabaseClient.URLs.usuario() + "?email=eq." + email + "&activo=eq.true&limit=1";
+
+                Request request = new Request.Builder()
+                        .url(url)
+                        .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
+                        .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
+                        .build();
+
+                try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String json = response.body().string();
+                        System.out.println("🔍 Response login: " + json);
+
+                        Type listType = new TypeToken<List<Usuario>>(){}.getType();
+                        List<Usuario> usuarios = gson.fromJson(json, listType);
+
+                        if (usuarios != null && !usuarios.isEmpty()) {
+                            Usuario usuario = usuarios.get(0);
+                            String storedHash = usuario.getContrasena();
+
+                            // Verificar la contraseña con BCrypt
+                            if (SecurityHelper.verifyPassword(password, storedHash)) {
+                                // Contraseña correcta
+                                callback.onSuccess(usuario);
+                            } else {
+                                // Contraseña incorrecta
+                                callback.onError("Credenciales inválidas");
+                            }
+                        } else {
+                            callback.onError("Usuario no encontrado");
+                        }
+                    } else {
+                        String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
+                        System.out.println("❌ Error en login: " + response.code() + " - " + errorBody);
+                        callback.onError("Error: " + response.code());
+                    }
+                }
+
+            } catch (Exception e) {
+                System.out.println("❌ Exception en loginUser: " + e.getMessage());
+                callback.onError("Error: " + e.getMessage());
+            }
+        });
+    }
+
+    // ========== USUARIO - REGISTRO MODIFICADO ==========
+    public static void registerUser(Usuario usuario, ApiCallback<Usuario> callback) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                // Hashear la contraseña antes de enviar
+                String hashedPassword = SecurityHelper.hashPassword(usuario.getContrasena());
+
+                // Crear JSON manualmente excluyendo usuarioid
+                String json = "{" +
+                        "\"nombre\":\"" + usuario.getNombre() + "\"," +
+                        "\"apellido\":\"" + usuario.getApellido() + "\"," +
+                        "\"email\":\"" + usuario.getEmail() + "\"," +
+                        "\"contrasena\":\"" + hashedPassword + "\"," + // ← Usar contraseña hasheada
+                        "\"edad\":" + usuario.getEdad() + "," +
+                        "\"telefono\":\"" + usuario.getTelefono() + "\"," +
+                        "\"rolid\":" + usuario.getRolid() + "," +
+                        "\"tiposangreid\":" + usuario.getTiposangreid() + "," +
+                        "\"activo\":true" +
+                        "}";
+
+                System.out.println("📤 JSON a enviar: " + json);
+
+                RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
+
+                Request request = new Request.Builder()
+                        .url(SupabaseClient.URLs.usuario())
+                        .post(body)
+                        .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
+                        .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("Prefer", "return=minimal")
+                        .build();
+
+                // Ejecutar INSERT
+                try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
+                    if (response.isSuccessful()) {
+                        System.out.println("✅ INSERT exitoso, código: " + response.code());
+
+                        // Pequeño delay para asegurar consistencia
+                        Thread.sleep(1000);
+
+                        // Buscar el usuario recién creado por email
+                        buscarUsuarioRecienCreado(usuario.getEmail(), callback);
+
+                    } else {
+                        String errorBody = response.body() != null ?
+                                response.body().string() : "Sin detalles";
+                        System.out.println("❌ Error en INSERT: " + response.code() + " - " + errorBody);
+
+                        if (response.code() == 409) {
+                            callback.onError("El email ya está registrado");
+                        } else if (response.code() == 400) {
+                            callback.onError("Error en los datos enviados: " + errorBody);
+                        } else {
+                            callback.onError("Error en registro: " + response.code());
+                        }
+                    }
+                }
+
+            } catch (Exception e) {
+                System.out.println("❌ Exception en registerUser: " + e.getMessage());
+                callback.onError("Error: " + e.getMessage());
+            }
+        });
+    }
+
+    // ========== MÉTODO AUXILIAR (sin cambios) ==========
+    private static void buscarUsuarioRecienCreado(String email, ApiCallback<Usuario> callback) {
+        try {
+            // Pequeño delay para asegurar que el INSERT se complete
+            Thread.sleep(500);
+
+            String url = SupabaseClient.URLs.usuario() + "?email=eq." + email + "&limit=1";
+
+            Request request = new Request.Builder()
+                    .url(url)
+                    .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
+                    .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
+                    .build();
+
+            try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
+                if (response.isSuccessful() && response.body() != null) {
+                    String json = response.body().string();
+                    System.out.println("🔍 Response buscar usuario: " + json);
+
+                    Type listType = new TypeToken<List<Usuario>>(){}.getType();
+                    List<Usuario> usuarios = gson.fromJson(json, listType);
+
+                    if (usuarios != null && !usuarios.isEmpty()) {
+                        Usuario usuario = usuarios.get(0);
+                        System.out.println("✅ Usuario encontrado - ID: " + usuario.getUsuarioid());
+                        callback.onSuccess(usuario);
+                    } else {
+                        callback.onError("Usuario creado pero no encontrado en la base de datos");
+                    }
+                } else {
+                    String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
+                    System.out.println("❌ Error al buscar usuario: " + response.code() + " - " + errorBody);
+                    callback.onError("Error al obtener datos del usuario: " + response.code());
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Exception en buscarUsuarioRecienCreado: " + e.getMessage());
+            callback.onError("Error: " + e.getMessage());
+        }
+    }
+
+    // ========== EL RESTO DE LOS MÉTODOS PERMANECEN IGUAL ==========
 
     // ========== SOLICITUDES - ACTUALIZACIÓN ==========
     public static void updateSolicitud(SolicitudDonacion solicitud, ApiCallback<SolicitudDonacion> callback) {
@@ -86,105 +244,11 @@ public class ApiService {
         });
     }
 
-    // ========== USUARIO ==========
-    public static void loginUser(String email, String password, ApiCallback<Usuario> callback) {
-        String url = SupabaseClient.URLs.usuario() + "?email=eq." + email +
-                "&contrasena=eq." + password + "&activo=eq.true";
-        getSingle(url, new TypeToken<List<Usuario>>(){}.getType(), callback);
+    // ========== SOLICITUD POR ID ==========
+    public static void getSolicitudById(int solicitudId, ApiCallback<SolicitudDonacion> callback) {
+        String url = SupabaseClient.URLs.solicitudDonacion() + "?solicitudid=eq." + solicitudId + "&limit=1";
+        getSingle(url, new TypeToken<List<SolicitudDonacion>>(){}.getType(), callback);
     }
-
-    public static void registerUser(Usuario usuario, ApiCallback<Usuario> callback) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                // Crear JSON manualmente excluyendo usuarioid
-                String json = usuario.toJsonForRegistration();
-                System.out.println("📤 JSON a enviar: " + json);
-
-                RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
-
-                Request request = new Request.Builder()
-                        .url(SupabaseClient.URLs.usuario())
-                        .post(body)
-                        .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
-                        .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
-                        .addHeader("Content-Type", "application/json")
-                        .addHeader("Prefer", "return=minimal")
-                        .build();
-
-                // Ejecutar INSERT
-                try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
-                    if (response.isSuccessful()) {
-                        System.out.println("✅ INSERT exitoso, código: " + response.code());
-
-                        // Pequeño delay para asegurar consistencia
-                        Thread.sleep(1000);
-
-                        // Buscar el usuario recién creado por email
-                        buscarUsuarioRecienCreado(usuario.getEmail(), callback);
-
-                    } else {
-                        String errorBody = response.body() != null ?
-                                response.body().string() : "Sin detalles";
-                        System.out.println("❌ Error en INSERT: " + response.code() + " - " + errorBody);
-
-                        if (response.code() == 409) {
-                            callback.onError("El email ya está registrado");
-                        } else if (response.code() == 400) {
-                            callback.onError("Error en los datos enviados: " + errorBody);
-                        } else {
-                            callback.onError("Error en registro: " + response.code());
-                        }
-                    }
-                }
-
-            } catch (Exception e) {
-                System.out.println("❌ Exception en registerUser: " + e.getMessage());
-                callback.onError("Error: " + e.getMessage());
-            }
-        });
-    }
-
-    private static void buscarUsuarioRecienCreado(String email, ApiCallback<Usuario> callback) {
-        try {
-            // Pequeño delay para asegurar que el INSERT se complete
-            Thread.sleep(500);
-
-            String url = SupabaseClient.URLs.usuario() + "?email=eq." + email + "&limit=1";
-
-            Request request = new Request.Builder()
-                    .url(url)
-                    .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
-                    .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
-                    .build();
-
-            try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
-                if (response.isSuccessful() && response.body() != null) {
-                    String json = response.body().string();
-                    System.out.println("🔍 Response buscar usuario: " + json);
-
-                    Type listType = new TypeToken<List<Usuario>>(){}.getType();
-                    List<Usuario> usuarios = gson.fromJson(json, listType);
-
-                    if (usuarios != null && !usuarios.isEmpty()) {
-                        Usuario usuario = usuarios.get(0);
-                        System.out.println("✅ Usuario encontrado - ID: " + usuario.getUsuarioid());
-                        callback.onSuccess(usuario);
-                    } else {
-                        callback.onError("Usuario creado pero no encontrado en la base de datos");
-                    }
-                } else {
-                    String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                    System.out.println("❌ Error al buscar usuario: " + response.code() + " - " + errorBody);
-                    callback.onError("Error al obtener datos del usuario: " + response.code());
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("❌ Exception en buscarUsuarioRecienCreado: " + e.getMessage());
-            callback.onError("Error: " + e.getMessage());
-        }
-    }
-
-
 
     // ========== USUARIOS - MÉTODOS ADICIONALES ==========
     public static void getUsuarioById(int usuarioId, ApiCallback<Usuario> callback) {
@@ -325,7 +389,6 @@ public class ApiService {
         });
     }
 
-    // ========== MÉTODOS DE BÚSQUEDA Y FILTRADO ==========
     // ========== MÉTODOS DE BÚSQUEDA Y FILTRADO ==========
     public static void buscarSolicitudes(String query, Integer tipoSangreId, ListCallback<SolicitudDonacion> callback) {
         CompletableFuture.runAsync(() -> {
@@ -843,6 +906,45 @@ public class ApiService {
         getSingle(url, new TypeToken<List<Chat>>(){}.getType(), callback);
     }
 
+    // ========== ACTUALIZAR MENSAJES COMO LEÍDOS ==========
+    public static void updateMensajesLeidos(int chatId, int usuarioActualId, ApiCallback<Void> callback) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                String json = "{\"leido\":true}";
+
+                RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
+
+                // Actualizar mensajes que NO son del usuario actual y están sin leer
+                String url = SupabaseClient.URLs.mensaje() +
+                        "?chatid=eq." + chatId +
+                        "&emisorioid=neq." + usuarioActualId +
+                        "&leido=eq.false";
+
+                Request request = new Request.Builder()
+                        .url(url)
+                        .patch(body)
+                        .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
+                        .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("Prefer", "return=minimal")
+                        .build();
+
+                try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
+                    if (response.isSuccessful()) {
+                        System.out.println("✅ Mensajes marcados como leídos para chat: " + chatId);
+                        callback.onSuccess(null);
+                    } else {
+                        String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
+                        System.out.println("❌ Error marcando mensajes como leídos: " + response.code() + " - " + errorBody);
+                        callback.onError("Error al marcar mensajes como leídos: " + response.code());
+                    }
+                }
+
+            } catch (Exception e) {
+                System.out.println("❌ Exception en updateMensajesLeidos: " + e.getMessage());
+                callback.onError("Error: " + e.getMessage());
+            }
+        });
+    }
+
 }
-
-

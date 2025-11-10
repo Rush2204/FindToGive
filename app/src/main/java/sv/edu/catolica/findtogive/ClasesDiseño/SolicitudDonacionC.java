@@ -371,34 +371,28 @@ public class SolicitudDonacionC extends AppCompatActivity {
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_inicio) {
-                Toast.makeText(this, "Inicio", Toast.LENGTH_SHORT).show();
+
                 Intent intent = new Intent(this, FeedDonacion.class);
                 startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_crear) {
                 // Navegar a crear solicitud
-                Toast.makeText(this, "Crear solicitud", Toast.LENGTH_SHORT).show();
+
                 return true;
             } else if (itemId == R.id.nav_notificaciones) {
                 startActivity(new Intent(this, Notificaciones.class));
                 finish();
-                Toast.makeText(this, "Avisos y notificaciones", Toast.LENGTH_SHORT).show();
+
                 return true;
             } else if (itemId == R.id.nav_historial) {
                 Intent intent = new Intent(this, HistorialDonaciones.class);
                 startActivity(intent);
-                Toast.makeText(this, "Historial de donaciones", Toast.LENGTH_SHORT).show();
+
                 return true;
             } else if (itemId == R.id.nav_perfil) {
                 // Navegar a perfil
-                Toast.makeText(this, "Perfil de usuario", Toast.LENGTH_SHORT).show();
+
                 Intent intent = new Intent(this, PerfilUsuario.class);
-                startActivity(intent);
-                return true;
-            } else if (itemId == R.id.nav_mensajeria) {
-                // Navegar a mensajería/chats
-                Toast.makeText(this, "Chats y mensajes", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(this, Mensajeria.class);
                 startActivity(intent);
                 return true;
             }

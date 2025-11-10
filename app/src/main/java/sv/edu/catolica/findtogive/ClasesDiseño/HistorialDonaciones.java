@@ -4,7 +4,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -19,30 +21,48 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.ApiService;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.HistorialAdapter;
+import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.HistorialFiltroDialog;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.SharedPreferencesManager;
+import sv.edu.catolica.findtogive.Modelado.Chat;
+import sv.edu.catolica.findtogive.Modelado.Mensaje;
 import sv.edu.catolica.findtogive.Modelado.SolicitudDonacion;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 import sv.edu.catolica.findtogive.R;
 
-public class HistorialDonaciones extends AppCompatActivity implements HistorialAdapter.OnItemDeleteListener, HistorialAdapter.OnItemCompleteListener {
+public class HistorialDonaciones extends AppCompatActivity implements
+        HistorialAdapter.OnItemDeleteListener,
+        HistorialAdapter.OnItemCompleteListener,
+        HistorialFiltroDialog.HistorialFiltroListener {
 
     private static final String TAG = "HistorialDonaciones";
-    private static final String PREF_ELIMINADOS = "historial_eliminados";
 
     private RecyclerView recyclerViewHistorial;
     private LinearLayout layoutEmptyStateHistory;
     private BottomNavigationView bottomNavigation;
+    private ImageButton btnFilterHistorial;
+    private TextView textTitleHistorial;
+    private TextView textFilterIndicator;
 
     private List<SolicitudDonacion> solicitudList;
+    private List<SolicitudDonacion> todasLasSolicitudes;
+    private List<Chat> chatsDelUsuario;
     private HistorialAdapter historialAdapter;
     private Usuario usuarioActual;
-    private Set<Integer> solicitudesEliminadas, solicitudesCompletadas; // Para guardar IDs eliminados localmente
+    private Set<Integer> solicitudesEliminadas, solicitudesCompletadas;
+
+    // Variables para filtros
+    private String currentEstado = "activa";
+    private String currentRol = "todas";
+    //Mapa para trackear mensajes no leídos por solicitud
+    private Map<Integer, Boolean> mensajesNoLeidosPorSolicitud;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +76,6 @@ public class HistorialDonaciones extends AppCompatActivity implements HistorialA
             return insets;
         });
 
-        // 1. Verificar y obtener usuario logueado
         usuarioActual = SharedPreferencesManager.getCurrentUser(this);
         if (usuarioActual == null || !SharedPreferencesManager.isLoggedIn(this)) {
             Toast.makeText(this, "Debe iniciar sesión.", Toast.LENGTH_LONG).show();
@@ -64,23 +83,27 @@ public class HistorialDonaciones extends AppCompatActivity implements HistorialA
             return;
         }
 
-
+        // INICIALIZAR EL MAPA QUE FALTABA
+        mensajesNoLeidosPorSolicitud = new HashMap<>(); // ESTA LÍNEA FALTABA
 
         initializeViews();
         setupRecyclerView();
         setupBottomNavigation();
-        loadUserSolicitudes(usuarioActual.getUsuarioid());
+        setupClickListeners();
+
+        // NUEVO: Actualizar el título para reflejar el filtro por defecto
+        actualizarTituloPorDefecto();
+
+        loadChatsDelUsuario();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Recargar el historial al reanudar la actividad
         if (usuarioActual != null) {
-            loadUserSolicitudes(usuarioActual.getUsuarioid());
+            loadChatsDelUsuario();
         }
 
-        // Asegurar que el ítem de historial esté seleccionado
         if (bottomNavigation != null) {
             bottomNavigation.setSelectedItemId(R.id.nav_historial);
         }
@@ -90,16 +113,47 @@ public class HistorialDonaciones extends AppCompatActivity implements HistorialA
         recyclerViewHistorial = findViewById(R.id.recycler_view_historial);
         layoutEmptyStateHistory = findViewById(R.id.layout_empty_state_history);
         bottomNavigation = findViewById(R.id.bottom_navigation_bar);
+        btnFilterHistorial = findViewById(R.id.btn_filter_historial);
+        textTitleHistorial = findViewById(R.id.text_header);
+        textFilterIndicator = findViewById(R.id.text_filter_indicator);
 
         solicitudList = new ArrayList<>();
+        todasLasSolicitudes = new ArrayList<>();
+        chatsDelUsuario = new ArrayList<>();
         solicitudesEliminadas = new HashSet<>();
         solicitudesCompletadas = new HashSet<>();
     }
 
+    private void actualizarTituloPorDefecto() {
+        if ("activa".equals(currentEstado) && "todas".equals(currentRol)) {
+            textTitleHistorial.setText("Solicitudes Activas");
+            textFilterIndicator.setVisibility(View.GONE);
+        }
+    }
+
     private void setupRecyclerView() {
-        historialAdapter = new HistorialAdapter(solicitudList, this, this);
+        // MODIFICADO: Pasar usuarioActual al adapter
+        historialAdapter = new HistorialAdapter(solicitudList, this, this, usuarioActual);
+        historialAdapter.setOnItemClickListener(new HistorialAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(SolicitudDonacion solicitud) {
+                navigateToMensajeriaWithFilter(solicitud.getSolicitudid(), solicitud.getEstado());
+            }
+        });
         recyclerViewHistorial.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewHistorial.setAdapter(historialAdapter);
+    }
+
+    private void setupClickListeners() {
+        btnFilterHistorial.setOnClickListener(v -> {
+            mostrarDialogoFiltroHistorial();
+        });
+    }
+
+    private void mostrarDialogoFiltroHistorial() {
+        HistorialFiltroDialog dialog = new HistorialFiltroDialog(this, this);
+        dialog.setFiltrosActuales(currentEstado, currentRol);
+        dialog.show();
     }
 
     private void setupBottomNavigation() {
@@ -122,115 +176,415 @@ public class HistorialDonaciones extends AppCompatActivity implements HistorialA
             } else if (itemId == R.id.nav_notificaciones) {
                 startActivity(new Intent(this, Notificaciones.class));
                 finish();
-                Toast.makeText(this, "Avisos y notificaciones", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (itemId == R.id.nav_historial) {
-                // Ya estamos aquí
                 return true;
             } else if (itemId == R.id.nav_perfil) {
                 startActivity(new Intent(this, PerfilUsuario.class));
-                return true;
-            } else if (itemId == R.id.nav_mensajeria) {
-                startActivity(new Intent(this, Mensajeria.class));
                 return true;
             }
             return false;
         });
 
-        // Ocultar ítem "Crear" del menú para donantes
         if (usuarioActual != null && usuarioActual.getRolid() == 1) {
             bottomNavigation.getMenu().findItem(R.id.nav_crear).setVisible(false);
         }
 
-        // Marcar el ítem correcto
         bottomNavigation.setSelectedItemId(R.id.nav_historial);
     }
 
     /**
-     * Carga las SOLICITUDES del usuario logueado, filtrando las eliminadas
+     * Cargar los chats del usuario para el filtro de donante
      */
-    /**
-     * Carga las SOLICITUDES del usuario logueado, mostrando solo las activas
-     */
-    /**
-     * Carga las SOLICITUDES del usuario logueado, mostrando solo las activas
-     */
-    private void loadUserSolicitudes(int usuarioId) {
-        showLoadingState();
-
-        ApiService.getSolicitudesByUsuarioId(usuarioId, new ApiService.ListCallback<SolicitudDonacion>() {
+    private void loadChatsDelUsuario() {
+        ApiService.getChatsByUsuario(usuarioActual.getUsuarioid(), new ApiService.ListCallback<Chat>() {
             @Override
-            public void onSuccess(List<SolicitudDonacion> result) {
+            public void onSuccess(List<Chat> chats) {
                 runOnUiThread(() -> {
-                    solicitudList.clear();
-                    if (result != null) {
-                        // FILTRAR: Solo mostrar solicitudes con estado "activa"
-                        for (SolicitudDonacion solicitud : result) {
-                            if ("activa".equalsIgnoreCase(solicitud.getEstado())) {
-                                solicitudList.add(solicitud);
-                            }
-                        }
-                        Log.d(TAG, "✅ " + solicitudList.size() + " solicitudes activas (de " + result.size() + " totales)");
+                    if (chats != null) {
+                        chatsDelUsuario.clear();
+                        chatsDelUsuario.addAll(chats);
+                        Log.d(TAG, "✅ " + chatsDelUsuario.size() + " chats cargados para filtro de donante");
 
-                        // Debug: mostrar estados de todas las solicitudes
-                        for (SolicitudDonacion s : result) {
-                            Log.d(TAG, "   Solicitud ID " + s.getSolicitudid() + " - Estado: " + s.getEstado());
+                        // NUEVO: Cargar información de mensajes no leídos
+                        cargarMensajesNoLeidos();
+
+                        // Log detallado de los chats
+                        for (Chat chat : chatsDelUsuario) {
+                            Log.d(TAG, "💬 Chat ID: " + chat.getChatid() +
+                                    ", Solicitud: " + chat.getSolicitudid() +
+                                    ", Usuario1: " + chat.getUsuario1id() +
+                                    ", Usuario2: " + chat.getUsuario2id() +
+                                    ", Yo soy: " + (chat.getUsuario1id() == usuarioActual.getUsuarioid() ? "Usuario1 (Donante)" : "Usuario2 (Receptor)"));
                         }
                     } else {
-                        Log.d(TAG, "⚠️ Resultado nulo para solicitudes del usuario " + usuarioId);
+                        Log.d(TAG, "⚠️ No se encontraron chats para el usuario");
                     }
-                    historialAdapter.notifyDataSetChanged();
-                    updateUIState();
+                    // Cargar TODAS las solicitudes necesarias (propias y de otros)
+                    loadTodasLasSolicitudesRelevantes();
                 });
             }
 
             @Override
             public void onError(String error) {
-                Log.e(TAG, "❌ Error al cargar solicitudes: " + error);
+                Log.e(TAG, "❌ Error cargando chats: " + error);
                 runOnUiThread(() -> {
-                    Toast.makeText(HistorialDonaciones.this, "Error al cargar solicitudes: " + error, Toast.LENGTH_LONG).show();
-                    updateUIState();
+                    loadTodasLasSolicitudesRelevantes();
                 });
             }
         });
     }
 
     /**
-     * Implementación para "eliminar" solicitudes del historial (cambiando estado a "eliminada")
+     * Carga TODAS las solicitudes relevantes: las del usuario + las de otros donde tiene chats
      */
+    private void loadTodasLasSolicitudesRelevantes() {
+        showLoadingState();
+
+        // Primero cargar las solicitudes del usuario actual
+        ApiService.getSolicitudesByUsuarioId(usuarioActual.getUsuarioid(), new ApiService.ListCallback<SolicitudDonacion>() {
+            @Override
+            public void onSuccess(List<SolicitudDonacion> misSolicitudes) {
+                runOnUiThread(() -> {
+                    todasLasSolicitudes.clear();
+
+                    if (misSolicitudes != null) {
+                        todasLasSolicitudes.addAll(misSolicitudes);
+                        Log.d(TAG, "✅ " + misSolicitudes.size() + " solicitudes propias cargadas");
+                    }
+
+                    // Ahora cargar las solicitudes de otros usuarios donde el usuario actual tiene chats
+                    cargarSolicitudesDeOtrosUsuarios();
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "❌ Error cargando solicitudes propias: " + error);
+                runOnUiThread(() -> {
+                    cargarSolicitudesDeOtrosUsuarios();
+                });
+            }
+        });
+    }
+
+    /**
+     * Carga las solicitudes de otros usuarios donde el usuario actual tiene chats
+     */
+    private void cargarSolicitudesDeOtrosUsuarios() {
+        // Obtener IDs únicos de solicitudes de otros usuarios donde tenemos chats
+        Set<Integer> solicitudIdsDeOtros = new HashSet<>();
+
+        for (Chat chat : chatsDelUsuario) {
+            // Solo considerar chats donde el usuario actual es usuario1id (inició el chat)
+            if (chat.getUsuario1id() == usuarioActual.getUsuarioid()) {
+                solicitudIdsDeOtros.add(chat.getSolicitudid());
+            }
+        }
+
+        Log.d(TAG, "🔍 Buscando " + solicitudIdsDeOtros.size() + " solicitudes de otros usuarios con chats");
+
+        if (solicitudIdsDeOtros.isEmpty()) {
+            aplicarFiltros();
+            return;
+        }
+
+        // VERIFICAR DUPLICADOS: Eliminar IDs que ya están en las solicitudes propias
+        Set<Integer> idsSolicitudesPropias = new HashSet<>();
+        for (SolicitudDonacion solicitud : todasLasSolicitudes) {
+            idsSolicitudesPropias.add(solicitud.getSolicitudid());
+        }
+
+        // Filtrar solo las solicitudes que NO están ya en la lista
+        Set<Integer> solicitudIdsUnicos = new HashSet<>();
+        for (int solicitudId : solicitudIdsDeOtros) {
+            if (!idsSolicitudesPropias.contains(solicitudId)) {
+                solicitudIdsUnicos.add(solicitudId);
+            } else {
+                Log.d(TAG, "⚠️ Omitiendo solicitud duplicada: " + solicitudId);
+            }
+        }
+
+        Log.d(TAG, "📋 Solicitudes únicas a cargar: " + solicitudIdsUnicos.size() + " de " + solicitudIdsDeOtros.size());
+
+        if (solicitudIdsUnicos.isEmpty()) {
+            aplicarFiltros();
+            return;
+        }
+
+        // Cargar cada solicitud individualmente
+        final int[] solicitudesCargadas = {0};
+        final int totalSolicitudes = solicitudIdsUnicos.size();
+
+        for (int solicitudId : solicitudIdsUnicos) {
+            cargarSolicitudPorId(solicitudId, new ApiService.ApiCallback<SolicitudDonacion>() {
+                @Override
+                public void onSuccess(SolicitudDonacion solicitud) {
+                    runOnUiThread(() -> {
+                        if (solicitud != null) {
+                            // VERIFICACIÓN FINAL: Asegurar que no sea duplicada
+                            boolean esDuplicada = false;
+                            for (SolicitudDonacion existente : todasLasSolicitudes) {
+                                if (existente.getSolicitudid() == solicitud.getSolicitudid()) {
+                                    esDuplicada = true;
+                                    Log.d(TAG, "🚫 Solicitud duplicada detectada y omitida: " + solicitud.getSolicitudid());
+                                    break;
+                                }
+                            }
+
+                            if (!esDuplicada) {
+                                todasLasSolicitudes.add(solicitud);
+                                Log.d(TAG, "✅ Solicitud de otro usuario cargada: ID " + solicitud.getSolicitudid() +
+                                        " - Creada por usuario: " + solicitud.getUsuarioid() +
+                                        " - Estado: " + solicitud.getEstado());
+                            }
+                        }
+
+                        solicitudesCargadas[0]++;
+                        if (solicitudesCargadas[0] == totalSolicitudes) {
+                            Log.d(TAG, "📊 Total de solicitudes cargadas: " + todasLasSolicitudes.size() +
+                                    " (propias: " + (todasLasSolicitudes.size() - solicitudIdsUnicos.size()) +
+                                    ", de otros: " + solicitudIdsUnicos.size() + ")");
+                            aplicarFiltros();
+                        }
+                    });
+                }
+
+                @Override
+                public void onError(String error) {
+                    runOnUiThread(() -> {
+                        Log.e(TAG, "❌ Error cargando solicitud: " + error);
+                        solicitudesCargadas[0]++;
+                        if (solicitudesCargadas[0] == totalSolicitudes) {
+                            aplicarFiltros();
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    /**
+     * Método auxiliar para cargar una solicitud por ID
+     */
+    private void cargarSolicitudPorId(int solicitudId, ApiService.ApiCallback<SolicitudDonacion> callback) {
+        // Usar directamente el método que ya existe en ApiService
+        ApiService.getSolicitudById(solicitudId, new ApiService.ApiCallback<SolicitudDonacion>() {
+            @Override
+            public void onSuccess(SolicitudDonacion solicitud) {
+                callback.onSuccess(solicitud);
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "❌ Error cargando solicitud " + solicitudId + ": " + error);
+                // Si falla, intentar buscar en todas las solicitudes activas como fallback
+                buscarSolicitudEnActivas(solicitudId, callback);
+            }
+        });
+    }
+
+    private void buscarSolicitudEnActivas(int solicitudId, ApiService.ApiCallback<SolicitudDonacion> callback) {
+        ApiService.getSolicitudesActivas(new ApiService.ListCallback<SolicitudDonacion>() {
+            @Override
+            public void onSuccess(List<SolicitudDonacion> todasLasSolicitudesActivas) {
+                if (todasLasSolicitudesActivas != null) {
+                    for (SolicitudDonacion solicitud : todasLasSolicitudesActivas) {
+                        if (solicitud.getSolicitudid() == solicitudId) {
+                            callback.onSuccess(solicitud);
+                            return;
+                        }
+                    }
+                }
+                callback.onError("Solicitud no encontrada");
+            }
+
+            @Override
+            public void onError(String error) {
+                callback.onError(error);
+            }
+        });
+    }
+
+    /**
+     * Aplica los filtros actuales a la lista de solicitudes
+     */
+    /**
+     * Aplica los filtros actuales a la lista de solicitudes
+     */
+    private void aplicarFiltros() {
+        solicitudList.clear();
+
+        for (SolicitudDonacion solicitud : todasLasSolicitudes) {
+            boolean cumpleEstado = true;
+            boolean cumpleRol = true;
+
+            // Filtrar por estado
+            if (!"todas".equals(currentEstado)) {
+                cumpleEstado = currentEstado.equalsIgnoreCase(solicitud.getEstado());
+            }
+
+            // Filtrar por rol (receptor vs donante)
+            if (!"todas".equals(currentRol)) {
+                if ("receptor".equals(currentRol)) {
+                    // El usuario actual es el creador de la solicitud
+                    cumpleRol = solicitud.getUsuarioid() == usuarioActual.getUsuarioid();
+                } else if ("donante".equals(currentRol)) {
+                    // CORRECCIÓN: El usuario actual es DONANTE en esta solicitud:
+                    // - NO es el creador de la solicitud
+                    // - Y tiene un chat donde usuario1id = usuarioActual.getUsuarioid() (él inició el chat como donante)
+                    boolean esCreador = solicitud.getUsuarioid() == usuarioActual.getUsuarioid();
+                    boolean esDonanteEnChat = esDonanteEnSolicitud(solicitud.getSolicitudid());
+                    cumpleRol = !esCreador && esDonanteEnChat;
+
+                    if (cumpleRol) {
+                        Log.d(TAG, "🎯 Solicitud de donante encontrada: ID " + solicitud.getSolicitudid() +
+                                " - Creada por: " + solicitud.getUsuarioid() + ", Yo: " + usuarioActual.getUsuarioid());
+                    }
+                }
+            }
+
+            if (cumpleEstado && cumpleRol) {
+                solicitudList.add(solicitud);
+            }
+        }
+
+        Log.d(TAG, "🔍 Filtros aplicados - Estado: " + currentEstado + ", Rol: " + currentRol);
+        Log.d(TAG, "📊 Resultado: " + solicitudList.size() + " de " + todasLasSolicitudes.size() + " solicitudes");
+
+        // NUEVO: Actualizar el adapter con la información de chats y mensajes no leídos
+        if (historialAdapter != null) {
+            historialAdapter.actualizarInfoChats(chatsDelUsuario, mensajesNoLeidosPorSolicitud);
+        }
+
+        historialAdapter.notifyDataSetChanged();
+        updateUIState();
+        mostrarIndicadorFiltros();
+    }
+
+    /**
+     * Verifica si el usuario es DONANTE en la solicitud específica
+     * (usuario1id = usuarioActual.getUsuarioid() en la tabla chat)
+     */
+    private boolean esDonanteEnSolicitud(int solicitudId) {
+        for (Chat chat : chatsDelUsuario) {
+            if (chat.getSolicitudid() == solicitudId &&
+                    chat.getUsuario1id() == usuarioActual.getUsuarioid()) {
+                Log.d(TAG, "✅ Es donante en solicitud " + solicitudId + " - Chat ID: " + chat.getChatid());
+                return true;
+            }
+        }
+        Log.d(TAG, "❌ NO es donante en solicitud " + solicitudId);
+        return false;
+    }
+
+    private void mostrarIndicadorFiltros() {
+        StringBuilder filtros = new StringBuilder();
+        boolean tieneFiltros = false;
+
+        // MODIFICADO: No considerar "activa" como filtro especial
+        if (!"activa".equals(currentEstado)) {
+            filtros.append("Estado: ").append(convertirEstadoANombre(currentEstado));
+            tieneFiltros = true;
+        }
+
+        if (!"todas".equals(currentRol)) {
+            if (tieneFiltros) filtros.append(" • ");
+            filtros.append("Rol: ").append(convertirRolANombre(currentRol));
+            tieneFiltros = true;
+        }
+
+        if (tieneFiltros) {
+            textFilterIndicator.setText(filtros.toString());
+            textFilterIndicator.setVisibility(View.VISIBLE);
+            textTitleHistorial.setText("Mi Historial Filtrado");
+        } else {
+            textFilterIndicator.setVisibility(View.GONE);
+            // MODIFICADO: Título diferente para el estado por defecto
+            textTitleHistorial.setText("Solicitudes Activas");
+        }
+    }
+
+    private String convertirEstadoANombre(String estado) {
+        switch (estado) {
+            case "activa": return "Activas";
+            case "completada": return "Completadas";
+            case "cancelada": return "Canceladas";
+            case "todas": return "Todas";
+            default: return estado;
+        }
+    }
+
+    private String convertirRolANombre(String rol) {
+        switch (rol) {
+            case "receptor": return "Como Receptor";
+            case "donante": return "Como Donante";
+            case "todas": return "Todos";
+            default: return rol;
+        }
+    }
+
+    @Override
+    public void onAplicarFiltros(String estado, String rol) {
+        currentEstado = estado;
+        currentRol = rol;
+        aplicarFiltros();
+        Toast.makeText(this, "Filtros aplicados", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onLimpiarFiltros() {
+        currentEstado = "activa";
+        currentRol = "todas";
+        aplicarFiltros();
+        Toast.makeText(this, "Filtros limpiados", Toast.LENGTH_SHORT).show();
+    }
+
+    private void navigateToMensajeriaWithFilter(int solicitudId, String estadoSolicitud) {
+        Intent intent = new Intent(this, Mensajeria.class);
+        intent.putExtra("filter_by_solicitud", true);
+        intent.putExtra("solicitud_id", solicitudId);
+        intent.putExtra("solicitud_estado", estadoSolicitud);
+        startActivity(intent);
+    }
+
     @Override
     public void onDeleteClick(SolicitudDonacion solicitud, int position) {
-        Snackbar.make(recyclerViewHistorial, "¿Desea eliminar esta solicitud del historial?", Snackbar.LENGTH_LONG)
-                .setAction("ELIMINAR", view -> eliminarDelHistorial(solicitud, position))
+        // Validación adicional: asegurar que el usuario es el creador
+        if (solicitud.getUsuarioid() != usuarioActual.getUsuarioid()) {
+            Toast.makeText(this, "Solo el creador de la solicitud puede cancelarla", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Snackbar.make(recyclerViewHistorial, "¿Desea cancelar esta solicitud?", Snackbar.LENGTH_LONG)
+                .setAction("CANCELAR", view -> eliminarDelHistorial(solicitud, position))
                 .show();
     }
 
+    @Override
     public void onCompleteClick(SolicitudDonacion solicitud, int position) {
-        Snackbar.make(recyclerViewHistorial, "¿Tu solicitud ha sido completada?", Snackbar.LENGTH_LONG)
+        // Validación adicional: asegurar que el usuario es el creador
+        if (solicitud.getUsuarioid() != usuarioActual.getUsuarioid()) {
+            Toast.makeText(this, "Solo el creador de la solicitud puede completarla", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Snackbar.make(recyclerViewHistorial, "¿Marcar esta solicitud como completada?", Snackbar.LENGTH_LONG)
                 .setAction("COMPLETAR", view -> completarDelHistorial(solicitud, position))
                 .show();
     }
 
     private void eliminarDelHistorial(SolicitudDonacion solicitud, int position) {
         showLoadingState();
-
         Log.d(TAG, "🔄 Cambiando estado de solicitud " + solicitud.getSolicitudid() + " a: cancelada");
-
 
         ApiService.updateSolicitudEstado(solicitud.getSolicitudid(), "cancelada", new ApiService.ApiCallback<SolicitudDonacion>() {
             @Override
             public void onSuccess(SolicitudDonacion result) {
                 runOnUiThread(() -> {
-                    Log.d(TAG, "✅ Estado cambiado a 'inactiva' para solicitud ID: " + solicitud.getSolicitudid());
-
-                    // Remover de la lista local
-                    if (position >= 0 && position < solicitudList.size()) {
-                        solicitudList.remove(position);
-                        historialAdapter.notifyItemRemoved(position);
-                    }
-
-                    Snackbar.make(recyclerViewHistorial, "Solicitud eliminada", Snackbar.LENGTH_SHORT).show();
-                    updateUIState();
+                    Log.d(TAG, "✅ Estado cambiado a 'cancelada' para solicitud ID: " + solicitud.getSolicitudid());
+                    loadChatsDelUsuario(); // Recargar todo
+                    Snackbar.make(recyclerViewHistorial, "Solicitud cancelada", Snackbar.LENGTH_SHORT).show();
                 });
             }
 
@@ -238,32 +592,75 @@ public class HistorialDonaciones extends AppCompatActivity implements HistorialA
             public void onError(String error) {
                 runOnUiThread(() -> {
                     Log.e(TAG, "❌ Error al cambiar estado: " + error);
-                    Toast.makeText(HistorialDonaciones.this, "Error al eliminar solicitud: " + error, Toast.LENGTH_LONG).show();
+                    Toast.makeText(HistorialDonaciones.this, "Error al cancelar solicitud: " + error, Toast.LENGTH_LONG).show();
                     updateUIState();
                 });
             }
         });
     }
 
+    /**
+     * Cargar información de mensajes no leídos para cada solicitud
+     */
+    private void cargarMensajesNoLeidos() {
+        if (usuarioActual == null) return;
+
+        // Limpiar mapa anterior
+        mensajesNoLeidosPorSolicitud.clear();
+
+        // Para cada chat del usuario, verificar si hay mensajes no leídos
+        for (Chat chat : chatsDelUsuario) {
+            verificarMensajesNoLeidosEnChat(chat);
+        }
+    }
+
+    private void verificarMensajesNoLeidosEnChat(Chat chat) {
+        ApiService.getMensajesByChat(chat.getChatid(), new ApiService.ListCallback<Mensaje>() {
+            @Override
+            public void onSuccess(List<Mensaje> mensajes) {
+                runOnUiThread(() -> {
+                    if (mensajes != null) {
+                        boolean tieneMensajesNoLeidos = false;
+
+                        for (Mensaje mensaje : mensajes) {
+                            // Un mensaje no leído es aquel que:
+                            // 1. No está marcado como leído (leido = false)
+                            // 2. No fue enviado por el usuario actual
+                            if (!mensaje.isLeido() && mensaje.getEmisorioid() != usuarioActual.getUsuarioid()) {
+                                tieneMensajesNoLeidos = true;
+                                break;
+                            }
+                        }
+
+                        // Actualizar el mapa
+                        mensajesNoLeidosPorSolicitud.put(chat.getSolicitudid(), tieneMensajesNoLeidos);
+
+                        // Notificar al adapter
+                        if (historialAdapter != null) {
+                            historialAdapter.actualizarInfoChats(chatsDelUsuario, mensajesNoLeidosPorSolicitud);
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "❌ Error cargando mensajes para chat " + chat.getChatid() + ": " + error);
+            }
+        });
+    }
+
     private void completarDelHistorial(SolicitudDonacion solicitud, int position) {
         showLoadingState();
-
         Log.d(TAG, "🔄 Cambiando estado de solicitud " + solicitud.getSolicitudid() + " a: completada");
-
 
         ApiService.updateSolicitudEstado(solicitud.getSolicitudid(), "completada", new ApiService.ApiCallback<SolicitudDonacion>() {
             @Override
             public void onSuccess(SolicitudDonacion result) {
                 runOnUiThread(() -> {
-
-                    // Remover de la lista local
-                    if (position >= 0 && position < solicitudList.size()) {
-                        solicitudList.remove(position);
-                        historialAdapter.notifyItemRemoved(position);
-                    }
-
+                    Log.d(TAG, "✅ Estado cambiado a 'completada' para solicitud ID: " + solicitud.getSolicitudid());
+                    loadChatsDelUsuario(); // Recargar todo
                     Snackbar.make(recyclerViewHistorial, "Solicitud completada", Snackbar.LENGTH_SHORT).show();
-                    updateUIState();
                 });
             }
 
@@ -276,10 +673,6 @@ public class HistorialDonaciones extends AppCompatActivity implements HistorialA
             }
         });
     }
-
-
-
-    // --- Métodos de Estado de UI ---
 
     private void showLoadingState() {
         recyclerViewHistorial.setVisibility(View.GONE);
