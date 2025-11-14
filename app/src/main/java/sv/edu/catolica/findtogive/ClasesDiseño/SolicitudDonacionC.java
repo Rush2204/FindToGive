@@ -371,35 +371,36 @@ public class SolicitudDonacionC extends AppCompatActivity {
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_inicio) {
-
                 Intent intent = new Intent(this, FeedDonacion.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_crear) {
-                // Navegar a crear solicitud
-
                 return true;
             } else if (itemId == R.id.nav_notificaciones) {
-                startActivity(new Intent(this, Notificaciones.class));
-                finish();
-
+                Intent intent = new Intent(this, Notificaciones.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_historial) {
                 Intent intent = new Intent(this, HistorialDonaciones.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
-
                 return true;
             } else if (itemId == R.id.nav_perfil) {
-                // Navegar a perfil
-
                 Intent intent = new Intent(this, PerfilUsuario.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
                 return true;
             }
             return false;
         });
 
-        // Marcar el ítem actual como seleccionado
+        bottomNavigation.setSelectedItemId(R.id.nav_crear);
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
         bottomNavigation.setSelectedItemId(R.id.nav_crear);
     }
 

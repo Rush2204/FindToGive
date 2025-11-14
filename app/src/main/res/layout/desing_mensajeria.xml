@@ -7,6 +7,20 @@
     android:layout_height="match_parent"
     tools:context=".ClasesDiseño.Mensajeria">
 
+    <!-- 1. Botón de Retroceso (Posicionado en la esquina superior izquierda) -->
+    <ImageView
+        android:id="@+id/btn_back"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:padding="8dp"
+        android:onClick="back"
+        android:src="@drawable/ico_arrow_back"
+        android:contentDescription="boton de retroceso"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <!-- Título Principal -->
     <TextView
         android:id="@+id/text_title_mensajeria"
@@ -18,8 +32,10 @@
         android:textColor="@android:color/black"
         android:layout_marginTop="24dp"
         android:layout_marginStart="24dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:paddingStart="20dp"
+        app:layout_constraintStart_toStartOf="@+id/btn_back"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="@+id/btn_back"/>
 
     <!-- 1. RecyclerView para la lista de chats (LISTA LLENA) -->
     <androidx.recyclerview.widget.RecyclerView

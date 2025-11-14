@@ -106,6 +106,8 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
     private void configurarVistaSegunRol() {
         if (usuarioActual == null) return;
 
+        actualizarNavegacionSegunRol();
+
         // Obtener referencias a los textos del empty state
         TextView emptyStateTitle = null;
         TextView emptyStateMessage = null;
@@ -149,6 +151,14 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
         }
     }
 
+    // ⭐⭐ NUEVO MÉTODO: Actualizar navegación según rol ⭐⭐
+    private void actualizarNavegacionSegunRol() {
+        if (usuarioActual != null) {
+            boolean esDonante = usuarioActual.getRolid() == 1;
+            bottomNavigation.getMenu().findItem(R.id.nav_crear).setVisible(!esDonante);
+        }
+    }
+
     private void setupRecyclerView() {
         adapter = new SolicitudesAdapter(solicitudesList, this);
         rvSolicitudes.setLayoutManager(new LinearLayoutManager(this));
@@ -188,38 +198,40 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
     }
 
     private void setupBottomNavigation() {
+        actualizarNavegacionSegunRol();
         bottomNavigation.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_inicio) {
-                // Ya estamos en inicio
                 return true;
             } else if (itemId == R.id.nav_crear) {
-                // Verificar rol antes de navegar a crear solicitud
                 if (usuarioActual != null && (usuarioActual.getRolid() == 2 || usuarioActual.getRolid() == 3)) {
                     Intent intent = new Intent(this, SolicitudDonacionC.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                     startActivity(intent);
                 } else {
                     Toast.makeText(this, "Solo receptores pueden crear solicitudes", Toast.LENGTH_SHORT).show();
                 }
                 return true;
             } else if (itemId == R.id.nav_notificaciones) {
-                startActivity(new Intent(this, Notificaciones.class));
-                finish();
+                Intent intent = new Intent(this, Notificaciones.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_historial) {
                 Intent intent = new Intent(this, HistorialDonaciones.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_perfil) {
                 Intent intent = new Intent(this, PerfilUsuario.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
                 return true;
             }
             return false;
         });
 
-        // Ocultar ítem "Crear" del menú para donantes
         if (usuarioActual != null && usuarioActual.getRolid() == 1) {
             bottomNavigation.getMenu().findItem(R.id.nav_crear).setVisible(false);
         }
@@ -506,6 +518,9 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
     protected void onResume() {
         super.onResume();
         System.out.println("🔄 FeedDonacion onResume - Activando modo agresivo");
+
+        usuarioActual = SharedPreferencesManager.getCurrentUser(this);
+        actualizarNavegacionSegunRol();
 
         // Recargar solicitudes cuando la actividad se reanude
         loadSolicitudes();

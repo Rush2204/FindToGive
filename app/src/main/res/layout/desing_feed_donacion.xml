@@ -48,7 +48,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:ignore="TouchTargetSizeCheck"
-        android:src="@drawable/ico_search"/>
+        android:src="@drawable/ico_search"
+        android:backgroundTint="@color/white"/>
 
 
     <!-- 1. Contenedor para la Lista de Solicitudes (VISIBLE cuando hay datos) -->

@@ -106,6 +106,48 @@ public class ChatC extends AppCompatActivity {
         textChatName.setText(chatNombre != null ? chatNombre : "Chat");
 
         btnSend.setOnClickListener(v -> enviarMensaje());
+
+        setupEditTextPaste();
+    }
+
+    // NUEVO MÉTODO: Configurar el EditText para permitir pegar
+    private void setupEditTextPaste() {
+        // Esto habilita el menú contextual nativo de Android (copiar, pegar, etc.)
+        editTextMessage.setCustomSelectionActionModeCallback(new android.view.ActionMode.Callback() {
+            @Override
+            public boolean onCreateActionMode(android.view.ActionMode mode, android.view.Menu menu) {
+                // El menú contextual se crea automáticamente con las opciones estándar
+                return true;
+            }
+
+            @Override
+            public boolean onPrepareActionMode(android.view.ActionMode mode, android.view.Menu menu) {
+                // Permitir que todas las opciones del menú estén disponibles
+                return true;
+            }
+
+            @Override
+            public boolean onActionItemClicked(android.view.ActionMode mode, android.view.MenuItem item) {
+                return false; // Dejar que el sistema maneje las acciones
+            }
+
+            @Override
+            public void onDestroyActionMode(android.view.ActionMode mode) {
+                // Limpieza si es necesaria
+            }
+        });
+
+        // También puedes agregar un LongClickListener para mostrar un mensaje personalizado
+        editTextMessage.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                // Mostrar un Toast informativo (opcional)
+                if (editTextMessage.getText().toString().isEmpty()) {
+                    Toast.makeText(ChatC.this, "Mantén presionado para pegar", Toast.LENGTH_SHORT).show();
+                }
+                return false; // Dejar que el sistema maneje el long click normalmente
+            }
+        });
     }
 
     // NUEVO MÉTODO: Verificar estado de la solicitud - MEJORADO

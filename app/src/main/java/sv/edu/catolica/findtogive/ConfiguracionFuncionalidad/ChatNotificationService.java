@@ -169,7 +169,6 @@ public class ChatNotificationService extends Service {
                         notificationPrefs.edit().putBoolean(key, true).apply();
                     } else {
                         // No hay mensajes, es un chat nuevo
-                        showNewChatNotification(chat);
                         notificationPrefs.edit().putBoolean(key, true).apply();
                     }
                 }

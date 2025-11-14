@@ -5,6 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#F8F9FA"
     tools:context=".ClasesDiseño.PerfilUsuario">
 
     <ScrollView
@@ -16,88 +17,85 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="24dp">
+            android:padding="20dp">
 
             <!-- Botón de Configuración/Ajustes -->
             <ImageButton
                 android:id="@+id/btn_settings"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Ajustes"
-                android:padding="8dp"
+                android:padding="12dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 tools:ignore="TouchTargetSizeCheck" />
-            <!--            android:src="@drawable/ic_settings"-->
 
             <TextView
                 android:id="@+id/text_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Mi Perfil"
-                android:textSize="24sp"
+                android:textSize="26sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black"
+                android:textColor="#2C3E50"
                 android:layout_marginTop="16dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-
 
             <!-- Imagen de Perfil y Botón de Edición Rápida -->
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/layout_profile_header"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="32dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/text_title">
 
-                <!-- Imagen de Perfil (usando 'foto_url' de la BD) -->
-                <!-- Nota: 'de.hdodenhof.circleimageview.CircleImageView' necesita la librería en Gradle -->
+                <!-- Imagen de Perfil -->
                 <ImageView
                     android:id="@+id/img_profile"
                     android:layout_width="120dp"
                     android:layout_height="120dp"
                     android:src="@drawable/logo_findtogive"
+                    android:padding="4dp"
+                    android:elevation="4dp"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintStart_toStartOf="parent" />
-                <!--                android:src="@drawable/ic_default_user_large"-->
 
-                <!-- Badge o Botón para cambiar foto -->
+                <!-- Botón para cambiar foto -->
                 <ImageButton
                     android:id="@+id/btn_edit_photo"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
                     android:contentDescription="Editar Foto"
-                    android:elevation="4dp"
+                    android:elevation="8dp"
                     android:padding="8dp"
+                    android:background="@android:color/white"
                     app:layout_constraintBottom_toBottomOf="@+id/img_profile"
                     app:layout_constraintEnd_toEndOf="@+id/img_profile"
                     tools:ignore="TouchTargetSizeCheck"
                     app:srcCompat="@android:drawable/ic_menu_camera"/>
-                <!--                android:src="@drawable/ic_camera_edit"-->
-                <!--                android:background="@drawable/badge_background_red"-->
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <!-- Nombre de Usuario (nombre + apellido de la BD) -->
+            <!-- Nombre de Usuario -->
             <TextView
                 android:id="@+id/text_user_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:textSize="24sp"
+                android:layout_marginTop="24dp"
+                android:textSize="22sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black"
+                android:textColor="#2C3E50"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/layout_profile_header"
                 tools:text="Nombre y Apellido del Usuario" />
 
-            <!-- Tipo de Sangre como Badge (tiposangreid de la BD) -->
+            <!-- Tipo de Sangre como Badge -->
             <TextView
                 android:id="@+id/text_blood_type_badge"
                 android:layout_width="wrap_content"
@@ -106,24 +104,25 @@
                 android:textColor="@android:color/white"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="4dp"
-                android:layout_marginTop="8dp"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="8dp"
+                android:layout_marginTop="12dp"
+                android:background="#E74C3C"
+                android:elevation="4dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/text_user_name" />
-            <!--            android:background="@drawable/badge_background_red"-->
 
             <!-- Sección Información Personal y Contacto -->
             <TextView
                 android:id="@+id/label_details_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
+                android:layout_marginTop="40dp"
                 android:text="Información y Contacto"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black"
+                android:textColor="#2C3E50"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/text_blood_type_badge" />
 
@@ -133,80 +132,134 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp"
-                android:layout_marginTop="8dp"
+                android:padding="20dp"
+                android:layout_marginTop="12dp"
+                android:background="@android:color/white"
+                android:elevation="4dp"
                 app:layout_constraintTop_toBottomOf="@+id/label_details_title">
-                <!--                android:background="@drawable/info_card_background"-->
 
-                <!-- 1. Email (email de la BD) -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Correo Electrónico"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/text_display_email"
+                <!-- 1. Email -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="8dp"
-                    android:textColor="#374151"
-                    tools:text="correo@ejemplo.com" />
+                    android:orientation="horizontal"
+                    android:paddingVertical="6dp">
 
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Correo Electrónico"
+                        android:textStyle="bold"
+                        android:textColor="#34495E" />
 
-                <!-- 2. Edad (edad de la BD) -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Edad"
-                    android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/text_display_email"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textAlignment="textEnd"
+                        android:textColor="#2C3E50"
+                        tools:text="correo@ejemplo.com" />
 
-                <TextView
-                    android:id="@+id/text_display_age"
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="4dp"
+                    android:background="#ECF0F1" />
+
+                <!-- 2. Edad -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="8dp"
-                    android:textColor="#374151"
-                    tools:text="30 años" />
+                    android:orientation="horizontal"
+                    android:paddingVertical="6dp">
 
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Edad"
+                        android:textStyle="bold"
+                        android:textColor="#34495E" />
 
-                <!-- 3. Teléfono (telefono de la BD) -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Teléfono"
-                    android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/text_display_age"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textAlignment="textEnd"
+                        android:textColor="#2C3E50"
+                        tools:text="30 años" />
 
-                <TextView
-                    android:id="@+id/text_display_phone"
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="4dp"
+                    android:background="#ECF0F1" />
+
+                <!-- 3. Teléfono -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="8dp"
-                    android:textColor="#374151"
-                    tools:text="7777-7777" />
+                    android:orientation="horizontal"
+                    android:paddingVertical="6dp">
 
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Teléfono"
+                        android:textStyle="bold"
+                        android:textColor="#34495E" />
 
-                <!-- 4. Ubicación (ubicacion de la BD) -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Ubicación"
-                    android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/text_display_phone"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textAlignment="textEnd"
+                        android:textColor="#2C3E50"
+                        tools:text="7777-7777" />
 
-                <TextView
-                    android:id="@+id/text_display_location"
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="4dp"
+                    android:background="#ECF0F1" />
+
+                <!-- 4. Ubicación -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="8dp"
-                    android:textColor="#374151"
-                    tools:text="Ubicación registrada en la BD" />
+                    android:orientation="horizontal"
+                    android:paddingVertical="6dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Ubicación"
+                        android:textStyle="bold"
+                        android:textColor="#34495E" />
+
+                    <TextView
+                        android:id="@+id/text_display_location"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textAlignment="textEnd"
+                        android:textColor="#2C3E50"
+                        tools:text="Ubicación registrada en la BD" />
+
+                </LinearLayout>
+
             </LinearLayout>
 
             <!-- Sección Rol de Usuario -->
@@ -218,7 +271,7 @@
                 android:text="Rol en FindToGive"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black"
+                android:textColor="#2C3E50"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/layout_details_card" />
 
@@ -227,25 +280,37 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp"
-                android:layout_marginTop="8dp"
+                android:padding="20dp"
+                android:layout_marginTop="12dp"
+                android:background="@android:color/white"
+                android:elevation="4dp"
                 app:layout_constraintTop_toBottomOf="@+id/label_rol_title">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Rol Asignado"
-                    android:textStyle="bold" />
-
-                <!-- Rol (rolid de la BD) -->
-                <TextView
-                    android:id="@+id/text_display_rol"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="8dp"
-                    android:textColor="#374151"
-                    tools:text="Rol (Donante, Receptor o Ambos)" />
+                    android:orientation="horizontal"
+                    android:paddingVertical="6dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Rol Asignado"
+                        android:textStyle="bold"
+                        android:textColor="#34495E" />
+
+                    <TextView
+                        android:id="@+id/text_display_rol"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textAlignment="textEnd"
+                        android:textColor="#2C3E50"
+                        tools:text="Rol (Donante, Receptor o Ambos)" />
+
+                </LinearLayout>
+
             </LinearLayout>
 
             <!-- Botón Editar Perfil -->
@@ -255,8 +320,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
                 android:text="Editar Perfil"
-                android:backgroundTint="#2563EB"
+                android:backgroundTint="#3498DB"
                 android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:elevation="4dp"
                 app:layout_constraintTop_toBottomOf="@+id/layout_rol_card"
                 android:layout_marginBottom="16dp"/>
 
@@ -267,7 +335,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Cerrar Sesión"
-                android:textColor="#DC2626"
+                android:textColor="#E74C3C"
+                android:textSize="16sp"
                 app:layout_constraintTop_toBottomOf="@+id/btn_edit_profile"
                 app:layout_constraintBottom_toBottomOf="parent"
                 android:layout_marginBottom="16dp"/>
@@ -275,18 +344,17 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
-    <!-- Barra de Navegación Inferior (Bottom Navigation Bar) -->
+    <!-- Barra de Navegación Inferior -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?android:attr/windowBackground"
+        android:background="@android:color/white"
+        android:elevation="8dp"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/menu_navegacion"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
-    <!--    app:itemIconTint="@color/bottom_nav_color"-->
-    <!--    app:itemTextColor="@color/bottom_nav_color"-->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

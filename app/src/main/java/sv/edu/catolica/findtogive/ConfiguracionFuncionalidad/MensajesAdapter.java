@@ -1,11 +1,13 @@
 package sv.edu.catolica.findtogive.ConfiguracionFuncionalidad;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -142,10 +144,12 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
         private TextView textLeidoStatus; // NUEVO: Para mostrar estado de leído
         private ImageView imgProfile;
         private int viewType;
+        private View itemView;
 
         public MensajeViewHolder(@NonNull View itemView, int viewType) {
             super(itemView);
             this.viewType = viewType;
+            this.itemView = itemView;
 
             textMessageContent = itemView.findViewById(R.id.text_message_content);
             textMessageTime = itemView.findViewById(R.id.text_message_time);
@@ -157,6 +161,52 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
 
             if (viewType == TYPE_RECEIVE) {
                 imgProfile = itemView.findViewById(R.id.img_profile);
+            }
+
+            setupLongClick();
+        }
+        // NUEVO MÉTODO: Configurar el long click para copiar
+        private void setupLongClick() {
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    // Obtener el mensaje actual
+                    int position = getAdapterPosition();
+                    if (position != RecyclerView.NO_POSITION) {
+                        Mensaje mensaje = mensajesList.get(position);
+                        copiarTexto(mensaje.getContenido());
+                        return true; // Indica que el evento fue manejado
+                    }
+                    return false;
+                }
+            });
+        }
+
+        // NUEVO MÉTODO: Copiar texto al portapapeles
+        private void copiarTexto(String texto) {
+            try {
+                // Obtener el clipboard del sistema
+                android.content.ClipboardManager clipboard =
+                        (android.content.ClipboardManager) itemView.getContext()
+                                .getSystemService(Context.CLIPBOARD_SERVICE);
+
+                // Crear el clip de datos
+                android.content.ClipData clip = android.content.ClipData
+                        .newPlainText("Mensaje de chat", texto);
+
+                // Establecer el clip en el clipboard
+                clipboard.setPrimaryClip(clip);
+
+                // Mostrar mensaje de confirmación
+                Toast.makeText(itemView.getContext(),
+                        "Mensaje copiado",
+                        Toast.LENGTH_SHORT).show();
+
+            } catch (Exception e) {
+                Toast.makeText(itemView.getContext(),
+                        "Error al copiar",
+                        Toast.LENGTH_SHORT).show();
+                e.printStackTrace();
             }
         }
 

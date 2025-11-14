@@ -163,24 +163,30 @@ public class HistorialDonaciones extends AppCompatActivity implements
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_inicio) {
-                startActivity(new Intent(this, FeedDonacion.class));
-                finish();
+                Intent intent = new Intent(this, FeedDonacion.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_crear) {
                 if (usuarioActual != null && (usuarioActual.getRolid() == 2 || usuarioActual.getRolid() == 3)) {
-                    startActivity(new Intent(this, SolicitudDonacionC.class));
+                    Intent intent = new Intent(this, SolicitudDonacionC.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    startActivity(intent);
                 } else {
                     Toast.makeText(this, "Solo receptores pueden crear solicitudes", Toast.LENGTH_SHORT).show();
                 }
                 return true;
             } else if (itemId == R.id.nav_notificaciones) {
-                startActivity(new Intent(this, Notificaciones.class));
-                finish();
+                Intent intent = new Intent(this, Notificaciones.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_historial) {
                 return true;
             } else if (itemId == R.id.nav_perfil) {
-                startActivity(new Intent(this, PerfilUsuario.class));
+                Intent intent = new Intent(this, PerfilUsuario.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
                 return true;
             }
             return false;
@@ -192,6 +198,7 @@ public class HistorialDonaciones extends AppCompatActivity implements
 
         bottomNavigation.setSelectedItemId(R.id.nav_historial);
     }
+
 
     /**
      * Cargar los chats del usuario para el filtro de donante

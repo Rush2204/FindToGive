@@ -33,6 +33,7 @@ public class Notificaciones extends AppCompatActivity {
     private NotificacionAdapter notificacionAdapter;
     private List<Notificacion> notificacionesList;
     private Usuario usuarioActual;
+    private BottomNavigationView bottomNavigation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +59,7 @@ public class Notificaciones extends AppCompatActivity {
     private void initializeViews() {
         recyclerViewNotifications = findViewById(R.id.recycler_view_notifications);
         layoutEmptyState = findViewById(R.id.layout_empty_state);
+        bottomNavigation = findViewById(R.id.bottom_navigation_bar);
     }
 
     private void setupRecyclerView() {
@@ -68,20 +70,29 @@ public class Notificaciones extends AppCompatActivity {
         recyclerViewNotifications.setLayoutManager(layoutManager);
         recyclerViewNotifications.setAdapter(notificacionAdapter);
     }
+    // ⭐⭐ NUEVO MÉTODO: Actualizar navegación según rol ⭐⭐
+    private void actualizarNavegacionSegunRol() {
+        if (usuarioActual != null) {
+            boolean esDonante = usuarioActual.getRolid() == 1;
+            bottomNavigation.getMenu().findItem(R.id.nav_crear).setVisible(!esDonante);
+        }
+    }
 
     private void setupBottomNavigation() {
-        BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation_bar);
+        actualizarNavegacionSegunRol();
         bottomNavigation.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_inicio) {
-                startActivity(new Intent(this, FeedDonacion.class));
-                finish();
+                Intent intent = new Intent(this, FeedDonacion.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_crear) {
                 if (usuarioActual != null && (usuarioActual.getRolid() == 2 || usuarioActual.getRolid() == 3)) {
-                    startActivity(new Intent(this, SolicitudDonacionC.class));
-                    finish();
+                    Intent intent = new Intent(this, SolicitudDonacionC.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    startActivity(intent);
                 } else {
                     Toast.makeText(this, "Solo receptores pueden crear solicitudes", Toast.LENGTH_SHORT).show();
                 }
@@ -90,12 +101,14 @@ public class Notificaciones extends AppCompatActivity {
                 // Ya estamos en notificaciones
                 return true;
             } else if (itemId == R.id.nav_historial) {
-                startActivity(new Intent(this, HistorialDonaciones.class));
-                finish();
+                Intent intent = new Intent(this, HistorialDonaciones.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_perfil) {
-                startActivity(new Intent(this, PerfilUsuario.class));
-                finish();
+                Intent intent = new Intent(this, PerfilUsuario.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
                 return true;
             }
             return false;
@@ -107,6 +120,7 @@ public class Notificaciones extends AppCompatActivity {
 
         bottomNavigation.setSelectedItemId(R.id.nav_notificaciones);
     }
+
 
     private void loadNotificaciones() {
         if (usuarioActual == null) {
@@ -182,6 +196,8 @@ public class Notificaciones extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         // Recargar notificaciones al volver a la actividad
+        actualizarNavegacionSegunRol();
         loadNotificaciones();
+        bottomNavigation.setSelectedItemId(R.id.nav_notificaciones);
     }
 }

@@ -58,6 +58,17 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
         return new ChatViewHolder(view);
     }
 
+    // Interface para manejar el click en la foto de perfil
+    public interface OnFotoPerfilClickListener {
+        void onFotoPerfilClick(Usuario usuario);
+    }
+
+    private OnFotoPerfilClickListener listener;
+
+    public void setOnFotoPerfilClickListener(OnFotoPerfilClickListener listener) {
+        this.listener = listener;
+    }
+
     @Override
     public void onBindViewHolder(@NonNull ChatViewHolder holder, int position) {
         Chat chat = chatsList.get(position);
@@ -379,6 +390,13 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
                 textLastMessage.setText("Cargando mensajes...");
                 textLastMessageTime.setText("");
             }
+
+            // Click listener para la foto de perfil
+            imgProfile.setOnClickListener(v -> {
+                if (usuario != null && listener != null) {
+                    listener.onFotoPerfilClick(usuario);
+                }
+            });
 
             itemView.setOnClickListener(v -> {
                 System.out.println("👆 Click en chat " + chat.getChatid());

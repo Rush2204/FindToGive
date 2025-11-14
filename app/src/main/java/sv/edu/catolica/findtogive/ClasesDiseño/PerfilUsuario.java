@@ -85,45 +85,47 @@ public class PerfilUsuario extends AppCompatActivity {
     }
 
     private void setupBottomNavigation() {
+        actualizarNavegacionSegunRol();
+
         bottomNavigation.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_inicio) {
                 Intent intent = new Intent(this, FeedDonacion.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
-                finish();
                 return true;
             } else if (itemId == R.id.nav_crear) {
-                // Verificar rol antes de navegar a crear solicitud
                 if (usuarioActual != null && (usuarioActual.getRolid() == 2 || usuarioActual.getRolid() == 3)) {
                     Intent intent = new Intent(this, SolicitudDonacionC.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
                     startActivity(intent);
-                    finish();
                 } else {
                     Toast.makeText(this, "Solo receptores pueden crear solicitudes", Toast.LENGTH_SHORT).show();
+                    return false;
                 }
                 return true;
             } else if (itemId == R.id.nav_notificaciones) {
-                startActivity(new Intent(this, Notificaciones.class));
-                finish();
+                Intent intent = new Intent(this, Notificaciones.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_historial) {
                 Intent intent = new Intent(this, HistorialDonaciones.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_perfil) {
-                // Ya estamos en el perfil
+                // Ya estamos en perfil
                 return true;
             }
             return false;
         });
 
-        // Ocultar ítem "Crear" del menú para donantes
         if (usuarioActual != null && usuarioActual.getRolid() == 1) {
             bottomNavigation.getMenu().findItem(R.id.nav_crear).setVisible(false);
         }
 
-        // Marcar la opción de perfil como seleccionada
         bottomNavigation.setSelectedItemId(R.id.nav_perfil);
     }
 
@@ -143,6 +145,7 @@ public class PerfilUsuario extends AppCompatActivity {
 
         if (usuarioActual != null) {
             displayUserData();
+            actualizarNavegacionSegunRol();
 
             // Actualizar visibilidad del ítem "Crear" en la navegación
             if (usuarioActual.getRolid() == 1) {
@@ -320,6 +323,17 @@ public class PerfilUsuario extends AppCompatActivity {
         });
     }
 
+    // NUEVO MÉTODO: Actualizar la navegación según el rol
+    private void actualizarNavegacionSegunRol() {
+        if (usuarioActual != null) {
+            boolean esDonante = usuarioActual.getRolid() == 1;
+            bottomNavigation.getMenu().findItem(R.id.nav_crear).setVisible(!esDonante);
+
+            System.out.println("🔄 Navegación actualizada - Rol: " + usuarioActual.getRolid() +
+                    ", Mostrar 'Crear': " + !esDonante);
+        }
+    }
+
     private void logoutUser() {
         SharedPreferencesManager.logout(this);
         Intent intent = new Intent(this, Login.class);
@@ -359,6 +373,9 @@ public class PerfilUsuario extends AppCompatActivity {
         if (usuarioActualizado != null) {
             usuarioActual = usuarioActualizado;
             displayUserData();
+
+            actualizarNavegacionSegunRol();
         }
+        bottomNavigation.setSelectedItemId(R.id.nav_perfil);
     }
 }
