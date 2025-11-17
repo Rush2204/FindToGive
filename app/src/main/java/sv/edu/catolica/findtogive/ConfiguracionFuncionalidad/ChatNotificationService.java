@@ -3,7 +3,6 @@ package sv.edu.catolica.findtogive.ConfiguracionFuncionalidad;
 import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
@@ -396,8 +395,13 @@ public class ChatNotificationService extends Service {
                     chat.getUsuario2id() : chat.getUsuario1id();
 
             String chatKey = "chat_info_" + chat.getChatid();
-            notificationPrefs.edit().putInt(chatKey, otroUsuarioId).apply();
-            Log.d(TAG, "Chat guardado en preferences: " + chat.getChatid() + " -> " + otroUsuarioId);
+            notificationPrefs.edit()
+                    .putInt(chatKey, otroUsuarioId)
+                    .putInt("chat_solicitud_" + chat.getChatid(), chat.getSolicitudid()) // NUEVO
+                    .apply();
+
+            Log.d(TAG, "Chat guardado en preferences: " + chat.getChatid() +
+                    " -> Usuario: " + otroUsuarioId + ", Solicitud: " + chat.getSolicitudid());
         }
     }
 
@@ -408,18 +412,25 @@ public class ChatNotificationService extends Service {
         Intent intent;
         if (isNewChat) {
             intent = new Intent(this, Mensajeria.class);
+            // IMPORTANTE: Limpiar el stack y crear nueva tarea
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         } else {
             intent = new Intent(this, ChatC.class);
             intent.putExtra("chat_id", chatId);
             intent.putExtra("solicitud_id", -1);
             intent.putExtra("otro_usuario_id", getOtroUsuarioId(chatId));
-        }
 
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            // NUEVO: Obtener y pasar el solicitud_id real del chat
+            int solicitudId = getSolicitudIdFromChat(chatId);
+            intent.putExtra("solicitud_id", solicitudId);
+
+            // IMPORTANTE: Configurar flags para navegación correcta
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        }
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this,
-                notificationId, // Usar ID único como requestCode
+                notificationId,
                 intent,
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
         );
@@ -445,6 +456,20 @@ public class ChatNotificationService extends Service {
         notificationManager.notify(notificationId, builder.build());
 
         Log.d(TAG, "Notificación creada - ID: " + notificationId + ", Chat: " + chatId);
+    }
+
+    // NUEVO MÉTODO: Obtener solicitud_id del chat
+    private int getSolicitudIdFromChat(int chatId) {
+        // Buscar en cache primero
+        for (Chat chat : cachedChats) {
+            if (chat.getChatid() == chatId) {
+                return chat.getSolicitudid();
+            }
+        }
+
+        // Si no está en cache, intentar obtener de SharedPreferences o API
+        String chatKey = "chat_solicitud_" + chatId;
+        return notificationPrefs.getInt(chatKey, -1);
     }
 
     private int generateUniqueNotificationId(int chatId) {

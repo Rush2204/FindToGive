@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -25,7 +26,11 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.ApiService;
+import sv.edu.catolica.findtogive.Modelado.HospitalUbicacion;
 import sv.edu.catolica.findtogive.Modelado.SolicitudDonacion;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 import sv.edu.catolica.findtogive.R;
@@ -36,19 +41,19 @@ public class SolicitudDonacionC extends AppCompatActivity {
 
     private TextInputEditText editTextTitulo, editTextDescripcion;
     private TextInputLayout inputLayoutTitulo, inputLayoutDescripcion;
-    private Spinner spinnerTipoSangre;
-    private TextView textCurrentLocation;
+    private Spinner spinnerTipoSangre, spinnerHospital;
     private Button btnEnviarSolicitud;
     private View layoutUploadImage;
     private ImageView imagePreview;
 
     private int selectedTipoSangreId = 1; // A+ por defecto
+    private int selectedHospitalId = 1; // Primer hospital por defecto
     private Uri selectedImageUri = null;
     private Usuario usuarioActual;
+    private List<HospitalUbicacion> hospitalesList;
+    private ArrayAdapter<HospitalUbicacion> hospitalAdapter;
 
     private BottomNavigationView bottomNavigation;
-
-
 
     // Activity result launcher para seleccionar imágenes
     private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
@@ -108,9 +113,9 @@ public class SolicitudDonacionC extends AppCompatActivity {
 
         initializeViews();
         setupSpinners();
+        loadHospitales();
         setupClickListeners();
         setupBottomNavigation();
-        setupLocation();
     }
 
     private boolean puedeCrearSolicitudes() {
@@ -146,16 +151,14 @@ public class SolicitudDonacionC extends AppCompatActivity {
         editTextTitulo = findViewById(R.id.edit_text_titulo);
         editTextDescripcion = findViewById(R.id.edit_text_descripcion);
 
-        // Spinner
+        // Spinners
         spinnerTipoSangre = findViewById(R.id.spinner_tipo_sangre);
-
-        // Location
-        textCurrentLocation = findViewById(R.id.text_current_location);
+        spinnerHospital = findViewById(R.id.spinner_hospital);
 
         // Upload image section
         layoutUploadImage = findViewById(R.id.layout_upload_image);
 
-        // Image preview (necesitarás agregar este ImageView en tu layout)
+        // Image preview
         imagePreview = findViewById(R.id.image_preview);
 
         // Button
@@ -182,6 +185,80 @@ public class SolicitudDonacionC extends AppCompatActivity {
                 selectedTipoSangreId = 1; // A+ por defecto
             }
         });
+
+        // Configurar spinner de hospitales (inicialmente vacío)
+        hospitalesList = new ArrayList<>();
+        hospitalAdapter = new ArrayAdapter<HospitalUbicacion>(this,
+                android.R.layout.simple_spinner_item, hospitalesList) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                TextView textView = (TextView) view;
+                if (position >= 0 && position < hospitalesList.size()) {
+                    textView.setText(hospitalesList.get(position).getNombre());
+                }
+                return view;
+            }
+
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View view = super.getDropDownView(position, convertView, parent);
+                TextView textView = (TextView) view;
+                if (position >= 0 && position < hospitalesList.size()) {
+                    textView.setText(hospitalesList.get(position).getNombre());
+                }
+                return view;
+            }
+        };
+        hospitalAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerHospital.setAdapter(hospitalAdapter);
+
+        spinnerHospital.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (position >= 0 && position < hospitalesList.size()) {
+                    selectedHospitalId = hospitalesList.get(position).getHospitalid();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                if (!hospitalesList.isEmpty()) {
+                    selectedHospitalId = hospitalesList.get(0).getHospitalid();
+                }
+            }
+        });
+    }
+
+    private void loadHospitales() {
+        ApiService.getHospitales(new ApiService.ListCallback<HospitalUbicacion>() {
+            @Override
+            public void onSuccess(List<HospitalUbicacion> hospitales) {
+                runOnUiThread(() -> {
+                    if (hospitales != null && !hospitales.isEmpty()) {
+                        hospitalesList.clear();
+                        hospitalesList.addAll(hospitales);
+                        hospitalAdapter.notifyDataSetChanged();
+
+                        // Seleccionar el primer hospital por defecto
+                        if (!hospitalesList.isEmpty()) {
+                            selectedHospitalId = hospitalesList.get(0).getHospitalid();
+                        }
+                    } else {
+                        Toast.makeText(SolicitudDonacionC.this,
+                                "No se pudieron cargar los hospitales", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                runOnUiThread(() -> {
+                    Toast.makeText(SolicitudDonacionC.this,
+                            "Error al cargar hospitales: " + error, Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 
     private void setupClickListeners() {
@@ -201,12 +278,6 @@ public class SolicitudDonacionC extends AppCompatActivity {
         });
     }
 
-    private void setupLocation() {
-        // Por ahora, ubicación fija de Santa Ana
-        // Podrías implementar geolocalización aquí
-        textCurrentLocation.setText("Santa Ana, El Salvador");
-    }
-
     private void seleccionarImagen() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         intent.setType("image/*");
@@ -216,7 +287,6 @@ public class SolicitudDonacionC extends AppCompatActivity {
     private void crearSolicitud() {
         String titulo = editTextTitulo.getText().toString().trim();
         String descripcion = editTextDescripcion.getText().toString().trim();
-        String ubicacion = textCurrentLocation.getText().toString();
 
         if (!validarInputs(titulo, descripcion)) {
             return;
@@ -235,7 +305,7 @@ public class SolicitudDonacionC extends AppCompatActivity {
                 titulo,
                 descripcion,
                 selectedTipoSangreId,
-                ubicacion
+                selectedHospitalId
         );
 
         // Deshabilitar botón mientras se procesa
@@ -306,7 +376,6 @@ public class SolicitudDonacionC extends AppCompatActivity {
     }
 
     private void actualizarSolicitudConImagen(SolicitudDonacion solicitud) {
-        // Necesitamos agregar este método en ApiService
         ApiService.updateSolicitud(solicitud, new ApiService.ApiCallback<SolicitudDonacion>() {
             @Override
             public void onSuccess(SolicitudDonacion solicitudActualizada) {
@@ -363,6 +432,12 @@ public class SolicitudDonacionC extends AppCompatActivity {
             inputLayoutDescripcion.setError(null);
         }
 
+        // Validar que se haya seleccionado un hospital
+        if (hospitalesList.isEmpty()) {
+            Toast.makeText(this, "No hay hospitales disponibles", Toast.LENGTH_SHORT).show();
+            isValid = false;
+        }
+
         return isValid;
     }
 
@@ -398,6 +473,7 @@ public class SolicitudDonacionC extends AppCompatActivity {
 
         bottomNavigation.setSelectedItemId(R.id.nav_crear);
     }
+
     @Override
     protected void onResume() {
         super.onResume();

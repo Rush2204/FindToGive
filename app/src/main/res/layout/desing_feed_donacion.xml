@@ -51,6 +51,21 @@
         android:src="@drawable/ico_search"
         android:backgroundTint="@color/white"/>
 
+    <!-- Botón de Filtrar por Ubicación -->
+    <ImageButton
+        android:id="@+id/btn_filter_location"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="Filtrar por ubicación"
+        android:layout_marginEnd="0dp"
+        android:layout_marginTop="24dp"
+        android:padding="8dp"
+        app:layout_constraintEnd_toStartOf="@+id/btn_filter_search"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="TouchTargetSizeCheck"
+        android:src="@drawable/ico_location"
+        android:backgroundTint="@color/white"/>
+
 
     <!-- 1. Contenedor para la Lista de Solicitudes (VISIBLE cuando hay datos) -->
     <androidx.recyclerview.widget.RecyclerView

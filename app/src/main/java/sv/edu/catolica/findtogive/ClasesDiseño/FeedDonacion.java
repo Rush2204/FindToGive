@@ -18,6 +18,8 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Context;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.ArrayList;
@@ -53,6 +55,11 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
     // Variables para filtros
     private String currentQuery = "";
     private int currentTipoSangreId = -1;
+
+    // Agregar después de las variables existentes
+    private ImageButton btnFilterLocation;
+    private boolean filtroUbicacionActivo = false;
+    private static final int PERMISSION_REQUEST_LOCATION = 1001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,6 +104,7 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
         layoutEmptyState = findViewById(R.id.layout_empty_state);
         btnCreateFirstRequest = findViewById(R.id.btn_create_first_request);
         btnFilterSearch = findViewById(R.id.btn_filter_search);
+        btnFilterLocation = findViewById(R.id.btn_filter_location); // NUEVO
         textTitle = findViewById(R.id.text_title);
         bottomNavigation = findViewById(R.id.bottom_navigation_bar);
 
@@ -177,7 +185,6 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
 
     private void setupClickListeners() {
         btnCreateFirstRequest.setOnClickListener(v -> {
-            // Verificar rol antes de navegar
             if (usuarioActual != null && (usuarioActual.getRolid() == 2 || usuarioActual.getRolid() == 3)) {
                 Intent intent = new Intent(this, SolicitudDonacionC.class);
                 startActivity(intent);
@@ -188,6 +195,17 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
 
         btnFilterSearch.setOnClickListener(v -> {
             mostrarDialogoFiltroBusqueda();
+        });
+
+        // NUEVO: Click listener para filtro de ubicación
+        btnFilterLocation.setOnClickListener(v -> {
+            if (filtroUbicacionActivo) {
+                // Desactivar filtro de ubicación
+                desactivarFiltroUbicacion();
+            } else {
+                // Activar filtro de ubicación
+                activarFiltroUbicacion();
+            }
         });
     }
 
@@ -239,19 +257,30 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
         bottomNavigation.setSelectedItemId(R.id.nav_inicio);
     }
 
-    // Agregar manejo de resultado de permisos
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (NotificationPermissionManager.handlePermissionResult(requestCode, grantResults)) {
-            // Permiso concedido, iniciar servicio
-            if (AppNotificationManager.areNotificationsEnabled(this)) {
-                AppNotificationManager.startNotificationService(this);
+        if (requestCode == PERMISSION_REQUEST_LOCATION) {
+            if (grantResults.length > 0 &&
+                    grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                // Permiso concedido, obtener ubicación
+                obtenerUbicacionYFiltrar();
+            } else {
+                Toast.makeText(this,
+                        "Se necesitan permisos de ubicación para usar esta función",
+                        Toast.LENGTH_LONG).show();
             }
-            Toast.makeText(this, "Notificaciones activadas", Toast.LENGTH_SHORT).show();
         } else {
-            Toast.makeText(this, "Las notificaciones estarán desactivadas", Toast.LENGTH_LONG).show();
+            // Manejar otros permisos (notificaciones)
+            if (NotificationPermissionManager.handlePermissionResult(requestCode, grantResults)) {
+                if (AppNotificationManager.areNotificationsEnabled(this)) {
+                    AppNotificationManager.startNotificationService(this);
+                }
+                Toast.makeText(this, "Notificaciones activadas", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Las notificaciones estarán desactivadas", Toast.LENGTH_LONG).show();
+            }
         }
     }
 
@@ -557,4 +586,208 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
         System.out.println("🛑 FeedDonacion onStop");
         stopAutoRefresh();
     }
+
+    // ========== MÉTODOS PARA FILTRO POR UBICACIÓN ==========
+
+    private void activarFiltroUbicacion() {
+        // Verificar permisos de ubicación
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+                    android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                // Solicitar permisos
+                requestPermissions(
+                        new String[]{
+                                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                android.Manifest.permission.ACCESS_COARSE_LOCATION
+                        },
+                        PERMISSION_REQUEST_LOCATION
+                );
+                return;
+            }
+        }
+
+        // Si ya tiene permisos, obtener ubicación
+        obtenerUbicacionYFiltrar();
+    }
+
+    private void obtenerUbicacionYFiltrar() {
+        showLoadingState();
+        Toast.makeText(this, "Obteniendo tu ubicación...", Toast.LENGTH_SHORT).show();
+
+        try {
+            android.location.LocationManager locationManager =
+                    (android.location.LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+            if (locationManager == null) {
+                Toast.makeText(this, "Error al acceder al servicio de ubicación", Toast.LENGTH_SHORT).show();
+                loadSolicitudes();
+                return;
+            }
+
+            // Verificar permisos nuevamente
+            if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+                    android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                loadSolicitudes();
+                return;
+            }
+
+            // Intentar obtener la última ubicación conocida primero
+            android.location.Location lastLocation =
+                    locationManager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER);
+
+            if (lastLocation == null) {
+                lastLocation = locationManager.getLastKnownLocation(
+                        android.location.LocationManager.NETWORK_PROVIDER);
+            }
+
+            if (lastLocation != null) {
+                // CORREGIDO: Usar getLongitude() en lugar de getLongitud()
+                procesarUbicacion(lastLocation.getLatitude(), lastLocation.getLongitude());
+            } else {
+                // Solicitar ubicación actual
+                locationManager.requestSingleUpdate(
+                        android.location.LocationManager.GPS_PROVIDER,
+                        new android.location.LocationListener() {
+                            @Override
+                            public void onLocationChanged(android.location.Location location) {
+                                // CORREGIDO: Usar getLongitude() en lugar de getLongitud()
+                                procesarUbicacion(location.getLatitude(), location.getLongitude());
+                            }
+
+                            @Override
+                            public void onStatusChanged(String provider, int status, android.os.Bundle extras) {}
+
+                            @Override
+                            public void onProviderEnabled(String provider) {}
+
+                            @Override
+                            public void onProviderDisabled(String provider) {
+                                Toast.makeText(FeedDonacion.this,
+                                        "Por favor activa el GPS", Toast.LENGTH_LONG).show();
+                                loadSolicitudes();
+                            }
+                        },
+                        null
+                );
+            }
+
+        } catch (Exception e) {
+            Log.e("FeedDonacion", "Error obteniendo ubicación: " + e.getMessage());
+            Toast.makeText(this, "Error al obtener ubicación", Toast.LENGTH_SHORT).show();
+            loadSolicitudes();
+        }
+    }
+
+    private void procesarUbicacion(double latitud, double longitud) {
+        Log.d("FeedDonacion", "📍 Ubicación obtenida: " + latitud + ", " + longitud);
+
+        // Guardar ubicación en la base de datos
+        if (usuarioActual != null) {
+            ApiService.updateUserLocation(
+                    usuarioActual.getUsuarioid(),
+                    latitud,
+                    longitud,
+                    new ApiService.ApiCallback<Usuario>() {
+                        @Override
+                        public void onSuccess(Usuario usuarioActualizado) {
+                            Log.d("FeedDonacion", "✅ Ubicación guardada en BD");
+
+                            // Actualizar usuario actual en SharedPreferences
+                            usuarioActual.setLatitud(latitud);
+                            usuarioActual.setLongitud(longitud);
+                            SharedPreferencesManager.saveCurrentUser(FeedDonacion.this, usuarioActual);
+
+                            // Filtrar solicitudes cercanas
+                            filtrarSolicitudesCercanas(latitud, longitud);
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            Log.e("FeedDonacion", "❌ Error guardando ubicación: " + error);
+                            // Continuar con el filtro aunque falle el guardado
+                            filtrarSolicitudesCercanas(latitud, longitud);
+                        }
+                    }
+            );
+        } else {
+            filtrarSolicitudesCercanas(latitud, longitud);
+        }
+    }
+
+    private void filtrarSolicitudesCercanas(double latitud, double longitud) {
+        final double RADIO_KM = 3.5;
+
+        ApiService.getSolicitudesCercanas(latitud, longitud, RADIO_KM,
+                new ApiService.ListCallback<SolicitudDonacion>() {
+                    @Override
+                    public void onSuccess(List<SolicitudDonacion> solicitudes) {
+                        runOnUiThread(() -> {
+                            if (solicitudes != null && !solicitudes.isEmpty()) {
+                                adapter.updateData(solicitudes);
+                                showSolicitudesList();
+
+                                filtroUbicacionActivo = true;
+                                actualizarBotonUbicacion();
+
+                                Toast.makeText(FeedDonacion.this,
+                                        "Se encontraron " + solicitudes.size() +
+                                                " solicitudes",
+                                        Toast.LENGTH_LONG).show();
+
+                                forceImmediateRedraw();
+                            } else {
+                                showEmptyState();
+                                personalizarMensajeEmptyStateUbicacion();
+
+                                filtroUbicacionActivo = true;
+                                actualizarBotonUbicacion();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("FeedDonacion", "❌ Error filtrando por ubicación: " + error);
+                        runOnUiThread(() -> {
+                            Toast.makeText(FeedDonacion.this,
+                                    "Error al filtrar por ubicación", Toast.LENGTH_SHORT).show();
+                            loadSolicitudes();
+                        });
+                    }
+                });
+    }
+
+    private void desactivarFiltroUbicacion() {
+        filtroUbicacionActivo = false;
+        actualizarBotonUbicacion();
+        loadSolicitudes(); // Recargar todas las solicitudes
+        Toast.makeText(this, "Filtro de ubicación desactivado", Toast.LENGTH_SHORT).show();
+    }
+
+    private void actualizarBotonUbicacion() {
+        if (filtroUbicacionActivo) {
+            btnFilterLocation.setColorFilter(getResources().getColor(android.R.color.holo_red_dark));
+            textTitle.setText("Solicitudes Cercanas");
+            textTitle.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+        } else {
+            btnFilterLocation.setColorFilter(getResources().getColor(android.R.color.black));
+            if (currentQuery.isEmpty() && currentTipoSangreId == -1) {
+                textTitle.setText("Solicitudes de Donación");
+                textTitle.setTextColor(getResources().getColor(android.R.color.black));
+            }
+        }
+    }
+
+    private void personalizarMensajeEmptyStateUbicacion() {
+        TextView emptyStateTitle = findViewById(R.id.text_empty_title);
+        TextView emptyStateMessage = findViewById(R.id.text_empty_message);
+
+        if (emptyStateTitle != null && emptyStateMessage != null) {
+            emptyStateTitle.setText("No hay solicitudes cercanas");
+            emptyStateMessage.setText("No se encontraron solicitudes activas en un radio de 3.5 km de tu ubicación.");
+        }
+    }
+
+
+
 }

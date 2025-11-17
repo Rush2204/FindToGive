@@ -27,9 +27,9 @@ public class SupabaseClient {
         public static String solicitudDonacion() { return BASE_URL + "solicitud_donacion"; }
         public static String rol() { return BASE_URL + "rol"; }
         public static String tipoSangre() { return BASE_URL + "tipo_sangre"; }
+        public static String hospitalUbicacion() { return BASE_URL + "hospital_ubicacion"; } // NUEVO
         public static String chat() { return BASE_URL + "chat"; }
         public static String mensaje() { return BASE_URL + "mensaje"; }
-        public static String historialDonacion() { return BASE_URL + "historial_donacion"; }
         public static String notificacion() { return BASE_URL + "notificacion"; }
     }
 

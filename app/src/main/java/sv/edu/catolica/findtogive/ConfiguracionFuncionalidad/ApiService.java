@@ -6,7 +6,9 @@ import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -15,7 +17,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import sv.edu.catolica.findtogive.Modelado.Chat;
-import sv.edu.catolica.findtogive.Modelado.HistorialDonacion;
+import sv.edu.catolica.findtogive.Modelado.HospitalUbicacion;
 import sv.edu.catolica.findtogive.Modelado.Mensaje;
 import sv.edu.catolica.findtogive.Modelado.Notificacion;
 import sv.edu.catolica.findtogive.Modelado.SolicitudDonacion;
@@ -334,13 +336,14 @@ public class ApiService {
                 String fechaActual = java.time.LocalDateTime.now().format(formatter);
 
                 // Crear JSON incluyendo la fecha
+                // En el método createSolicitud, modifica el JSON:
                 String json = "{" +
                         "\"usuarioid\":" + solicitud.getUsuarioid() + "," +
                         "\"titulo\":\"" + solicitud.getTitulo() + "\"," +
                         "\"descripcion\":\"" + solicitud.getDescripcion() + "\"," +
                         "\"tiposangreid\":" + solicitud.getTiposangreid() + "," +
-                        "\"ubicacion\":\"" + solicitud.getUbicacion() + "\"," +
-                        "\"fecha_publicacion\":\"" + fechaActual + "\"," + // ← Fecha desde app
+                        "\"hospitalid\":" + solicitud.getHospitalid() + "," + // ← CAMBIO AQUÍ
+                        "\"fecha_publicacion\":\"" + fechaActual + "\"," +
                         "\"estado\":\"activa\"" +
                         "}";
 
@@ -387,6 +390,17 @@ public class ApiService {
                 callback.onError("Error: " + e.getMessage());
             }
         });
+    }
+
+    // ========== HOSPITALES ==========
+    public static void getHospitales(ListCallback<HospitalUbicacion> callback) {
+        String url = SupabaseClient.URLs.hospitalUbicacion();
+        getList(url, new TypeToken<List<HospitalUbicacion>>(){}.getType(), callback);
+    }
+
+    public static void getHospitalById(int hospitalId, ApiCallback<HospitalUbicacion> callback) {
+        String url = SupabaseClient.URLs.hospitalUbicacion() + "?hospitalid=eq." + hospitalId + "&limit=1";
+        getSingle(url, new TypeToken<List<HospitalUbicacion>>(){}.getType(), callback);
     }
 
     // ========== MÉTODOS DE BÚSQUEDA Y FILTRADO ==========
@@ -609,19 +623,7 @@ public class ApiService {
         });
     }
 
-    private static <T> void postWithReturn(String url, Object data, Type type, ApiCallback<T> callback) {
-        CompletableFuture.runAsync(() -> {
-            Request request = createPostRequest(url, data);
-            executeRequest(request, type, callback);
-        });
-    }
 
-    private static <T> void patch(String url, Object data, Type type, ApiCallback<T> callback) {
-        CompletableFuture.runAsync(() -> {
-            Request request = createPatchRequest(url, data);
-            executeRequest(request, type, callback);
-        });
-    }
 
     // ========== MÉTODOS DE REQUEST ==========
     private static Request createGetRequest(String url) {
@@ -632,33 +634,7 @@ public class ApiService {
                 .build();
     }
 
-    private static Request createPostRequest(String url, Object data) {
-        String json = gson.toJson(data);
-        RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
 
-        return new Request.Builder()
-                .url(url)
-                .post(body)
-                .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
-                .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Prefer", "return=representation")
-                .build();
-    }
-
-    private static Request createPatchRequest(String url, Object data) {
-        String json = gson.toJson(data);
-        RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
-
-        return new Request.Builder()
-                .url(url)
-                .patch(body)
-                .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
-                .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Prefer", "return=representation")
-                .build();
-    }
 
     private static <T> void executeRequest(Request request, Type type, ApiCallback<T> callback) {
         try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
@@ -703,37 +679,7 @@ public class ApiService {
                 "&order=fecha_publicacion.desc";
         getList(url, new TypeToken<List<SolicitudDonacion>>(){}.getType(), callback);
     }
-    public static void deleteHistorialDonacion(int historialId, ApiCallback<Void> callback) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                // DELETE: .../historial_donacion?historialid=eq.X
-                String url = SupabaseClient.URLs.historialDonacion() +
-                        "?historialid=eq." + historialId;
 
-                Request request = new Request.Builder()
-                        .url(url)
-                        .delete() // Usamos el método DELETE
-                        // Asegúrate de que las cabeceras estén correctas
-                        .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
-                        .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
-                        .addHeader("Prefer", "return=minimal")
-                        .build();
-
-                try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
-                    if (response.isSuccessful()) {
-                        // Código 200 o 204 significa éxito en DELETE
-                        callback.onSuccess(null);
-                    } else {
-                        String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                        callback.onError("Error al eliminar: " + response.code() + " - " + errorBody);
-                    }
-                }
-
-            } catch (Exception e) {
-                callback.onError("Error de red: " + e.getMessage());
-            }
-        });
-    }
 
     // ========== ACTUALIZAR ESTADO DE SOLICITUD ==========
     public static void updateSolicitudEstado(int solicitudId, String nuevoEstado, ApiCallback<SolicitudDonacion> callback) {
@@ -883,22 +829,154 @@ public class ApiService {
         });
     }
 
-    public static void getNotificacionesNoLeidas(int usuarioId, ListCallback<Notificacion> callback) {
-        String url = SupabaseClient.URLs.notificacion() +
-                "?usuarioid=eq." + usuarioId +
-                "&leida=eq.false" +
-                "&order=fecha_envio.desc";
-        getList(url, new TypeToken<List<Notificacion>>(){}.getType(), callback);
+    // Agregar al final de la clase ApiService, antes del último }
+
+    // ========== ACTUALIZAR UBICACIÓN DEL USUARIO ==========
+    public static void updateUserLocation(int usuarioId, double latitud, double longitud, ApiCallback<Usuario> callback) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                String json = "{" +
+                        "\"latitud\":" + latitud + "," +
+                        "\"longitud\":" + longitud +
+                        "}";
+
+                System.out.println("📍 JSON Update Location: " + json);
+
+                RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
+
+                String url = SupabaseClient.URLs.usuario() + "?usuarioid=eq." + usuarioId;
+
+                Request request = new Request.Builder()
+                        .url(url)
+                        .patch(body)
+                        .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
+                        .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("Prefer", "return=representation")
+                        .build();
+
+                try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String responseBody = response.body().string();
+                        System.out.println("✅ UPDATE ubicación exitoso: " + responseBody);
+
+                        Type listType = new TypeToken<List<Usuario>>(){}.getType();
+                        List<Usuario> usuariosActualizados = gson.fromJson(responseBody, listType);
+
+                        if (usuariosActualizados != null && !usuariosActualizados.isEmpty()) {
+                            callback.onSuccess(usuariosActualizados.get(0));
+                        } else {
+                            callback.onError("No se pudo obtener el usuario actualizado");
+                        }
+                    } else {
+                        String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
+                        System.out.println("❌ Error en UPDATE ubicación: " + response.code() + " - " + errorBody);
+                        callback.onError("Error al actualizar ubicación: " + response.code());
+                    }
+                }
+
+            } catch (Exception e) {
+                System.out.println("❌ Exception en updateUserLocation: " + e.getMessage());
+                callback.onError("Error: " + e.getMessage());
+            }
+        });
     }
 
-    // Método para obtener solo mensajes no leídos
-    public static void getMensajesNoLeidos(int usuarioId, ListCallback<Mensaje> callback) {
-        String url = SupabaseClient.URLs.mensaje() +
-                "?leido=eq.false" +
-                "&emisorioid=neq." + usuarioId + // Mensajes de otros usuarios
-                "&order=fecha_envio.desc";
-        getList(url, new TypeToken<List<Mensaje>>(){}.getType(), callback);
+    // ========== OBTENER SOLICITUDES CERCANAS ==========
+    public static void getSolicitudesCercanas(double latitudUsuario, double longitudUsuario,
+                                              double radioKm, ListCallback<SolicitudDonacion> callback) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                // Primero obtener todas las solicitudes activas
+                String url = SupabaseClient.URLs.solicitudDonacion() + "?estado=eq.activa&order=fecha_publicacion.desc";
+
+                Request request = new Request.Builder()
+                        .url(url)
+                        .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
+                        .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
+                        .build();
+
+                try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String json = response.body().string();
+                        Type listType = new TypeToken<List<SolicitudDonacion>>(){}.getType();
+                        List<SolicitudDonacion> todasSolicitudes = gson.fromJson(json, listType);
+
+                        if (todasSolicitudes == null || todasSolicitudes.isEmpty()) {
+                            callback.onSuccess(new ArrayList<>());
+                            return;
+                        }
+
+                        // Obtener todos los hospitales
+                        ApiService.getHospitales(new ListCallback<HospitalUbicacion>() {
+                            @Override
+                            public void onSuccess(List<HospitalUbicacion> hospitales) {
+                                // Crear mapa de hospitales por ID
+                                Map<Integer, HospitalUbicacion> hospitalesMap = new HashMap<>();
+                                for (HospitalUbicacion hospital : hospitales) {
+                                    hospitalesMap.put(hospital.getHospitalid(), hospital);
+                                }
+
+                                // Filtrar solicitudes por distancia
+                                List<SolicitudDonacion> solicitudesCercanas = new ArrayList<>();
+
+                                for (SolicitudDonacion solicitud : todasSolicitudes) {
+                                    HospitalUbicacion hospital = hospitalesMap.get(solicitud.getHospitalid());
+
+                                    if (hospital != null) {
+                                        double distancia = calcularDistancia(
+                                                latitudUsuario, longitudUsuario,
+                                                hospital.getLatitud(), hospital.getLongitud()
+                                        );
+
+                                        System.out.println("📍 Distancia a " + hospital.getNombre() + ": " +
+                                                String.format("%.2f", distancia) + " km");
+
+                                        if (distancia <= radioKm) {
+                                            solicitudesCercanas.add(solicitud);
+                                        }
+                                    }
+                                }
+
+                                System.out.println("✅ Solicitudes cercanas encontradas: " + solicitudesCercanas.size());
+                                callback.onSuccess(solicitudesCercanas);
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                callback.onError("Error al obtener hospitales: " + error);
+                            }
+                        });
+
+                    } else {
+                        callback.onError("Error: " + response.code());
+                    }
+                }
+
+            } catch (Exception e) {
+                callback.onError("Error: " + e.getMessage());
+            }
+        });
     }
+
+    // Método auxiliar para calcular distancia entre dos puntos (Fórmula de Haversine)
+    private static double calcularDistancia(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // Radio de la Tierra en km
+
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c; // Distancia en kilómetros
+    }
+
+
+
 
     // ========== CHATS - MÉTODOS ADICIONALES ==========
     public static void getChatById(int chatId, ApiCallback<Chat> callback) {

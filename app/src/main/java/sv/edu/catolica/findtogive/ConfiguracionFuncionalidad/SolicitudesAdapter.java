@@ -3,6 +3,7 @@ package sv.edu.catolica.findtogive.ConfiguracionFuncionalidad;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -28,11 +29,14 @@ import com.bumptech.glide.request.target.Target;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import sv.edu.catolica.findtogive.ClasesDiseño.ChatC;
 import sv.edu.catolica.findtogive.Modelado.Chat;
+import sv.edu.catolica.findtogive.Modelado.HospitalUbicacion;
 import sv.edu.catolica.findtogive.Modelado.SolicitudDonacion;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 import sv.edu.catolica.findtogive.R;
@@ -42,11 +46,13 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
     private List<SolicitudDonacion> solicitudesList;
     private Context context;
     private Map<Integer, Usuario> usuariosMap; // Cache de usuarios
+    private Map<Integer, HospitalUbicacion> hospitalesMap; // Cache de hospitales
 
     public SolicitudesAdapter(List<SolicitudDonacion> solicitudesList, Context context) {
         this.solicitudesList = solicitudesList;
         this.context = context;
         this.usuariosMap = new HashMap<>();
+        this.hospitalesMap = new HashMap<>(); // Inicializar cache de hospitales
     }
 
     @NonNull
@@ -139,9 +145,9 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
     public void updateData(List<SolicitudDonacion> nuevasSolicitudes) {
         System.out.println("💥 FEED: ACTUALIZACIÓN AGRESIVA DE SOLICITUDES: " + nuevasSolicitudes.size() + " solicitudes");
 
-        // Limpiar TODO
+        // Limpiar solo las solicitudes, mantener caches
         this.solicitudesList.clear();
-        this.usuariosMap.clear();
+        // NO limpiar usuariosMap ni hospitalesMap para mantener el cache
 
         // Agregar nuevas solicitudes
         this.solicitudesList.addAll(nuevasSolicitudes);
@@ -154,6 +160,9 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
         // Forzar carga de usuarios inmediatamente
         forzarCargaUsuarios();
 
+        // Cargar datos de hospitales
+        cargarHospitalesParaSolicitudes();
+
         // Cargar datos de usuarios para las nuevas solicitudes
         cargarDatosUsuarios();
     }
@@ -162,6 +171,66 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
         this.usuariosMap.clear();
         this.usuariosMap.putAll(usuariosMap);
         notifyDataSetChanged();
+    }
+
+    // ========== MÉTODOS PARA CARGAR HOSPITALES ==========
+
+    private void cargarHospitalesParaSolicitudes() {
+        Set<Integer> hospitalIds = new HashSet<>();
+
+        // Identificar hospitales que necesitan ser cargados
+        for (SolicitudDonacion solicitud : solicitudesList) {
+            int hospitalId = solicitud.getHospitalid();
+            if (!hospitalesMap.containsKey(hospitalId)) {
+                hospitalIds.add(hospitalId);
+            }
+        }
+
+        System.out.println("🏥 FEED: Cargando " + hospitalIds.size() + " hospitales desde API");
+
+        // Cargar cada hospital individualmente
+        for (Integer hospitalId : hospitalIds) {
+            cargarHospitalIndividual(hospitalId);
+        }
+    }
+
+    private void cargarHospitalIndividual(int hospitalId) {
+        ApiService.getHospitalById(hospitalId, new ApiService.ApiCallback<HospitalUbicacion>() {
+            @Override
+            public void onSuccess(HospitalUbicacion hospital) {
+                hospitalesMap.put(hospitalId, hospital);
+                System.out.println("✅ FEED: Hospital cargado: " + hospital.getNombre());
+
+                // Actualizar todas las solicitudes que usen este hospital
+                actualizarSolicitudesConHospital(hospitalId, hospital);
+            }
+
+            @Override
+            public void onError(String error) {
+                System.out.println("❌ FEED: Error cargando hospital " + hospitalId + ": " + error);
+
+                // Reintentar después de 2 segundos
+                new Handler().postDelayed(() -> {
+                    cargarHospitalIndividual(hospitalId);
+                }, 2000);
+            }
+        });
+    }
+
+    private void actualizarSolicitudesConHospital(int hospitalId, HospitalUbicacion hospital) {
+        for (int i = 0; i < solicitudesList.size(); i++) {
+            if (solicitudesList.get(i).getHospitalid() == hospitalId) {
+                solicitudesList.get(i).setHospital(hospital);
+
+                // Actualizar la vista específica
+                final int position = i;
+                runOnUiThread(() -> {
+                    if (position >= 0 && position < solicitudesList.size()) {
+                        notifyItemChanged(position);
+                    }
+                });
+            }
+        }
     }
 
     // ========== MÉTODOS PRIVADOS ==========
@@ -307,6 +376,39 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
             btnChatear = itemView.findViewById(R.id.btnchatear);
         }
 
+        private void cargarDatosHospital(int hospitalId, int position) {
+            // Si ya está en cache, no cargar de nuevo
+            if (hospitalesMap.containsKey(hospitalId)) {
+                return;
+            }
+
+            ApiService.getHospitalById(hospitalId, new ApiService.ApiCallback<HospitalUbicacion>() {
+                @Override
+                public void onSuccess(HospitalUbicacion hospital) {
+                    hospitalesMap.put(hospitalId, hospital);
+
+                    // Actualizar todas las solicitudes que usen este hospital
+                    for (int i = 0; i < solicitudesList.size(); i++) {
+                        if (solicitudesList.get(i).getHospitalid() == hospitalId) {
+                            solicitudesList.get(i).setHospital(hospital);
+
+                            final int pos = i;
+                            runOnUiThread(() -> {
+                                if (pos >= 0 && pos < solicitudesList.size()) {
+                                    notifyItemChanged(pos);
+                                }
+                            });
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(String error) {
+                    System.out.println("❌ Error cargando hospital: " + error);
+                }
+            });
+        }
+
         public void bind(SolicitudDonacion solicitud) {
             int position = getAdapterPosition();
             System.out.println("🎯 FEED: RENDERIZANDO solicitud " + solicitud.getSolicitudid() + " en posición " + position);
@@ -315,8 +417,8 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
             textTitle.setText(solicitud.getTitulo() != null ? solicitud.getTitulo() : "Sin título");
             textDescription.setText(solicitud.getDescripcion() != null ? solicitud.getDescripcion() : "Sin descripción");
 
-            // Ubicación
-            textLocationDetails.setText(solicitud.getUbicacion() != null ? solicitud.getUbicacion() : "Ubicación no especificada");
+            // UBICACIÓN - Usar el cache de hospitales
+            configurarUbicacion(solicitud, position);
 
             // Tipo de sangre
             textBloodTypeBadge.setText(obtenerTipoSangreCompleto(solicitud.getTiposangreid()));
@@ -335,6 +437,71 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
             itemView.setOnClickListener(v -> {
                 Toast.makeText(context, "Abriendo detalles de: " + solicitud.getTitulo(), Toast.LENGTH_SHORT).show();
             });
+        }
+
+        private void configurarUbicacion(SolicitudDonacion solicitud, int position) {
+            HospitalUbicacion hospital = hospitalesMap.get(solicitud.getHospitalid());
+
+            if (hospital != null) {
+                // Tenemos datos del hospital en cache
+                solicitud.setHospital(hospital);
+                textLocationDetails.setText(hospital.getNombre());
+
+                // Hacer clickeable si tiene link
+                if (hospital.getLink() != null && !hospital.getLink().isEmpty()) {
+                    textLocationDetails.setTextColor(context.getResources().getColor(android.R.color.holo_blue_dark));
+                    textLocationDetails.setClickable(true);
+                    textLocationDetails.setFocusable(true);
+
+                    textLocationDetails.setOnClickListener(v -> {
+                        abrirGoogleMaps(hospital);
+                    });
+                } else {
+                    // No tiene link, mostrar normal
+                    textLocationDetails.setTextColor(context.getResources().getColor(android.R.color.darker_gray));
+                    textLocationDetails.setClickable(false);
+                    textLocationDetails.setFocusable(false);
+                }
+            } else {
+                // No tenemos datos del hospital, mostrar loading
+                textLocationDetails.setText("Cargando hospital...");
+                textLocationDetails.setTextColor(context.getResources().getColor(android.R.color.darker_gray));
+                textLocationDetails.setClickable(false);
+                textLocationDetails.setFocusable(false);
+
+                // Forzar carga del hospital
+                cargarDatosHospital(solicitud.getHospitalid(), position);
+            }
+        }
+
+        // Método para abrir Google Maps
+        private void abrirGoogleMaps(HospitalUbicacion hospital) {
+            try {
+                String mapsUrl = hospital.getLink();
+
+                // Si no hay link específico, crear uno con las coordenadas
+                if (mapsUrl == null || mapsUrl.isEmpty()) {
+                    mapsUrl = "https://www.google.com/maps/search/?api=1&query=" +
+                            hospital.getLatitud() + "," + hospital.getLongitud() +
+                            "&query=" + Uri.encode(hospital.getNombre());
+                }
+
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(mapsUrl));
+                intent.setPackage("com.google.android.apps.maps");
+
+                // Verificar si Google Maps está instalado
+                if (intent.resolveActivity(context.getPackageManager()) != null) {
+                    context.startActivity(intent);
+                } else {
+                    // Si Google Maps no está instalado, abrir en navegador
+                    intent.setPackage(null);
+                    context.startActivity(intent);
+                }
+
+            } catch (Exception e) {
+                Toast.makeText(context, "Error al abrir la ubicación", Toast.LENGTH_SHORT).show();
+                Log.e("Maps", "Error al abrir Google Maps: " + e.getMessage());
+            }
         }
 
         private void cargarDatosUsuarioAgresivo(int usuarioId, int position) {

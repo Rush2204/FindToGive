@@ -1,13 +1,8 @@
 package sv.edu.catolica.findtogive.ClasesDiseño;
 
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -18,7 +13,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -61,6 +55,9 @@ public class ChatC extends AppCompatActivity {
     private static final long POLLING_INTERVAL = 1000;
     private SharedPreferences notificacionPrefs;
 
+    // NUEVO: Control para saber si ya se marcaron los mensajes como leídos
+    private boolean mensajesMarcadosComoLeidos = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,8 +73,11 @@ public class ChatC extends AppCompatActivity {
 
         initializeViews();
 
-        // MARCAR MENSAJES COMO LEÍDOS AL ENTRAR AL CHAT
-        marcarMensajesComoLeidos();
+        // ✅ CORRECTO: Marcar mensajes como leídos SOLO cuando se abre el chat por primera vez
+        if (!mensajesMarcadosComoLeidos) {
+            marcarMensajesComoLeidos();
+            mensajesMarcadosComoLeidos = true;
+        }
 
         // VERIFICAR ESTADO DE LA SOLICITUD INMEDIATAMENTE - MEJORADO
         verificarEstadoSolicitud();
@@ -327,9 +327,6 @@ public class ChatC extends AppCompatActivity {
                                 recyclerViewChat.scrollToPosition(mensajes.size() - 1);
                             }
                             System.out.println("🔄 Mensajes actualizados: " + mensajes.size());
-
-                            // Marcar mensajes nuevos como leídos
-                            marcarMensajesNuevosComoLeidos(mensajes);
                         }
                     }
                 });
@@ -343,24 +340,6 @@ public class ChatC extends AppCompatActivity {
             }
         });
     }
-
-    // NUEVO MÉTODO: Marcar mensajes nuevos como leídos
-    private void marcarMensajesNuevosComoLeidos(List<Mensaje> nuevosMensajes) {
-        boolean hayMensajesNoLeidos = false;
-
-        for (Mensaje mensaje : nuevosMensajes) {
-            if (!mensaje.isLeido() && mensaje.getEmisorioid() != usuarioActual.getUsuarioid()) {
-                hayMensajesNoLeidos = true;
-                break;
-            }
-        }
-
-        if (hayMensajesNoLeidos) {
-            marcarMensajesComoLeidos();
-        }
-    }
-
-
 
     private boolean hayMensajesNuevos(List<Mensaje> nuevosMensajes) {
         if (mensajesList.size() != nuevosMensajes.size()) {
@@ -382,27 +361,13 @@ public class ChatC extends AppCompatActivity {
             @Override
             public void run() {
                 loadMensajes();
-
-                // Verificar si hay mensajes no leídos y marcarlos
-                verificarYMarcarMensajesNoLeidos();
-
                 pollingHandler.postDelayed(this, POLLING_INTERVAL);
             }
         };
         pollingHandler.postDelayed(pollingRunnable, POLLING_INTERVAL);
     }
 
-    // NUEVO MÉTODO: Verificar y marcar mensajes no leídos
-    private void verificarYMarcarMensajesNoLeidos() {
-        if (mensajesList != null) {
-            for (Mensaje mensaje : mensajesList) {
-                if (!mensaje.isLeido() && mensaje.getEmisorioid() != usuarioActual.getUsuarioid()) {
-                    marcarMensajesComoLeidos();
-                    break;
-                }
-            }
-        }
-    }
+    // ❌ ELIMINADO: El método verificarYMarcarMensajesNoLeidos() que causaba el problema
 
     private void stopPolling() {
         if (pollingHandler != null && pollingRunnable != null) {
@@ -486,7 +451,7 @@ public class ChatC extends AppCompatActivity {
         });
     }
 
-    // NUEVO MÉTODO: Marcar mensajes como leídos
+    // ✅ MÉTODO MODIFICADO: Marcar mensajes como leídos SOLO cuando se abre el chat
     private void marcarMensajesComoLeidos() {
         if (chatId == -1 || usuarioActual == null) {
             return;
@@ -550,7 +515,6 @@ public class ChatC extends AppCompatActivity {
         });
     }
 
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -569,19 +533,26 @@ public class ChatC extends AppCompatActivity {
         startPolling();
         loadMensajes();
 
-        // MARCAR MENSAJES COMO LEÍDOS AL VOLVER AL CHAT
-        marcarMensajesComoLeidos();
+        // ❌ ELIMINADO: No marcar mensajes como leídos automáticamente en onResume
+        // Esto causaba que los mensajes se marcaran como leídos sin que el usuario los viera
     }
 
     public void back(View view) {
         Intent intent = new Intent(ChatC.this, Mensajeria.class);
 
         int solicitudId = getIntent().getIntExtra("solicitud_id", -1);
+        System.out.println("🔙 Navegando hacia atrás - Solicitud ID: " + solicitudId);
+
         if (solicitudId != -1) {
             intent.putExtra("filter_by_solicitud", true);
             intent.putExtra("solicitud_id", solicitudId);
+            System.out.println("🎯 Filtro aplicado para solicitud: " + solicitudId);
+        } else {
+            System.out.println("ℹ️ Sin filtro - Mostrando todos los chats");
         }
 
+        // IMPORTANTE: Limpiar el stack para evitar acumulación de actividades
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
         finish();
     }

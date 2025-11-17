@@ -8,30 +8,35 @@ public class SolicitudDonacion {
     private String titulo;
     private String descripcion;
     private int tiposangreid;
-    private String ubicacion;
+
+    @SerializedName("hospitalid")
+    private int hospitalid;
 
     @SerializedName("imagen_url")
     private String imagen_url;
 
-    @SerializedName("fecha_publicacion")  // <- AÑADE ESTA LÍNEA
+    @SerializedName("fecha_publicacion")
     private String fecha_publicacion;
 
     private String estado;
+
+    // Campo transiente para mostrar información del hospital en la UI
+    private transient HospitalUbicacion hospital;
 
     public SolicitudDonacion() {}
 
     // Constructor para crear nueva solicitud
     public SolicitudDonacion(int usuarioid, String titulo, String descripcion,
-                             int tiposangreid, String ubicacion) {
+                             int tiposangreid, int hospitalid) {
         this.usuarioid = usuarioid;
         this.titulo = titulo;
         this.descripcion = descripcion;
         this.tiposangreid = tiposangreid;
-        this.ubicacion = ubicacion;
+        this.hospitalid = hospitalid;
         this.estado = "activa";
     }
 
-    // Getters y Setters (MANTÉN LOS NOMBRES ACTUALES)
+    // Getters y Setters
     public int getSolicitudid() { return solicitudid; }
     public void setSolicitudid(int solicitudid) { this.solicitudid = solicitudid; }
 
@@ -47,8 +52,8 @@ public class SolicitudDonacion {
     public int getTiposangreid() { return tiposangreid; }
     public void setTiposangreid(int tiposangreid) { this.tiposangreid = tiposangreid; }
 
-    public String getUbicacion() { return ubicacion; }
-    public void setUbicacion(String ubicacion) { this.ubicacion = ubicacion; }
+    public int getHospitalid() { return hospitalid; }
+    public void setHospitalid(int hospitalid) { this.hospitalid = hospitalid; }
 
     public String getImagenUrl() { return imagen_url; }
     public void setImagenUrl(String imagenUrl) { this.imagen_url = imagenUrl; }
@@ -58,4 +63,7 @@ public class SolicitudDonacion {
 
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
+
+    public HospitalUbicacion getHospital() { return hospital; }
+    public void setHospital(HospitalUbicacion hospital) { this.hospital = hospital; }
 }

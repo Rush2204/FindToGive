@@ -2,6 +2,7 @@ package sv.edu.catolica.findtogive.ClasesDiseño;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
@@ -9,7 +10,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -64,6 +64,16 @@ public class HistorialDonaciones extends AppCompatActivity implements
     //Mapa para trackear mensajes no leídos por solicitud
     private Map<Integer, Boolean> mensajesNoLeidosPorSolicitud;
 
+    // NUEVO: Handler para actualización automática
+    private Handler autoRefreshHandler;
+    private Runnable autoRefreshRunnable;
+    private static final long AUTO_REFRESH_INTERVAL = 500; // 0.5 segundos
+
+    // NUEVO: Handler específico para mensajes no leídos
+    private Handler mensajesNoLeidosHandler;
+    private Runnable mensajesNoLeidosRunnable;
+    private static final long MENSAJES_CHECK_INTERVAL = 2000; // 2 segundos
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -95,11 +105,22 @@ public class HistorialDonaciones extends AppCompatActivity implements
         actualizarTituloPorDefecto();
 
         loadChatsDelUsuario();
+
+        // NUEVO: Iniciar actualización automática
+        startAggressiveAutoRefresh();
+
+        // NUEVO: Iniciar verificación periódica de mensajes no leídos
+        startMensajesNoLeidosChecker();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        System.out.println("🔄 HistorialDonaciones onResume - Reactivando vista");
+
+        // NUEVO: Forzar verificación inmediata de mensajes no leídos
+        verificarTodosLosMensajesNoLeidos();
+
         if (usuarioActual != null) {
             loadChatsDelUsuario();
         }
@@ -107,6 +128,29 @@ public class HistorialDonaciones extends AppCompatActivity implements
         if (bottomNavigation != null) {
             bottomNavigation.setSelectedItemId(R.id.nav_historial);
         }
+
+        // NUEVO: Reactivar actualización automática
+        startAggressiveAutoRefresh();
+        startMensajesNoLeidosChecker(); // Asegurar que el checker esté activo
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // NUEVO: Detener actualización automática
+        stopAutoRefresh();
+        // NUEVO: Detener verificación de mensajes no leídos
+        stopMensajesNoLeidosChecker();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "🔚 HistorialDonaciones onDestroy");
+        // NUEVO: Detener actualización automática
+        stopAutoRefresh();
+        // NUEVO: Detener verificación de mensajes no leídos
+        stopMensajesNoLeidosChecker();
     }
 
     private void initializeViews() {
@@ -142,6 +186,18 @@ public class HistorialDonaciones extends AppCompatActivity implements
         });
         recyclerViewHistorial.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewHistorial.setAdapter(historialAdapter);
+
+        // NUEVO: Forzar la medición y layout inmediatamente
+        recyclerViewHistorial.post(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("🎯 HISTORIAL: FORZANDO PRIMERA ACTUALIZACIÓN DEL RECYCLERVIEW");
+                if (historialAdapter != null) {
+                    historialAdapter.notifyDataSetChanged();
+                    forceImmediateRedraw();
+                }
+            }
+        });
     }
 
     private void setupClickListeners() {
@@ -199,6 +255,101 @@ public class HistorialDonaciones extends AppCompatActivity implements
         bottomNavigation.setSelectedItemId(R.id.nav_historial);
     }
 
+    // NUEVO MÉTODO: Actualización automática agresiva
+    private void startAggressiveAutoRefresh() {
+        autoRefreshHandler = new Handler();
+        autoRefreshRunnable = new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("💥 HISTORIAL: ACTUALIZACIÓN AUTOMÁTICA FORZADA");
+                forceImmediateRedraw();
+                autoRefreshHandler.postDelayed(this, AUTO_REFRESH_INTERVAL);
+            }
+        };
+        // Iniciar inmediatamente y repetir cada 0.5 segundos
+        autoRefreshHandler.post(autoRefreshRunnable);
+    }
+
+    // NUEVO MÉTODO: Forzar redibujado inmediato
+    private void forceImmediateRedraw() {
+        if (historialAdapter != null) {
+            // Método 1: Notificar cambio completo
+            historialAdapter.notifyDataSetChanged();
+
+            // Método 2: Invalidar el RecyclerView
+            recyclerViewHistorial.invalidate();
+
+            // Método 3: Forzar re-draw
+            recyclerViewHistorial.post(new Runnable() {
+                @Override
+                public void run() {
+                    recyclerViewHistorial.requestLayout();
+                }
+            });
+
+            System.out.println("🎯 HISTORIAL: Vistas forzadas a redibujarse");
+        }
+    }
+
+    // NUEVO MÉTODO: Detener actualización automática
+    private void stopAutoRefresh() {
+        if (autoRefreshHandler != null && autoRefreshRunnable != null) {
+            autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
+            System.out.println("⏹️ HISTORIAL: Auto-refresh detenido");
+        }
+    }
+
+    // NUEVO MÉTODO: Iniciar verificación periódica de mensajes no leídos
+    private void startMensajesNoLeidosChecker() {
+        if (mensajesNoLeidosHandler != null) {
+            mensajesNoLeidosHandler.removeCallbacks(mensajesNoLeidosRunnable);
+        }
+
+        mensajesNoLeidosHandler = new Handler();
+        mensajesNoLeidosRunnable = new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("🔍 HISTORIAL: Verificando mensajes no leídos...");
+                verificarTodosLosMensajesNoLeidos();
+                mensajesNoLeidosHandler.postDelayed(this, MENSAJES_CHECK_INTERVAL);
+            }
+        };
+        mensajesNoLeidosHandler.postDelayed(mensajesNoLeidosRunnable, MENSAJES_CHECK_INTERVAL);
+    }
+
+    // NUEVO MÉTODO: Detener verificación de mensajes no leídos
+    private void stopMensajesNoLeidosChecker() {
+        if (mensajesNoLeidosHandler != null && mensajesNoLeidosRunnable != null) {
+            mensajesNoLeidosHandler.removeCallbacks(mensajesNoLeidosRunnable);
+            System.out.println("⏹️ HISTORIAL: Checker de mensajes no leídos detenido");
+        }
+    }
+
+    // NUEVO MÉTODO: Verificar TODOS los mensajes no leídos de forma eficiente
+    private void verificarTodosLosMensajesNoLeidos() {
+        if (usuarioActual == null || chatsDelUsuario.isEmpty()) {
+            return;
+        }
+
+        System.out.println("🔍 Verificando mensajes no leídos para " + chatsDelUsuario.size() + " chats");
+
+        for (Chat chat : chatsDelUsuario) {
+            verificarMensajesNoLeidosEnChat(chat, false); // false = no forzar update UI inmediato
+        }
+
+        // Actualizar UI una sola vez después de verificar todos los chats
+        actualizarUIconMensajesNoLeidos();
+    }
+
+    // NUEVO MÉTODO: Forzar verificación manual de mensajes no leídos
+    public void forzarVerificacionMensajesNoLeidos() {
+        System.out.println("🔄 FORZANDO verificación de mensajes no leídos");
+        if (usuarioActual != null && !chatsDelUsuario.isEmpty()) {
+            cargarMensajesNoLeidos();
+        } else {
+            System.out.println("⚠️ No se puede forzar verificación: usuario null o sin chats");
+        }
+    }
 
     /**
      * Cargar los chats del usuario para el filtro de donante
@@ -416,11 +567,10 @@ public class HistorialDonaciones extends AppCompatActivity implements
     /**
      * Aplica los filtros actuales a la lista de solicitudes
      */
-    /**
-     * Aplica los filtros actuales a la lista de solicitudes
-     */
     private void aplicarFiltros() {
-        solicitudList.clear();
+        Log.d(TAG, "🔍 Aplicando filtros - Estado: " + currentEstado + ", Rol: " + currentRol);
+
+        List<SolicitudDonacion> solicitudesFiltradas = new ArrayList<>();
 
         for (SolicitudDonacion solicitud : todasLasSolicitudes) {
             boolean cumpleEstado = true;
@@ -437,34 +587,31 @@ public class HistorialDonaciones extends AppCompatActivity implements
                     // El usuario actual es el creador de la solicitud
                     cumpleRol = solicitud.getUsuarioid() == usuarioActual.getUsuarioid();
                 } else if ("donante".equals(currentRol)) {
-                    // CORRECCIÓN: El usuario actual es DONANTE en esta solicitud:
-                    // - NO es el creador de la solicitud
-                    // - Y tiene un chat donde usuario1id = usuarioActual.getUsuarioid() (él inició el chat como donante)
                     boolean esCreador = solicitud.getUsuarioid() == usuarioActual.getUsuarioid();
                     boolean esDonanteEnChat = esDonanteEnSolicitud(solicitud.getSolicitudid());
                     cumpleRol = !esCreador && esDonanteEnChat;
-
-                    if (cumpleRol) {
-                        Log.d(TAG, "🎯 Solicitud de donante encontrada: ID " + solicitud.getSolicitudid() +
-                                " - Creada por: " + solicitud.getUsuarioid() + ", Yo: " + usuarioActual.getUsuarioid());
-                    }
                 }
             }
 
             if (cumpleEstado && cumpleRol) {
-                solicitudList.add(solicitud);
+                solicitudesFiltradas.add(solicitud);
             }
         }
 
-        Log.d(TAG, "🔍 Filtros aplicados - Estado: " + currentEstado + ", Rol: " + currentRol);
-        Log.d(TAG, "📊 Resultado: " + solicitudList.size() + " de " + todasLasSolicitudes.size() + " solicitudes");
+        Log.d(TAG, "📊 Resultado filtro: " + solicitudesFiltradas.size() + " de " + todasLasSolicitudes.size() + " solicitudes");
 
-        // NUEVO: Actualizar el adapter con la información de chats y mensajes no leídos
+        // ✅ USAR EL NUEVO MÉTODO SEGURO
         if (historialAdapter != null) {
+            historialAdapter.actualizarListaSolicitudes(solicitudesFiltradas);
             historialAdapter.actualizarInfoChats(chatsDelUsuario, mensajesNoLeidosPorSolicitud);
+
+            // NUEVO: Forzar actualización inmediata después de aplicar filtros
+            forceImmediateRedraw();
+
+        } else {
+            Log.e(TAG, "❌ historialAdapter es null");
         }
 
-        historialAdapter.notifyDataSetChanged();
         updateUIState();
         mostrarIndicadorFiltros();
     }
@@ -612,22 +759,33 @@ public class HistorialDonaciones extends AppCompatActivity implements
     private void cargarMensajesNoLeidos() {
         if (usuarioActual == null) return;
 
+        System.out.println("🔄 Cargando mensajes no leídos para " + chatsDelUsuario.size() + " chats");
+
         // Limpiar mapa anterior
         mensajesNoLeidosPorSolicitud.clear();
 
         // Para cada chat del usuario, verificar si hay mensajes no leídos
         for (Chat chat : chatsDelUsuario) {
-            verificarMensajesNoLeidosEnChat(chat);
+            verificarMensajesNoLeidosEnChat(chat, false);
         }
+
+        // Programar actualización UI después de un breve delay para permitir que todas las llamadas se completen
+        new Handler().postDelayed(() -> {
+            actualizarUIconMensajesNoLeidos();
+        }, 1000);
     }
 
-    private void verificarMensajesNoLeidosEnChat(Chat chat) {
+    // MÉTODO MODIFICADO: Verificar mensajes no leídos en un chat específico
+    private void verificarMensajesNoLeidosEnChat(Chat chat, boolean updateUIInmediato) {
+        if (chat == null) return;
+
         ApiService.getMensajesByChat(chat.getChatid(), new ApiService.ListCallback<Mensaje>() {
             @Override
             public void onSuccess(List<Mensaje> mensajes) {
                 runOnUiThread(() -> {
                     if (mensajes != null) {
                         boolean tieneMensajesNoLeidos = false;
+                        int contadorNoLeidos = 0;
 
                         for (Mensaje mensaje : mensajes) {
                             // Un mensaje no leído es aquel que:
@@ -635,16 +793,23 @@ public class HistorialDonaciones extends AppCompatActivity implements
                             // 2. No fue enviado por el usuario actual
                             if (!mensaje.isLeido() && mensaje.getEmisorioid() != usuarioActual.getUsuarioid()) {
                                 tieneMensajesNoLeidos = true;
-                                break;
+                                contadorNoLeidos++;
+                                // No break, queremos contar todos
                             }
                         }
 
                         // Actualizar el mapa
                         mensajesNoLeidosPorSolicitud.put(chat.getSolicitudid(), tieneMensajesNoLeidos);
 
-                        // Notificar al adapter
-                        if (historialAdapter != null) {
-                            historialAdapter.actualizarInfoChats(chatsDelUsuario, mensajesNoLeidosPorSolicitud);
+                        // Log para debugging
+                        if (tieneMensajesNoLeidos) {
+                            System.out.println("💬 Chat " + chat.getChatid() + " (Solicitud " +
+                                    chat.getSolicitudid() + ") tiene " + contadorNoLeidos + " mensajes no leídos");
+                        }
+
+                        // Actualizar UI si se solicita
+                        if (updateUIInmediato) {
+                            actualizarUIconMensajesNoLeidos();
                         }
                     }
                 });
@@ -653,8 +818,33 @@ public class HistorialDonaciones extends AppCompatActivity implements
             @Override
             public void onError(String error) {
                 Log.e(TAG, "❌ Error cargando mensajes para chat " + chat.getChatid() + ": " + error);
+                // En caso de error, asumir que no hay mensajes no leídos para evitar falsos positivos
+                runOnUiThread(() -> {
+                    mensajesNoLeidosPorSolicitud.put(chat.getSolicitudid(), false);
+                    if (updateUIInmediato) {
+                        actualizarUIconMensajesNoLeidos();
+                    }
+                });
             }
         });
+    }
+
+    // NUEVO MÉTODO: Actualizar UI con la información de mensajes no leídos
+    private void actualizarUIconMensajesNoLeidos() {
+        if (historialAdapter != null) {
+            historialAdapter.actualizarInfoChats(chatsDelUsuario, mensajesNoLeidosPorSolicitud);
+
+            // Forzar redibujado inmediato
+            forceImmediateRedraw();
+
+            // Log del estado actual
+            int totalConMensajesNoLeidos = 0;
+            for (Boolean tieneMensajes : mensajesNoLeidosPorSolicitud.values()) {
+                if (tieneMensajes) totalConMensajesNoLeidos++;
+            }
+            System.out.println("📊 Estado mensajes no leídos: " + totalConMensajesNoLeidos +
+                    " de " + mensajesNoLeidosPorSolicitud.size() + " solicitudes tienen mensajes nuevos");
+        }
     }
 
     private void completarDelHistorial(SolicitudDonacion solicitud, int position) {
@@ -697,10 +887,13 @@ public class HistorialDonaciones extends AppCompatActivity implements
     }
 
     private void updateUIState() {
+        // ✅ CORREGIDO: Verificar la lista local que sí contiene las solicitudes
         if (solicitudList.isEmpty()) {
             showEmptyState();
+            Log.d(TAG, "📭 Mostrando estado vacío - No hay solicitudes que coincidan con los filtros");
         } else {
             showDonationList();
+            Log.d(TAG, "📋 Mostrando lista con " + solicitudList.size() + " solicitudes");
         }
     }
 

@@ -6,14 +6,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -58,7 +55,6 @@ public class Mensajeria extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.desing_mensajeria);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -67,11 +63,13 @@ public class Mensajeria extends AppCompatActivity {
             return insets;
         });
 
-        // Obtener parámetros del intent
+        // Obtener parámetros del intent - MEJORADO
         Intent intent = getIntent();
         if (intent != null) {
             filterBySolicitud = intent.getBooleanExtra("filter_by_solicitud", false);
             filteredSolicitudId = intent.getIntExtra("solicitud_id", -1);
+
+            System.out.println("🎯 Mensajeria - Filtro: " + filterBySolicitud + ", Solicitud ID: " + filteredSolicitudId);
         }
 
         usuarioActual = SharedPreferencesManager.getCurrentUser(this);
@@ -163,6 +161,25 @@ public class Mensajeria extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        System.out.println("🔄 onNewIntent llamado");
+
+        // Actualizar con el nuevo Intent
+        setIntent(intent);
+
+        // Re-obtener parámetros
+        filterBySolicitud = intent.getBooleanExtra("filter_by_solicitud", false);
+        filteredSolicitudId = intent.getIntExtra("solicitud_id", -1);
+
+        System.out.println("🔄 Nuevos parámetros - Filtro: " + filterBySolicitud + ", Solicitud ID: " + filteredSolicitudId);
+
+        // Actualizar UI
+        updateTitle();
+        loadChats();
+    }
+
     // Método auxiliar para obtener el nombre del rol
     private String obtenerRol(int rolId) {
         switch (rolId) {
@@ -225,7 +242,9 @@ public class Mensajeria extends AppCompatActivity {
             return;
         }
 
-        System.out.println("🔄 Cargando chats para usuario: " + usuarioActual.getUsuarioid());
+        System.out.println("🔄 Cargando chats para usuario: " + usuarioActual.getUsuarioid() +
+                ", Filtro activo: " + filterBySolicitud +
+                ", Solicitud ID: " + filteredSolicitudId);
 
         ApiService.getChatsByUsuario(usuarioActual.getUsuarioid(), new ApiService.ListCallback<Chat>() {
             @Override
@@ -243,8 +262,8 @@ public class Mensajeria extends AppCompatActivity {
                                     filteredChats.add(chat);
                                 }
                             }
-                            System.out.println("🔍 Filtrado: " + filteredChats.size() + " chats para solicitud " + filteredSolicitudId);
-                            // ELIMINAR la llamada a bloquearMensajeria() de aquí
+                            System.out.println("🔍 Filtrado: " + filteredChats.size() +
+                                    " chats para solicitud " + filteredSolicitudId);
                         }
 
                         chatsAdapter.actualizarChats(filteredChats);
@@ -269,13 +288,34 @@ public class Mensajeria extends AppCompatActivity {
 
 
     // NUEVO MÉTODO: Actualizar título según el contexto
+    // NUEVO MÉTODO: Actualizar título según el contexto - MEJORADO
     private void updateTitle() {
         TextView textTitle = findViewById(R.id.text_title_mensajeria);
-        if (filterBySolicitud) {
+        ImageView btnBack = findViewById(R.id.btn_back);
+
+        if (filterBySolicitud && filteredSolicitudId != -1) {
             textTitle.setText("Chats de Solicitud");
+            // Configurar el botón back para ir a HistorialDonaciones
+            btnBack.setOnClickListener(v -> {
+                Intent intent = new Intent(Mensajeria.this, HistorialDonaciones.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+                finish();
+            });
         } else {
             textTitle.setText("Mensajería");
+            // Configurar el botón back normal
+            btnBack.setOnClickListener(v -> {
+                Intent intent = new Intent(Mensajeria.this, HistorialDonaciones.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+                finish();
+            });
         }
+
+        System.out.println("🏷️ Título actualizado: " + textTitle.getText() +
+                ", Filtro: " + filterBySolicitud +
+                ", Solicitud ID: " + filteredSolicitudId);
     }
 
     // NUEVO MÉTODO: Actualizar solo los mensajes de los chats existentes
@@ -416,9 +456,6 @@ public class Mensajeria extends AppCompatActivity {
 
     public void back(View view) {
         Intent intent = new Intent(Mensajeria.this, HistorialDonaciones.class);
-
-
-
         startActivity(intent);
         finish();
     }

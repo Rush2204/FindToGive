@@ -24,6 +24,11 @@ public class SharedPreferencesManager {
         editor.apply();
     }
 
+    // NUEVO: Método alias para mantener compatibilidad
+    public static void saveCurrentUser(Context context, Usuario usuario) {
+        saveUser(context, usuario);
+    }
+
     public static Usuario getCurrentUser(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         String userJson = prefs.getString(KEY_USER_DATA, null);

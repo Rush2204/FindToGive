@@ -54,9 +54,9 @@ public class HistorialFiltroDialog extends Dialog {
         // Configurar spinner de estado - MODIFICADO: Texto más descriptivo
         String[] estados = {
                 "Todas las solicitudes",
-                "Solo activas (predeterminado) ✓",  // MODIFICADO: Agregar indicador
-                "Solo completadas (solo lectura)",
-                "Solo canceladas (solo lectura)"
+                "Solo activas",  // MODIFICADO: Agregar indicador
+                "Solo completadas",
+                "Solo canceladas"
         };
 
         ArrayAdapter<String> estadoAdapter = new ArrayAdapter<>(
@@ -70,8 +70,8 @@ public class HistorialFiltroDialog extends Dialog {
         // Configurar spinner de rol (sin cambios)
         String[] roles = {
                 "Todos los roles",
-                "Como receptor (mis solicitudes creadas)",
-                "Como donante (chats que inicié)"
+                "Solicitudes creadas",
+                "Solicitudes iniciadas"
         };
 
         ArrayAdapter<String> rolAdapter = new ArrayAdapter<>(

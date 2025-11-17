@@ -12,4 +12,9 @@
     <color name="light_gray">#B2B2B4</color>
     <color name="colorPrimary">#2196F3</color>
     <color name="gray">#666666</color>
+
+        <!-- ... tus colores existentes ... -->
+    <color name="blue_600">#2563EB</color>
+    <color name="gray_500">#6B7280</color>
+
 </resources>
