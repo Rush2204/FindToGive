@@ -14,7 +14,7 @@
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:layout_marginEnd="8dp"
-        android:contentDescription="Foto de perfil"
+        android:contentDescription="@string/foto_de_perfil_chat"
         tools:src="@drawable/logo_findtogive" />
 
     <!-- Bubble de mensaje recibido -->

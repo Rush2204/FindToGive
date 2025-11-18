@@ -3,16 +3,16 @@ package sv.edu.catolica.findtogive.ConfiguracionFuncionalidad;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 
 public class NotificationBroadcastReceiver extends BroadcastReceiver {
-    private static final String TAG = "NotificationReceiver";
 
+    /**
+     * Se ejecuta cuando se recibe un broadcast.
+     * Inicia el servicio de notificaciones de chat, usando startForegroundService
+     * para versiones de Android Oreo (API 26) y superiores, o startService para versiones anteriores.
+     */
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.d(TAG, "Broadcast recibido, iniciando servicio de notificaciones");
-
-        // Iniciar el servicio de notificaciones
         Intent serviceIntent = new Intent(context, ChatNotificationService.class);
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {

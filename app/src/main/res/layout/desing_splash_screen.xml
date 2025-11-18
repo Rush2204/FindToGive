@@ -11,7 +11,7 @@
         android:id="@+id/img_logo"
         android:layout_width="250dp"
         android:layout_height="250dp"
-        android:contentDescription="logo_de_findtogive"
+        android:contentDescription="@string/logo_de_findtogive"
         android:src="@drawable/ico_logo_findtogive"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

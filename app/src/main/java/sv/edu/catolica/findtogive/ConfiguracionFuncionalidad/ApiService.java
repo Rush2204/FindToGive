@@ -36,11 +36,15 @@ public class ApiService {
         void onError(String error);
     }
 
-    // ========== USUARIO - LOGIN MODIFICADO ==========
+    /**
+     * Autentica un usuario con email y contraseña
+     * @param email Email del usuario
+     * @param password Contraseña del usuario
+     * @param callback Callback para manejar el resultado
+     */
     public static void loginUser(String email, String password, ApiCallback<Usuario> callback) {
         CompletableFuture.runAsync(() -> {
             try {
-                // Primero obtener el usuario por email
                 String url = SupabaseClient.URLs.usuario() + "?email=eq." + email + "&activo=eq.true&limit=1";
 
                 Request request = new Request.Builder()
@@ -52,7 +56,6 @@ public class ApiService {
                 try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
                     if (response.isSuccessful() && response.body() != null) {
                         String json = response.body().string();
-                        System.out.println("🔍 Response login: " + json);
 
                         Type listType = new TypeToken<List<Usuario>>(){}.getType();
                         List<Usuario> usuarios = gson.fromJson(json, listType);
@@ -61,12 +64,9 @@ public class ApiService {
                             Usuario usuario = usuarios.get(0);
                             String storedHash = usuario.getContrasena();
 
-                            // Verificar la contraseña con BCrypt
                             if (SecurityHelper.verifyPassword(password, storedHash)) {
-                                // Contraseña correcta
                                 callback.onSuccess(usuario);
                             } else {
-                                // Contraseña incorrecta
                                 callback.onError("Credenciales inválidas");
                             }
                         } else {
@@ -74,39 +74,37 @@ public class ApiService {
                         }
                     } else {
                         String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                        System.out.println("❌ Error en login: " + response.code() + " - " + errorBody);
                         callback.onError("Error: " + response.code());
                     }
                 }
 
             } catch (Exception e) {
-                System.out.println("❌ Exception en loginUser: " + e.getMessage());
                 callback.onError("Error: " + e.getMessage());
             }
         });
     }
 
-    // ========== USUARIO - REGISTRO MODIFICADO ==========
+    /**
+     * Registra un nuevo usuario en el sistema
+     * @param usuario Objeto usuario con los datos del registro
+     * @param callback Callback para manejar el resultado
+     */
     public static void registerUser(Usuario usuario, ApiCallback<Usuario> callback) {
         CompletableFuture.runAsync(() -> {
             try {
-                // Hashear la contraseña antes de enviar
                 String hashedPassword = SecurityHelper.hashPassword(usuario.getContrasena());
 
-                // Crear JSON manualmente excluyendo usuarioid
                 String json = "{" +
                         "\"nombre\":\"" + usuario.getNombre() + "\"," +
                         "\"apellido\":\"" + usuario.getApellido() + "\"," +
                         "\"email\":\"" + usuario.getEmail() + "\"," +
-                        "\"contrasena\":\"" + hashedPassword + "\"," + // ← Usar contraseña hasheada
+                        "\"contrasena\":\"" + hashedPassword + "\"," +
                         "\"edad\":" + usuario.getEdad() + "," +
                         "\"telefono\":\"" + usuario.getTelefono() + "\"," +
                         "\"rolid\":" + usuario.getRolid() + "," +
                         "\"tiposangreid\":" + usuario.getTiposangreid() + "," +
                         "\"activo\":true" +
                         "}";
-
-                System.out.println("📤 JSON a enviar: " + json);
 
                 RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
 
@@ -119,21 +117,13 @@ public class ApiService {
                         .addHeader("Prefer", "return=minimal")
                         .build();
 
-                // Ejecutar INSERT
                 try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
                     if (response.isSuccessful()) {
-                        System.out.println("✅ INSERT exitoso, código: " + response.code());
-
-                        // Pequeño delay para asegurar consistencia
                         Thread.sleep(1000);
-
-                        // Buscar el usuario recién creado por email
                         buscarUsuarioRecienCreado(usuario.getEmail(), callback);
-
                     } else {
                         String errorBody = response.body() != null ?
                                 response.body().string() : "Sin detalles";
-                        System.out.println("❌ Error en INSERT: " + response.code() + " - " + errorBody);
 
                         if (response.code() == 409) {
                             callback.onError("El email ya está registrado");
@@ -146,16 +136,18 @@ public class ApiService {
                 }
 
             } catch (Exception e) {
-                System.out.println("❌ Exception en registerUser: " + e.getMessage());
                 callback.onError("Error: " + e.getMessage());
             }
         });
     }
 
-    // ========== MÉTODO AUXILIAR (sin cambios) ==========
+    /**
+     * Busca un usuario recién creado por email
+     * @param email Email del usuario a buscar
+     * @param callback Callback para manejar el resultado
+     */
     private static void buscarUsuarioRecienCreado(String email, ApiCallback<Usuario> callback) {
         try {
-            // Pequeño delay para asegurar que el INSERT se complete
             Thread.sleep(500);
 
             String url = SupabaseClient.URLs.usuario() + "?email=eq." + email + "&limit=1";
@@ -169,42 +161,37 @@ public class ApiService {
             try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
                 if (response.isSuccessful() && response.body() != null) {
                     String json = response.body().string();
-                    System.out.println("🔍 Response buscar usuario: " + json);
 
                     Type listType = new TypeToken<List<Usuario>>(){}.getType();
                     List<Usuario> usuarios = gson.fromJson(json, listType);
 
                     if (usuarios != null && !usuarios.isEmpty()) {
                         Usuario usuario = usuarios.get(0);
-                        System.out.println("✅ Usuario encontrado - ID: " + usuario.getUsuarioid());
                         callback.onSuccess(usuario);
                     } else {
                         callback.onError("Usuario creado pero no encontrado en la base de datos");
                     }
                 } else {
                     String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                    System.out.println("❌ Error al buscar usuario: " + response.code() + " - " + errorBody);
                     callback.onError("Error al obtener datos del usuario: " + response.code());
                 }
             }
         } catch (Exception e) {
-            System.out.println("❌ Exception en buscarUsuarioRecienCreado: " + e.getMessage());
             callback.onError("Error: " + e.getMessage());
         }
     }
 
-    // ========== EL RESTO DE LOS MÉTODOS PERMANECEN IGUAL ==========
-
-    // ========== SOLICITUDES - ACTUALIZACIÓN ==========
+    /**
+     * Actualiza una solicitud de donación existente
+     * @param solicitud Solicitud con los datos actualizados
+     * @param callback Callback para manejar el resultado
+     */
     public static void updateSolicitud(SolicitudDonacion solicitud, ApiCallback<SolicitudDonacion> callback) {
         CompletableFuture.runAsync(() -> {
             try {
-                // Crear JSON solo con los campos que queremos actualizar
                 String json = "{" +
                         "\"imagen_url\":\"" + (solicitud.getImagenUrl() != null ? solicitud.getImagenUrl() : "") + "\"" +
                         "}";
-
-                System.out.println("📤 JSON Update Solicitud: " + json);
 
                 RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
 
@@ -222,7 +209,6 @@ public class ApiService {
                 try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
                     if (response.isSuccessful() && response.body() != null) {
                         String responseBody = response.body().string();
-                        System.out.println("✅ UPDATE solicitud exitoso: " + responseBody);
 
                         Type listType = new TypeToken<List<SolicitudDonacion>>(){}.getType();
                         List<SolicitudDonacion> solicitudesActualizadas = gson.fromJson(responseBody, listType);
@@ -230,41 +216,51 @@ public class ApiService {
                         if (solicitudesActualizadas != null && !solicitudesActualizadas.isEmpty()) {
                             callback.onSuccess(solicitudesActualizadas.get(0));
                         } else {
-                            callback.onSuccess(solicitud); // Retornar la solicitud original si no hay respuesta
+                            callback.onSuccess(solicitud);
                         }
                     } else {
                         String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                        System.out.println("❌ Error en UPDATE solicitud: " + response.code() + " - " + errorBody);
                         callback.onError("Error al actualizar solicitud: " + response.code());
                     }
                 }
 
             } catch (Exception e) {
-                System.out.println("❌ Exception en updateSolicitud: " + e.getMessage());
                 callback.onError("Error: " + e.getMessage());
             }
         });
     }
 
-    // ========== SOLICITUD POR ID ==========
+    /**
+     * Obtiene una solicitud por su ID
+     * @param solicitudId ID de la solicitud
+     * @param callback Callback para manejar el resultado
+     */
     public static void getSolicitudById(int solicitudId, ApiCallback<SolicitudDonacion> callback) {
         String url = SupabaseClient.URLs.solicitudDonacion() + "?solicitudid=eq." + solicitudId + "&limit=1";
         getSingle(url, new TypeToken<List<SolicitudDonacion>>(){}.getType(), callback);
     }
 
-    // ========== USUARIOS - MÉTODOS ADICIONALES ==========
+    /**
+     * Obtiene un usuario por su ID
+     * @param usuarioId ID del usuario
+     * @param callback Callback para manejar el resultado
+     */
     public static void getUsuarioById(int usuarioId, ApiCallback<Usuario> callback) {
         String url = SupabaseClient.URLs.usuario() + "?usuarioid=eq." + usuarioId + "&limit=1";
         getSingle(url, new TypeToken<List<Usuario>>(){}.getType(), callback);
     }
 
+    /**
+     * Obtiene múltiples usuarios por sus IDs
+     * @param usuarioIds Lista de IDs de usuarios
+     * @param callback Callback para manejar el resultado
+     */
     public static void getUsuariosByIds(List<Integer> usuarioIds, ListCallback<Usuario> callback) {
         if (usuarioIds == null || usuarioIds.isEmpty()) {
             callback.onSuccess(new ArrayList<>());
             return;
         }
 
-        // Crear filtro para múltiples IDs: usuarioid=in.(1,2,3)
         String idsParam = usuarioIds.stream()
                 .map(String::valueOf)
                 .collect(Collectors.joining(","));
@@ -273,12 +269,15 @@ public class ApiService {
         getList(url, new TypeToken<List<Usuario>>(){}.getType(), callback);
     }
 
+    /**
+     * Actualiza los datos de un usuario
+     * @param usuario Usuario con los datos actualizados
+     * @param callback Callback para manejar el resultado
+     */
     public static void updateUser(Usuario usuario, ApiCallback<Usuario> callback) {
         CompletableFuture.runAsync(() -> {
             try {
-                // Usar el nuevo método toJsonForUpdate
                 String json = usuario.toJsonForUpdate();
-                System.out.println("📤 JSON Update Usuario: " + json);
 
                 RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
 
@@ -296,7 +295,6 @@ public class ApiService {
                 try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
                     if (response.isSuccessful() && response.body() != null) {
                         String responseBody = response.body().string();
-                        System.out.println("✅ UPDATE usuario exitoso: " + responseBody);
 
                         Type listType = new TypeToken<List<Usuario>>(){}.getType();
                         List<Usuario> usuariosActualizados = gson.fromJson(responseBody, listType);
@@ -304,50 +302,50 @@ public class ApiService {
                         if (usuariosActualizados != null && !usuariosActualizados.isEmpty()) {
                             callback.onSuccess(usuariosActualizados.get(0));
                         } else {
-                            callback.onSuccess(usuario); // Retornar el usuario original si no hay respuesta
+                            callback.onSuccess(usuario);
                         }
                     } else {
                         String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                        System.out.println("❌ Error en UPDATE usuario: " + response.code() + " - " + errorBody);
                         callback.onError("Error al actualizar usuario: " + response.code());
                     }
                 }
 
             } catch (Exception e) {
-                System.out.println("❌ Exception en updateUser: " + e.getMessage());
                 callback.onError("Error: " + e.getMessage());
             }
         });
     }
 
-    // ========== SOLICITUDES ==========
+    /**
+     * Obtiene todas las solicitudes activas
+     * @param callback Callback para manejar el resultado
+     */
     public static void getSolicitudesActivas(ListCallback<SolicitudDonacion> callback) {
         String url = SupabaseClient.URLs.solicitudDonacion() + "?estado=eq.activa&order=fecha_publicacion.desc";
         getList(url, new TypeToken<List<SolicitudDonacion>>(){}.getType(), callback);
     }
 
-    // ========== SOLICITUDES ==========
+    /**
+     * Crea una nueva solicitud de donación
+     * @param solicitud Solicitud a crear
+     * @param callback Callback para manejar el resultado
+     */
     public static void createSolicitud(SolicitudDonacion solicitud, ApiCallback<SolicitudDonacion> callback) {
         CompletableFuture.runAsync(() -> {
             try {
-                // Obtener fecha actual en formato correcto
                 java.time.format.DateTimeFormatter formatter =
                         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
                 String fechaActual = java.time.LocalDateTime.now().format(formatter);
 
-                // Crear JSON incluyendo la fecha
-                // En el método createSolicitud, modifica el JSON:
                 String json = "{" +
                         "\"usuarioid\":" + solicitud.getUsuarioid() + "," +
                         "\"titulo\":\"" + solicitud.getTitulo() + "\"," +
                         "\"descripcion\":\"" + solicitud.getDescripcion() + "\"," +
                         "\"tiposangreid\":" + solicitud.getTiposangreid() + "," +
-                        "\"hospitalid\":" + solicitud.getHospitalid() + "," + // ← CAMBIO AQUÍ
+                        "\"hospitalid\":" + solicitud.getHospitalid() + "," +
                         "\"fecha_publicacion\":\"" + fechaActual + "\"," +
                         "\"estado\":\"activa\"" +
                         "}";
-
-                System.out.println("📤 JSON Solicitud: " + json);
 
                 RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
 
@@ -360,62 +358,65 @@ public class ApiService {
                         .addHeader("Prefer", "return=representation")
                         .build();
 
-                // Ejecutar INSERT
                 try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
                     if (response.isSuccessful() && response.body() != null) {
                         String responseBody = response.body().string();
-                        System.out.println("✅ INSERT solicitud exitoso: " + responseBody);
 
-                        // Parsear la respuesta para obtener la solicitud creada con ID
                         Type listType = new TypeToken<List<SolicitudDonacion>>(){}.getType();
                         List<SolicitudDonacion> solicitudesCreadas = gson.fromJson(responseBody, listType);
 
                         if (solicitudesCreadas != null && !solicitudesCreadas.isEmpty()) {
                             SolicitudDonacion solicitudCreada = solicitudesCreadas.get(0);
-                            System.out.println("✅ Solicitud creada con ID: " + solicitudCreada.getSolicitudid());
                             callback.onSuccess(solicitudCreada);
                         } else {
-                            // Si no retorna datos, buscar la última solicitud del usuario
                             buscarSolicitudRecienCreada(solicitud.getUsuarioid(), callback);
                         }
                     } else {
                         String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                        System.out.println("❌ Error en INSERT solicitud: " + response.code() + " - " + errorBody);
                         callback.onError("Error al crear solicitud: " + response.code());
                     }
                 }
 
             } catch (Exception e) {
-                System.out.println("❌ Exception en createSolicitud: " + e.getMessage());
                 callback.onError("Error: " + e.getMessage());
             }
         });
     }
 
-    // ========== HOSPITALES ==========
+    /**
+     * Obtiene la lista de hospitales
+     * @param callback Callback para manejar el resultado
+     */
     public static void getHospitales(ListCallback<HospitalUbicacion> callback) {
         String url = SupabaseClient.URLs.hospitalUbicacion();
         getList(url, new TypeToken<List<HospitalUbicacion>>(){}.getType(), callback);
     }
 
+    /**
+     * Obtiene un hospital por su ID
+     * @param hospitalId ID del hospital
+     * @param callback Callback para manejar el resultado
+     */
     public static void getHospitalById(int hospitalId, ApiCallback<HospitalUbicacion> callback) {
         String url = SupabaseClient.URLs.hospitalUbicacion() + "?hospitalid=eq." + hospitalId + "&limit=1";
         getSingle(url, new TypeToken<List<HospitalUbicacion>>(){}.getType(), callback);
     }
 
-    // ========== MÉTODOS DE BÚSQUEDA Y FILTRADO ==========
+    /**
+     * Busca solicitudes por query y tipo de sangre
+     * @param query Texto de búsqueda
+     * @param tipoSangreId ID del tipo de sangre
+     * @param callback Callback para manejar el resultado
+     */
     public static void buscarSolicitudes(String query, Integer tipoSangreId, ListCallback<SolicitudDonacion> callback) {
         CompletableFuture.runAsync(() -> {
             try {
-                // Construir URL base
                 StringBuilder urlBuilder = new StringBuilder(SupabaseClient.URLs.solicitudDonacion());
                 urlBuilder.append("?estado=eq.activa");
 
-                // Agregar filtros
                 List<String> filters = new ArrayList<>();
 
                 if (query != null && !query.trim().isEmpty()) {
-                    // Usar ilike para búsqueda case-insensitive
                     filters.add("titulo=ilike.%25" + query.trim() + "%25");
                 }
 
@@ -423,34 +424,36 @@ public class ApiService {
                     filters.add("tiposangreid=eq." + tipoSangreId);
                 }
 
-                // Combinar filtros
                 if (!filters.isEmpty()) {
                     urlBuilder.append("&").append(String.join("&", filters));
                 }
 
-                // Ordenar por fecha de publicación
                 urlBuilder.append("&order=fecha_publicacion.desc");
 
                 String finalUrl = urlBuilder.toString();
-                System.out.println("🔍 URL de búsqueda: " + finalUrl);
-
                 getList(finalUrl, new TypeToken<List<SolicitudDonacion>>(){}.getType(), callback);
 
             } catch (Exception e) {
-                System.out.println("❌ Error en buscarSolicitudes: " + e.getMessage());
                 callback.onError("Error en búsqueda: " + e.getMessage());
             }
         });
     }
 
-    // Método para obtener todas las solicitudes sin filtros (reset)
+    /**
+     * Obtiene todas las solicitudes sin filtros
+     * @param callback Callback para manejar el resultado
+     */
     public static void getSolicitudesSinFiltros(ListCallback<SolicitudDonacion> callback) {
         getSolicitudesActivas(callback);
     }
 
+    /**
+     * Busca una solicitud recién creada por usuario
+     * @param usuarioId ID del usuario
+     * @param callback Callback para manejar el resultado
+     */
     private static void buscarSolicitudRecienCreada(int usuarioId, ApiCallback<SolicitudDonacion> callback) {
         try {
-            // Pequeño delay para asegurar consistencia
             Thread.sleep(1000);
 
             String url = SupabaseClient.URLs.solicitudDonacion() +
@@ -466,35 +469,34 @@ public class ApiService {
             try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
                 if (response.isSuccessful() && response.body() != null) {
                     String json = response.body().string();
-                    System.out.println("🔍 Response buscar solicitud: " + json);
 
                     Type listType = new TypeToken<List<SolicitudDonacion>>(){}.getType();
                     List<SolicitudDonacion> solicitudes = gson.fromJson(json, listType);
 
                     if (solicitudes != null && !solicitudes.isEmpty()) {
                         SolicitudDonacion solicitud = solicitudes.get(0);
-                        System.out.println("✅ Solicitud encontrada - ID: " + solicitud.getSolicitudid());
                         callback.onSuccess(solicitud);
                     } else {
                         callback.onError("Solicitud creada pero no encontrada en la base de datos");
                     }
                 } else {
                     String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                    System.out.println("❌ Error al buscar solicitud: " + response.code() + " - " + errorBody);
                     callback.onError("Error al obtener datos de la solicitud: " + response.code());
                 }
             }
         } catch (Exception e) {
-            System.out.println("❌ Exception en buscarSolicitudRecienCreada: " + e.getMessage());
             callback.onError("Error: " + e.getMessage());
         }
     }
 
-    // ========== CHATS ==========
+    /**
+     * Crea un nuevo chat
+     * @param chat Chat a crear
+     * @param callback Callback para manejar el resultado
+     */
     public static void createChat(Chat chat, ApiCallback<Chat> callback) {
         CompletableFuture.runAsync(() -> {
             try {
-                // Obtener fecha actual desde la app
                 java.time.format.DateTimeFormatter formatter =
                         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
                 String fechaActual = java.time.LocalDateTime.now().format(formatter);
@@ -503,7 +505,7 @@ public class ApiService {
                         "\"usuario1id\":" + chat.getUsuario1id() + "," +
                         "\"usuario2id\":" + chat.getUsuario2id() + "," +
                         "\"solicitudid\":" + chat.getSolicitudid() + "," +
-                        "\"fecha_creacion\":\"" + fechaActual + "\"" + // ← Fecha desde app
+                        "\"fecha_creacion\":\"" + fechaActual + "\"" +
                         "}";
 
                 RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
@@ -538,6 +540,11 @@ public class ApiService {
         });
     }
 
+    /**
+     * Obtiene los chats de un usuario
+     * @param usuarioId ID del usuario
+     * @param callback Callback para manejar el resultado
+     */
     public static void getChatsByUsuario(int usuarioId, ListCallback<Chat> callback) {
         String url = SupabaseClient.URLs.chat() +
                 "?or=(usuario1id.eq." + usuarioId + ",usuario2id.eq." + usuarioId + ")" +
@@ -545,6 +552,13 @@ public class ApiService {
         getList(url, new TypeToken<List<Chat>>(){}.getType(), callback);
     }
 
+    /**
+     * Obtiene un chat específico por usuarios y solicitud
+     * @param usuario1id ID del primer usuario
+     * @param usuario2id ID del segundo usuario
+     * @param solicitudid ID de la solicitud
+     * @param callback Callback para manejar el resultado
+     */
     public static void getChatByUsuariosAndSolicitud(int usuario1id, int usuario2id, int solicitudid, ApiCallback<Chat> callback) {
         String url = SupabaseClient.URLs.chat() +
                 "?and=(usuario1id.eq." + usuario1id + ",usuario2id.eq." + usuario2id + ",solicitudid.eq." + solicitudid + ")" +
@@ -552,11 +566,14 @@ public class ApiService {
         getSingle(url, new TypeToken<List<Chat>>(){}.getType(), callback);
     }
 
-    // ========== MENSAJES ==========
+    /**
+     * Crea un nuevo mensaje
+     * @param mensaje Mensaje a crear
+     * @param callback Callback para manejar el resultado
+     */
     public static void createMensaje(Mensaje mensaje, ApiCallback<Mensaje> callback) {
         CompletableFuture.runAsync(() -> {
             try {
-                // Obtener fecha actual desde la app
                 java.time.format.DateTimeFormatter formatter =
                         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
                 String fechaActual = java.time.LocalDateTime.now().format(formatter);
@@ -565,7 +582,7 @@ public class ApiService {
                         "\"chatid\":" + mensaje.getChatid() + "," +
                         "\"emisorioid\":" + mensaje.getEmisorioid() + "," +
                         "\"contenido\":\"" + mensaje.getContenido() + "\"," +
-                        "\"fecha_envio\":\"" + fechaActual + "\"," + // ← Fecha desde app
+                        "\"fecha_envio\":\"" + fechaActual + "\"," +
                         "\"leido\":false" +
                         "}";
 
@@ -601,6 +618,11 @@ public class ApiService {
         });
     }
 
+    /**
+     * Obtiene los mensajes de un chat
+     * @param chatId ID del chat
+     * @param callback Callback para manejar el resultado
+     */
     public static void getMensajesByChat(int chatId, ListCallback<Mensaje> callback) {
         String url = SupabaseClient.URLs.mensaje() +
                 "?chatid=eq." + chatId +
@@ -609,6 +631,13 @@ public class ApiService {
     }
 
     // ========== MÉTODOS GENÉRICOS ==========
+
+    /**
+     * Ejecuta una consulta para obtener un solo elemento
+     * @param url URL de la consulta
+     * @param type Tipo del resultado
+     * @param callback Callback para manejar el resultado
+     */
     private static <T> void getSingle(String url, Type type, ApiCallback<T> callback) {
         CompletableFuture.runAsync(() -> {
             Request request = createGetRequest(url);
@@ -616,6 +645,12 @@ public class ApiService {
         });
     }
 
+    /**
+     * Ejecuta una consulta para obtener una lista de elementos
+     * @param url URL de la consulta
+     * @param type Tipo del resultado
+     * @param callback Callback para manejar el resultado
+     */
     private static <T> void getList(String url, Type type, ListCallback<T> callback) {
         CompletableFuture.runAsync(() -> {
             Request request = createGetRequest(url);
@@ -623,9 +658,11 @@ public class ApiService {
         });
     }
 
-
-
-    // ========== MÉTODOS DE REQUEST ==========
+    /**
+     * Crea una petición GET
+     * @param url URL de la petición
+     * @return Request configurado
+     */
     private static Request createGetRequest(String url) {
         return new Request.Builder()
                 .url(url)
@@ -634,13 +671,16 @@ public class ApiService {
                 .build();
     }
 
-
-
+    /**
+     * Ejecuta una petición y procesa la respuesta para un solo elemento
+     * @param request Petición a ejecutar
+     * @param type Tipo del resultado
+     * @param callback Callback para manejar el resultado
+     */
     private static <T> void executeRequest(Request request, Type type, ApiCallback<T> callback) {
         try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
             if (response.isSuccessful() && response.body() != null) {
                 String json = response.body().string();
-                System.out.println("📨 Response: " + json);
                 List<T> result = gson.fromJson(json, type);
                 if (result != null && !result.isEmpty()) {
                     callback.onSuccess(result.get(0));
@@ -649,15 +689,19 @@ public class ApiService {
                 }
             } else {
                 String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                System.out.println("❌ Error: " + response.code() + " - " + errorBody);
                 callback.onError("Error: " + response.code());
             }
         } catch (IOException e) {
-            System.out.println("❌ IOException: " + e.getMessage());
             callback.onError("Error de red: " + e.getMessage());
         }
     }
 
+    /**
+     * Ejecuta una petición y procesa la respuesta para una lista
+     * @param request Petición a ejecutar
+     * @param type Tipo del resultado
+     * @param callback Callback para manejar el resultado
+     */
     private static <T> void executeListRequest(Request request, Type type, ListCallback<T> callback) {
         try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
             if (response.isSuccessful() && response.body() != null) {
@@ -672,7 +716,11 @@ public class ApiService {
         }
     }
 
-    // ========== SOLICITUDES POR USUARIO ==========
+    /**
+     * Obtiene las solicitudes de un usuario
+     * @param usuarioId ID del usuario
+     * @param callback Callback para manejar el resultado
+     */
     public static void getSolicitudesByUsuarioId(int usuarioId, ListCallback<SolicitudDonacion> callback) {
         String url = SupabaseClient.URLs.solicitudDonacion() +
                 "?usuarioid=eq." + usuarioId +
@@ -680,8 +728,12 @@ public class ApiService {
         getList(url, new TypeToken<List<SolicitudDonacion>>(){}.getType(), callback);
     }
 
-
-    // ========== ACTUALIZAR ESTADO DE SOLICITUD ==========
+    /**
+     * Actualiza el estado de una solicitud
+     * @param solicitudId ID de la solicitud
+     * @param nuevoEstado Nuevo estado de la solicitud
+     * @param callback Callback para manejar el resultado
+     */
     public static void updateSolicitudEstado(int solicitudId, String nuevoEstado, ApiCallback<SolicitudDonacion> callback) {
         CompletableFuture.runAsync(() -> {
             try {
@@ -703,7 +755,6 @@ public class ApiService {
                 try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
                     if (response.isSuccessful() && response.body() != null) {
                         String responseBody = response.body().string();
-                        System.out.println("✅ UPDATE estado solicitud exitoso: " + responseBody);
 
                         Type listType = new TypeToken<List<SolicitudDonacion>>(){}.getType();
                         List<SolicitudDonacion> solicitudesActualizadas = gson.fromJson(responseBody, listType);
@@ -715,23 +766,24 @@ public class ApiService {
                         }
                     } else {
                         String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                        System.out.println("❌ Error en UPDATE estado solicitud: " + response.code() + " - " + errorBody);
                         callback.onError("Error al actualizar estado: " + response.code());
                     }
                 }
 
             } catch (Exception e) {
-                System.out.println("❌ Exception en updateSolicitudEstado: " + e.getMessage());
                 callback.onError("Error: " + e.getMessage());
             }
         });
     }
 
-    // ========== NOTIFICACIONES ==========
+    /**
+     * Crea una nueva notificación
+     * @param notificacion Notificación a crear
+     * @param callback Callback para manejar el resultado
+     */
     public static void createNotificacion(Notificacion notificacion, ApiCallback<Notificacion> callback) {
         CompletableFuture.runAsync(() -> {
             try {
-                // Obtener fecha actual desde la app
                 java.time.format.DateTimeFormatter formatter =
                         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
                 String fechaActual = java.time.LocalDateTime.now().format(formatter);
@@ -743,8 +795,6 @@ public class ApiService {
                         "\"fecha_envio\":\"" + fechaActual + "\"," +
                         "\"leida\":" + notificacion.isLeida() +
                         "}";
-
-                System.out.println("📤 JSON Notificación: " + json);
 
                 RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
 
@@ -760,7 +810,6 @@ public class ApiService {
                 try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
                     if (response.isSuccessful() && response.body() != null) {
                         String responseBody = response.body().string();
-                        System.out.println("✅ Notificación creada: " + responseBody);
 
                         Type listType = new TypeToken<List<Notificacion>>(){}.getType();
                         List<Notificacion> notificacionesCreadas = gson.fromJson(responseBody, listType);
@@ -772,17 +821,20 @@ public class ApiService {
                         }
                     } else {
                         String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                        System.out.println("❌ Error creando notificación: " + response.code() + " - " + errorBody);
                         callback.onError("Error al crear notificación: " + response.code());
                     }
                 }
             } catch (Exception e) {
-                System.out.println("❌ Exception en createNotificacion: " + e.getMessage());
                 callback.onError("Error: " + e.getMessage());
             }
         });
     }
 
+    /**
+     * Obtiene las notificaciones de un usuario
+     * @param usuarioId ID del usuario
+     * @param callback Callback para manejar el resultado
+     */
     public static void getNotificacionesByUsuario(int usuarioId, ListCallback<Notificacion> callback) {
         String url = SupabaseClient.URLs.notificacion() +
                 "?usuarioid=eq." + usuarioId +
@@ -790,6 +842,11 @@ public class ApiService {
         getList(url, new TypeToken<List<Notificacion>>(){}.getType(), callback);
     }
 
+    /**
+     * Marca una notificación como leída
+     * @param notificacionId ID de la notificación
+     * @param callback Callback para manejar el resultado
+     */
     public static void updateNotificacionLeida(int notificacionId, ApiCallback<Notificacion> callback) {
         CompletableFuture.runAsync(() -> {
             try {
@@ -829,9 +886,13 @@ public class ApiService {
         });
     }
 
-    // Agregar al final de la clase ApiService, antes del último }
-
-    // ========== ACTUALIZAR UBICACIÓN DEL USUARIO ==========
+    /**
+     * Actualiza la ubicación de un usuario
+     * @param usuarioId ID del usuario
+     * @param latitud Latitud de la ubicación
+     * @param longitud Longitud de la ubicación
+     * @param callback Callback para manejar el resultado
+     */
     public static void updateUserLocation(int usuarioId, double latitud, double longitud, ApiCallback<Usuario> callback) {
         CompletableFuture.runAsync(() -> {
             try {
@@ -839,8 +900,6 @@ public class ApiService {
                         "\"latitud\":" + latitud + "," +
                         "\"longitud\":" + longitud +
                         "}";
-
-                System.out.println("📍 JSON Update Location: " + json);
 
                 RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
 
@@ -858,7 +917,6 @@ public class ApiService {
                 try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
                     if (response.isSuccessful() && response.body() != null) {
                         String responseBody = response.body().string();
-                        System.out.println("✅ UPDATE ubicación exitoso: " + responseBody);
 
                         Type listType = new TypeToken<List<Usuario>>(){}.getType();
                         List<Usuario> usuariosActualizados = gson.fromJson(responseBody, listType);
@@ -870,24 +928,27 @@ public class ApiService {
                         }
                     } else {
                         String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                        System.out.println("❌ Error en UPDATE ubicación: " + response.code() + " - " + errorBody);
                         callback.onError("Error al actualizar ubicación: " + response.code());
                     }
                 }
 
             } catch (Exception e) {
-                System.out.println("❌ Exception en updateUserLocation: " + e.getMessage());
                 callback.onError("Error: " + e.getMessage());
             }
         });
     }
 
-    // ========== OBTENER SOLICITUDES CERCANAS ==========
+    /**
+     * Obtiene solicitudes cercanas a una ubicación
+     * @param latitudUsuario Latitud del usuario
+     * @param longitudUsuario Longitud del usuario
+     * @param radioKm Radio de búsqueda en kilómetros
+     * @param callback Callback para manejar el resultado
+     */
     public static void getSolicitudesCercanas(double latitudUsuario, double longitudUsuario,
                                               double radioKm, ListCallback<SolicitudDonacion> callback) {
         CompletableFuture.runAsync(() -> {
             try {
-                // Primero obtener todas las solicitudes activas
                 String url = SupabaseClient.URLs.solicitudDonacion() + "?estado=eq.activa&order=fecha_publicacion.desc";
 
                 Request request = new Request.Builder()
@@ -907,17 +968,14 @@ public class ApiService {
                             return;
                         }
 
-                        // Obtener todos los hospitales
                         ApiService.getHospitales(new ListCallback<HospitalUbicacion>() {
                             @Override
                             public void onSuccess(List<HospitalUbicacion> hospitales) {
-                                // Crear mapa de hospitales por ID
                                 Map<Integer, HospitalUbicacion> hospitalesMap = new HashMap<>();
                                 for (HospitalUbicacion hospital : hospitales) {
                                     hospitalesMap.put(hospital.getHospitalid(), hospital);
                                 }
 
-                                // Filtrar solicitudes por distancia
                                 List<SolicitudDonacion> solicitudesCercanas = new ArrayList<>();
 
                                 for (SolicitudDonacion solicitud : todasSolicitudes) {
@@ -929,16 +987,12 @@ public class ApiService {
                                                 hospital.getLatitud(), hospital.getLongitud()
                                         );
 
-                                        System.out.println("📍 Distancia a " + hospital.getNombre() + ": " +
-                                                String.format("%.2f", distancia) + " km");
-
                                         if (distancia <= radioKm) {
                                             solicitudesCercanas.add(solicitud);
                                         }
                                     }
                                 }
 
-                                System.out.println("✅ Solicitudes cercanas encontradas: " + solicitudesCercanas.size());
                                 callback.onSuccess(solicitudesCercanas);
                             }
 
@@ -959,7 +1013,14 @@ public class ApiService {
         });
     }
 
-    // Método auxiliar para calcular distancia entre dos puntos (Fórmula de Haversine)
+    /**
+     * Calcula la distancia entre dos puntos geográficos usando la fórmula de Haversine
+     * @param lat1 Latitud del primer punto
+     * @param lon1 Longitud del primer punto
+     * @param lat2 Latitud del segundo punto
+     * @param lon2 Longitud del segundo punto
+     * @return Distancia en kilómetros
+     */
     private static double calcularDistancia(double lat1, double lon1, double lat2, double lon2) {
         final int R = 6371; // Radio de la Tierra en km
 
@@ -975,16 +1036,22 @@ public class ApiService {
         return R * c; // Distancia en kilómetros
     }
 
-
-
-
-    // ========== CHATS - MÉTODOS ADICIONALES ==========
+    /**
+     * Obtiene un chat por su ID
+     * @param chatId ID del chat
+     * @param callback Callback para manejar el resultado
+     */
     public static void getChatById(int chatId, ApiCallback<Chat> callback) {
         String url = SupabaseClient.URLs.chat() + "?chatid=eq." + chatId + "&limit=1";
         getSingle(url, new TypeToken<List<Chat>>(){}.getType(), callback);
     }
 
-    // ========== ACTUALIZAR MENSAJES COMO LEÍDOS ==========
+    /**
+     * Marca los mensajes de un chat como leídos
+     * @param chatId ID del chat
+     * @param usuarioActualId ID del usuario actual
+     * @param callback Callback para manejar el resultado
+     */
     public static void updateMensajesLeidos(int chatId, int usuarioActualId, ApiCallback<Void> callback) {
         CompletableFuture.runAsync(() -> {
             try {
@@ -992,7 +1059,6 @@ public class ApiService {
 
                 RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
 
-                // Actualizar mensajes que NO son del usuario actual y están sin leer
                 String url = SupabaseClient.URLs.mensaje() +
                         "?chatid=eq." + chatId +
                         "&emisorioid=neq." + usuarioActualId +
@@ -1009,20 +1075,16 @@ public class ApiService {
 
                 try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
                     if (response.isSuccessful()) {
-                        System.out.println("✅ Mensajes marcados como leídos para chat: " + chatId);
                         callback.onSuccess(null);
                     } else {
                         String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                        System.out.println("❌ Error marcando mensajes como leídos: " + response.code() + " - " + errorBody);
                         callback.onError("Error al marcar mensajes como leídos: " + response.code());
                     }
                 }
 
             } catch (Exception e) {
-                System.out.println("❌ Exception en updateMensajesLeidos: " + e.getMessage());
                 callback.onError("Error: " + e.getMessage());
             }
         });
     }
-
 }

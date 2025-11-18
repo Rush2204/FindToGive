@@ -12,7 +12,7 @@
         android:id="@+id/text_welcome"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Bienvenido a FindToGive"
+        android:text="@string/bienvenido_a_findtogive"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginTop="32dp"
@@ -26,7 +26,7 @@
         android:layout_width="150dp"
         android:layout_height="150dp"
         android:layout_marginTop="32dp"
-        android:contentDescription="logo_de_findtogive"
+        android:contentDescription="@string/logo_de_findtogive"
         android:src="@drawable/logo_findtogive"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -53,7 +53,7 @@
             android:lines="1"
             android:imeOptions="actionNext"
             android:autofillHints="emailAddress"
-            android:hint="Introduce tu correo electrónico" />
+            android:hint="@string/introduce_tu_correo_electr_nico" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -77,7 +77,7 @@
             android:singleLine="true"
             android:lines="1"
             android:imeOptions="actionDone"
-            android:hint="Introduce tu contraseña" />
+            android:hint="@string/introduce_tu_contrase_a" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -87,7 +87,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        android:text="Iniciar sesión"
+        android:text="@string/iniciar_sesi_n"
         android:backgroundTint="@color/dark_gray"
         app:layout_constraintTop_toBottomOf="@+id/input_layout_password" />
 
@@ -104,7 +104,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="No tienes una cuenta"
+            android:text="@string/no_tienes_una_cuenta"
             android:textColor="@android:color/black" />
 
         <TextView
@@ -112,7 +112,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
-            android:text="Regístrate aquí"
+            android:text="@string/reg_strate_aqu"
             android:textStyle="bold"
             android:textColor="@color/dark_gray" />
     </LinearLayout>

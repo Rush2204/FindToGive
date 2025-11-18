@@ -39,6 +39,10 @@ public class Registro extends AppCompatActivity {
     private int selectedRolId = 3; // "ambos" por defecto
     private int selectedTipoSangreId = 1; // "A+" por defecto
 
+    /**
+     * Método principal que inicializa la actividad de registro
+     * Configura la vista, spinners y validaciones de entrada
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,6 +60,10 @@ public class Registro extends AppCompatActivity {
         setupClickListeners();
     }
 
+    /**
+     * Inicializa todos los componentes visuales de la interfaz
+     * Obtiene referencias a los views del layout
+     */
     private void initializeViews() {
         // TextInputLayouts
         tilNombre = findViewById(R.id.til_nombre);
@@ -82,6 +90,10 @@ public class Registro extends AppCompatActivity {
         tvLoginLink = findViewById(R.id.tv_login_link);
     }
 
+    /**
+     * Configura los spinners de rol y tipo de sangre
+     * Carga las opciones desde los arrays de recursos y establece listeners
+     */
     private void setupSpinners() {
         // Configurar spinner de roles
         ArrayAdapter<CharSequence> rolAdapter = ArrayAdapter.createFromResource(this,
@@ -92,7 +104,6 @@ public class Registro extends AppCompatActivity {
         spinnerRol.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                // Mapear posición a rolid: 1=donante, 2=receptor, 3=ambos
                 selectedRolId = position + 1;
             }
 
@@ -111,7 +122,6 @@ public class Registro extends AppCompatActivity {
         spinnerTipoSangre.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                // Mapear posición a tiposangreid: 1=A+, 2=A-, etc.
                 selectedTipoSangreId = position + 1;
             }
 
@@ -122,6 +132,10 @@ public class Registro extends AppCompatActivity {
         });
     }
 
+    /**
+     * Configura los listeners de clic para los botones
+     * Asigna las acciones a realizar cuando se presionan los botones
+     */
     private void setupClickListeners() {
         btnRegistrar.setOnClickListener(v -> registerUser());
 
@@ -131,14 +145,15 @@ public class Registro extends AppCompatActivity {
             finish();
         });
 
-        // Configurar validaciones y formateo
         setupInputValidations();
         setupTelefonoFormatting();
-
-        // Limpiar errores al escribir
         setupErrorClearingListeners();
     }
 
+    /**
+     * Configura las validaciones en tiempo real para los campos de entrada
+     * Aplica filtros para nombre y apellido mientras el usuario escribe
+     */
     private void setupInputValidations() {
         // Filtro para nombre - solo letras y espacios
         etNombre.addTextChangedListener(new TextWatcher() {
@@ -152,12 +167,11 @@ public class Registro extends AppCompatActivity {
             public void afterTextChanged(Editable s) {
                 String input = s.toString();
                 if (!input.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]*$")) {
-                    // Remover caracteres no válidos
                     String filtered = input.replaceAll("[^a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]", "");
                     if (!filtered.equals(input)) {
                         etNombre.setText(filtered);
                         etNombre.setSelection(filtered.length());
-                        tilNombre.setError("Solo se permiten letras y espacios");
+                        tilNombre.setError(getString(R.string.solo_se_permiten_letras_y_espacios));
                     }
                 } else {
                     tilNombre.setError(null);
@@ -177,12 +191,11 @@ public class Registro extends AppCompatActivity {
             public void afterTextChanged(Editable s) {
                 String input = s.toString();
                 if (!input.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]*$")) {
-                    // Remover caracteres no válidos
                     String filtered = input.replaceAll("[^a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]", "");
                     if (!filtered.equals(input)) {
                         etApellido.setText(filtered);
                         etApellido.setSelection(filtered.length());
-                        tilApellido.setError("Solo se permiten letras y espacios");
+                        tilApellido.setError(getString(R.string.solo_se_permiten_letras_y_espacios));
                     }
                 } else {
                     tilApellido.setError(null);
@@ -191,6 +204,10 @@ public class Registro extends AppCompatActivity {
         });
     }
 
+    /**
+     * Configura el formateo automático del número de teléfono
+     * Aplica el formato XXXX-XXXX mientras el usuario escribe
+     */
     private void setupTelefonoFormatting() {
         etTelefono.addTextChangedListener(new TextWatcher() {
             private boolean isFormatting = false;
@@ -204,7 +221,6 @@ public class Registro extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Detectar si se está eliminando el guión
                 if (before == 1 && count == 0 && lastLength > 0) {
                     String text = s.toString();
                     if (start < text.length() && text.charAt(start) == '-') {
@@ -221,7 +237,6 @@ public class Registro extends AppCompatActivity {
 
                 String phone = s.toString().replaceAll("[^\\d]", "");
 
-                // Si se está eliminando el guión, eliminar también el dígito anterior
                 if (deletingHyphen && phone.length() == 4 && lastLength == 6) {
                     phone = phone.substring(0, phone.length() - 1);
                     deletingHyphen = false;
@@ -238,16 +253,14 @@ public class Registro extends AppCompatActivity {
                     formatted.append(phone);
                 }
 
-                // Solo actualizar si hay cambios
                 if (!s.toString().equals(formatted.toString())) {
                     etTelefono.setText(formatted.toString());
 
-                    // Posicionar el cursor correctamente
                     int cursorPos = formatted.length();
                     if (phone.length() <= 4) {
                         cursorPos = phone.length();
                     } else if (phone.length() < 8) {
-                        cursorPos = phone.length() + 1; // +1 por el guión
+                        cursorPos = phone.length() + 1;
                     }
                     etTelefono.setSelection(Math.min(cursorPos, formatted.length()));
                 }
@@ -256,13 +269,15 @@ public class Registro extends AppCompatActivity {
             }
         });
 
-        // Mejorar la experiencia de edición permitiendo selección
         etTelefono.setOnKeyListener((v, keyCode, event) -> {
-            // Permitir navegación y selección sin interferencias
             return false;
         });
     }
 
+    /**
+     * Configura listeners para limpiar mensajes de error cuando el campo recibe foco
+     * Mejora la experiencia de usuario eliminando errores al intentar corregirlos
+     */
     private void setupErrorClearingListeners() {
         etNombre.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) tilNombre.setError(null);
@@ -289,6 +304,10 @@ public class Registro extends AppCompatActivity {
         });
     }
 
+    /**
+     * Procesa el registro del usuario
+     * Valida los datos, crea el usuario y lo registra en la API
+     */
     private void registerUser() {
         String nombre = etNombre.getText().toString().trim();
         String apellido = etApellido.getText().toString().trim();
@@ -303,11 +322,10 @@ public class Registro extends AppCompatActivity {
 
         int edad = Integer.parseInt(edadStr);
 
-        // Crear usuario con nombre y apellido separados
         Usuario nuevoUsuario = new Usuario(nombre, apellido, email, password,
                 edad, telefono, selectedRolId, selectedTipoSangreId);
 
-        setRegisterButtonState(false, "Registrando...");
+        setRegisterButtonState(false, getString(R.string.registrando));
 
         ApiService.registerUser(nuevoUsuario, new ApiService.ApiCallback<Usuario>() {
             @Override
@@ -326,20 +344,29 @@ public class Registro extends AppCompatActivity {
         });
     }
 
-    // En tu Registro.java, modifica SOLO el método validateInputs:
+    /**
+     * Valida todos los campos de entrada antes del registro
+     * @param nombre Nombre a validar
+     * @param apellido Apellido a validar
+     * @param email Email a validar
+     * @param password Contraseña a validar
+     * @param edadStr Edad a validar
+     * @param telefono Teléfono a validar
+     * @return true si todos los campos son válidos, false en caso contrario
+     */
     private boolean validateInputs(String nombre, String apellido, String email, String password,
                                    String edadStr, String telefono) {
         boolean isValid = true;
 
         // Validar nombre
         if (nombre.isEmpty()) {
-            tilNombre.setError("El nombre es requerido");
+            tilNombre.setError(getString(R.string.nombre_requerido));
             isValid = false;
         } else if (!isValidNombreApellido(nombre)) {
-            tilNombre.setError("El nombre solo puede contener letras y espacios");
+            tilNombre.setError(getString(R.string.nombre_solo_letras_espacios));
             isValid = false;
         } else if (nombre.length() < 2) {
-            tilNombre.setError("El nombre debe tener al menos 2 caracteres");
+            tilNombre.setError(getString(R.string.nombre_min_caracteres));
             isValid = false;
         } else {
             tilNombre.setError(null);
@@ -347,13 +374,13 @@ public class Registro extends AppCompatActivity {
 
         // Validar apellido
         if (apellido.isEmpty()) {
-            tilApellido.setError("El apellido es requerido");
+            tilApellido.setError(getString(R.string.apellido_requerido));
             isValid = false;
         } else if (!isValidNombreApellido(apellido)) {
-            tilApellido.setError("El apellido solo puede contener letras y espacios");
+            tilApellido.setError(getString(R.string.apellido_solo_letras_espacios));
             isValid = false;
         } else if (apellido.length() < 2) {
-            tilApellido.setError("El apellido debe tener al menos 2 caracteres");
+            tilApellido.setError(getString(R.string.apellido_min_caracteres));
             isValid = false;
         } else {
             tilApellido.setError(null);
@@ -361,24 +388,24 @@ public class Registro extends AppCompatActivity {
 
         // Validar email
         if (email.isEmpty()) {
-            tilEmail.setError("El correo electrónico es requerido");
+            tilEmail.setError(getString(R.string.email_requerido));
             isValid = false;
         } else if (!isValidEmail(email)) {
-            tilEmail.setError("Ingresa un correo electrónico válido");
+            tilEmail.setError(getString(R.string.email_valido_requerido));
             isValid = false;
         } else {
             tilEmail.setError(null);
         }
 
-        // Validar contraseña - MODIFICADO para usar SecurityHelper
+        // Validar contraseña
         if (password.isEmpty()) {
-            tilPassword.setError("La contraseña es requerida");
+            tilPassword.setError(getString(R.string.password_requerido));
             isValid = false;
         } else if (password.length() < 8) {
-            tilPassword.setError("La contraseña debe tener al menos 8 caracteres");
+            tilPassword.setError(getString(R.string.password_min_caracteres));
             isValid = false;
         } else if (!SecurityHelper.isPasswordStrong(password)) {
-            tilPassword.setError("La contraseña debe incluir mayúsculas, minúsculas y números");
+            tilPassword.setError(getString(R.string.password_fuerte_requerida));
             isValid = false;
         } else {
             tilPassword.setError(null);
@@ -386,29 +413,29 @@ public class Registro extends AppCompatActivity {
 
         // Validar edad
         if (edadStr.isEmpty()) {
-            tilEdad.setError("La edad es requerida");
+            tilEdad.setError(getString(R.string.edad_requerida));
             isValid = false;
         } else {
             try {
                 int edad = Integer.parseInt(edadStr);
                 if (edad < 18 || edad > 65) {
-                    tilEdad.setError("La edad debe estar entre 18 y 65 años");
+                    tilEdad.setError(getString(R.string.edad_rango_valido));
                     isValid = false;
                 } else {
                     tilEdad.setError(null);
                 }
             } catch (NumberFormatException e) {
-                tilEdad.setError("Ingresa una edad válida");
+                tilEdad.setError(getString(R.string.edad_valida_requerida));
                 isValid = false;
             }
         }
 
         // Validar teléfono con formato XXXX-XXXX
         if (telefono.isEmpty()) {
-            tilTelefono.setError("El teléfono es requerido");
+            tilTelefono.setError(getString(R.string.telefono_requerido));
             isValid = false;
         } else if (!isValidTelefono(telefono)) {
-            tilTelefono.setError("Formato: XXXX-XXXX (8 dígitos)");
+            tilTelefono.setError(getString(R.string.formato_telefono));
             isValid = false;
         } else {
             tilTelefono.setError(null);
@@ -417,41 +444,60 @@ public class Registro extends AppCompatActivity {
         return isValid;
     }
 
+    /**
+     * Valida que el nombre o apellido contenga solo letras y espacios
+     * @param text Texto a validar
+     * @return true si es válido, false en caso contrario
+     */
     private boolean isValidNombreApellido(String text) {
-        // Solo letras (incluyendo acentos) y espacios
         String nombrePattern = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$";
         return text.matches(nombrePattern);
     }
 
+    /**
+     * Valida el formato de email usando expresión regular
+     * @param email Email a validar
+     * @return true si el formato es válido, false en caso contrario
+     */
     private boolean isValidEmail(String email) {
         String emailPattern = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$";
         return email.matches(emailPattern);
     }
 
+    /**
+     * Valida el formato de la contraseña
+     * @param password Contraseña a validar
+     * @return true si la contraseña cumple con los requisitos de seguridad
+     */
     private boolean isValidPassword(String password) {
-        // Al menos una mayúscula, una minúscula, un número y mínimo 8 caracteres
         String passwordPattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$";
         return password.matches(passwordPattern);
     }
 
+    /**
+     * Valida el formato del teléfono (XXXX-XXXX)
+     * @param telefono Número de teléfono a validar
+     * @return true si el formato es válido, false en caso contrario
+     */
     private boolean isValidTelefono(String telefono) {
-        // Formato: 4 dígitos + guión + 4 dígitos
         String telefonoPattern = "\\d{4}-\\d{4}";
         return telefono.matches(telefonoPattern);
     }
 
-    // Registro.java - Agregar en onRegisterSuccess
+    /**
+     * Se ejecuta cuando el registro es exitoso
+     * Guarda el usuario, solicita permisos y navega al feed principal
+     * @param usuario Usuario registrado exitosamente
+     */
     private void onRegisterSuccess(Usuario usuario) {
-        Toast.makeText(this, "¡Registro exitoso! Bienvenido " + usuario.getNombre(), Toast.LENGTH_SHORT).show();
+        String mensajeBienvenida = getString(R.string.registro_exitoso_bienvenida, usuario.getNombre());
+        Toast.makeText(this, mensajeBienvenida, Toast.LENGTH_SHORT).show();
 
-        // Guardar usuario
         SharedPreferencesManager.saveUser(this, usuario);
 
-        // Solicitar permisos de notificación después del registro exitoso
         if (!NotificationPermissionManager.areNotificationsEnabled(this)) {
             NotificationPermissionManager.requestNotificationPermission(this);
         } else {
-            // Ya tiene permisos, iniciar servicio
             if (AppNotificationManager.areNotificationsEnabled(this)) {
                 AppNotificationManager.startNotificationService(this);
             }
@@ -459,37 +505,55 @@ public class Registro extends AppCompatActivity {
         }
     }
 
-    // Agregar método para manejar resultado de permisos
+    /**
+     * Maneja los resultados de las solicitudes de permisos
+     * @param requestCode Código de la solicitud de permisos
+     * @param permissions Permisos solicitados
+     * @param grantResults Resultados de la concesión de permisos
+     */
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (NotificationPermissionManager.handlePermissionResult(requestCode, grantResults)) {
-            // Permiso concedido, iniciar servicio
             if (AppNotificationManager.areNotificationsEnabled(this)) {
                 AppNotificationManager.startNotificationService(this);
             }
         }
-        // Navegar al feed independientemente de los permisos
         navigateToFeedDonacion();
     }
 
+    /**
+     * Se ejecuta cuando ocurre un error en el registro
+     * Muestra mensajes de error específicos según el tipo de error
+     * @param error Mensaje de error recibido
+     */
     private void onRegisterError(String error) {
-        setRegisterButtonState(true, "Registrarse");
+        setRegisterButtonState(true, getString(R.string.registrarse));
 
         if (error.contains("El email ya está registrado")) {
-            tilEmail.setError("Este email ya está registrado");
-            Toast.makeText(this, "El email ya está en uso", Toast.LENGTH_LONG).show();
+            tilEmail.setError(getString(R.string.email_ya_registrado));
+            Toast.makeText(this, R.string.email_en_uso, Toast.LENGTH_LONG).show();
         } else {
-            Toast.makeText(this, "Error en registro: " + error, Toast.LENGTH_LONG).show();
+            String errorRegistro = getString(R.string.error_registro, error);
+            Toast.makeText(this, errorRegistro, Toast.LENGTH_LONG).show();
         }
     }
 
+    /**
+     * Cambia el estado del botón de registro (habilitado/deshabilitado)
+     * @param enabled true para habilitar, false para deshabilitar
+     * @param text Texto a mostrar en el botón
+     */
     private void setRegisterButtonState(boolean enabled, String text) {
         btnRegistrar.setEnabled(enabled);
         btnRegistrar.setText(text);
     }
 
+    /**
+     * Navega a la actividad principal del feed de donaciones
+     * Limpia el stack de actividades
+     */
     private void navigateToFeedDonacion() {
         Intent intent = new Intent(Registro.this, FeedDonacion.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -497,10 +561,13 @@ public class Registro extends AppCompatActivity {
         finish();
     }
 
+    /**
+     * Método del ciclo de vida que se ejecuta al reanudar la actividad
+     * Restaura el estado del botón de registro
+     */
     @Override
     protected void onResume() {
         super.onResume();
-        // Restaurar estado del botón si vuelve a esta actividad
-        setRegisterButtonState(true, "Registrarse");
+        setRegisterButtonState(true, getString(R.string.registrarse));
     }
 }

@@ -5,7 +5,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.OpenableColumns;
-import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 import java.io.File;
@@ -14,13 +13,17 @@ import java.io.InputStream;
 
 public class ImageUtils {
 
+    /**
+     * Convierte un Uri de contenido a un archivo físico en el directorio de cache.
+     * Lee el InputStream del Uri y escribe los datos en un archivo temporal.
+     * Retorna el archivo creado o null si ocurre algún error.
+     */
     public static File uriToFile(Context context, Uri uri) {
         try {
             ContentResolver contentResolver = context.getContentResolver();
             InputStream inputStream = contentResolver.openInputStream(uri);
 
             if (inputStream == null) {
-                Log.e("ImageUtils", "❌ No se pudo abrir InputStream del URI");
                 return null;
             }
 
@@ -34,9 +37,6 @@ public class ImageUtils {
 
             String fileName = "upload_" + System.currentTimeMillis() + "." + fileExtension;
             File file = new File(context.getCacheDir(), fileName);
-
-            Log.d("ImageUtils", "📁 Creando archivo: " + file.getAbsolutePath() +
-                    " desde: " + displayName);
 
             FileOutputStream outputStream = new FileOutputStream(file);
 
@@ -52,18 +52,18 @@ public class ImageUtils {
             inputStream.close();
             outputStream.close();
 
-            Log.d("ImageUtils", "✅ Archivo creado: " + file.getAbsolutePath() +
-                    " Tamaño: " + totalBytes + " bytes");
-
             return file;
 
         } catch (Exception e) {
-            Log.e("ImageUtils", "💥 Error en uriToFile: " + e.getMessage());
-            e.printStackTrace();
             return null;
         }
     }
 
+    /**
+     * Obtiene el nombre del archivo a partir de un Uri.
+     * Primero intenta obtenerlo mediante una consulta al ContentResolver,
+     * si falla, extrae el nombre de la ruta del Uri.
+     */
     private static String getFileName(Context context, Uri uri) {
         String result = null;
         if (uri.getScheme().equals("content")) {
@@ -75,7 +75,6 @@ public class ImageUtils {
                     }
                 }
             } catch (Exception e) {
-                Log.e("ImageUtils", "Error obteniendo nombre de archivo", e);
             }
         }
         if (result == null) {
@@ -88,6 +87,12 @@ public class ImageUtils {
         return result;
     }
 
+    /**
+     * Obtiene la extensión del archivo a partir de un Uri.
+     * Primero intenta obtenerla del tipo MIME mediante el ContentResolver,
+     * si no es posible, extrae la extensión del nombre del archivo.
+     * Retorna "jpg" como extensión por defecto si no puede determinarse.
+     */
     private static String getFileExtension(Context context, Uri uri) {
         ContentResolver contentResolver = context.getContentResolver();
         MimeTypeMap mime = MimeTypeMap.getSingleton();

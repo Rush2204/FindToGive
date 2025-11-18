@@ -101,7 +101,7 @@ public class Login extends AppCompatActivity {
             return;
         }
 
-        setLoginButtonState(false, "Iniciando sesión...");
+        setLoginButtonState(false, getString(R.string.iniciando_sesion));
 
         ApiService.loginUser(email, password, new ApiService.ApiCallback<Usuario>() {
             @Override
@@ -124,20 +124,20 @@ public class Login extends AppCompatActivity {
         boolean isValid = true;
 
         if (email.isEmpty()) {
-            inputLayoutEmail.setError("El correo electrónico es requerido");
+            inputLayoutEmail.setError(getString(R.string.el_correo_electronico_es_requerido));
             isValid = false;
         } else if (!isValidEmail(email)) {
-            inputLayoutEmail.setError("Ingresa un correo electrónico válido");
+            inputLayoutEmail.setError(getString(R.string.ingresa_un_correo_electronico_valido));
             isValid = false;
         } else {
             inputLayoutEmail.setError(null);
         }
 
         if (password.isEmpty()) {
-            inputLayoutPassword.setError("La contraseña es requerida");
+            inputLayoutPassword.setError(getString(R.string.la_contrasena_es_requerida));
             isValid = false;
         } else if (password.length() < 6) {
-            inputLayoutPassword.setError("La contraseña debe tener al menos 6 caracteres");
+            inputLayoutPassword.setError(getString(R.string.la_contrasena_debe_tener_al_menos_6_caracteres));
             isValid = false;
         } else {
             inputLayoutPassword.setError(null);
@@ -154,7 +154,8 @@ public class Login extends AppCompatActivity {
     private void onLoginSuccess(Usuario usuario) {
         SharedPreferencesManager.saveUser(Login.this, usuario);
 
-        Toast.makeText(Login.this, "¡Bienvenido " + usuario.getNombre() + "!", Toast.LENGTH_SHORT).show();
+        String mensajeBienvenida = getString(R.string.bienvenida_usuario, usuario.getNombre());
+        Toast.makeText(Login.this, mensajeBienvenida, Toast.LENGTH_SHORT).show();
 
         // 🔥 AGREGAR ESTA LÍNEA - Iniciar servicio de notificaciones
         if (AppNotificationManager.areNotificationsEnabled(Login.this)) {
@@ -165,18 +166,18 @@ public class Login extends AppCompatActivity {
     }
 
     private void onLoginError(String errorMessage) {
-        setLoginButtonState(true, "Iniciar sesión");
+        setLoginButtonState(true, getString(R.string.iniciar_sesion));
 
         if (errorMessage.contains("No se encontraron datos") ||
                 errorMessage.contains("Error: 404") ||
                 errorMessage.contains("Error: 400")) {
-            inputLayoutEmail.setError("Correo o contraseña incorrectos");
-            inputLayoutPassword.setError("Correo o contraseña incorrectos");
-            Toast.makeText(Login.this, "Credenciales incorrectas", Toast.LENGTH_LONG).show();
+            inputLayoutEmail.setError(getString(R.string.correo_o_contrasena_incorrectos));
+            inputLayoutPassword.setError(getString(R.string.correo_o_contrasena_incorrectos));
+            Toast.makeText(Login.this, R.string.credenciales_incorrectas, Toast.LENGTH_LONG).show();
         } else if (errorMessage.contains("Error de red")) {
-            Toast.makeText(Login.this, "Error de conexión. Verifica tu internet", Toast.LENGTH_LONG).show();
+            Toast.makeText(Login.this, R.string.error_de_conexion_verifica_tu_internet, Toast.LENGTH_LONG).show();
         } else {
-            Toast.makeText(Login.this, "Error: " + errorMessage, Toast.LENGTH_LONG).show();
+            Toast.makeText(Login.this, getString(R.string.error) + errorMessage, Toast.LENGTH_LONG).show();
         }
     }
 
@@ -210,7 +211,7 @@ public class Login extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        setLoginButtonState(true, "Iniciar sesión");
+        setLoginButtonState(true, getString(R.string.iniciar_sesion));
         inputLayoutEmail.setError(null);
         inputLayoutPassword.setError(null);
     }

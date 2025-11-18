@@ -12,8 +12,6 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
-import android.util.Log;
-
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
@@ -30,12 +28,9 @@ import sv.edu.catolica.findtogive.R;
 
 public class ChatNotificationService extends Service {
 
-    private static final String TAG = "ChatNotificationService";
     private static final String CHANNEL_ID = "chat_notifications_channel";
     private static final String CHANNEL_NAME = "Chat Notifications";
-    private static final int NOTIFICATION_ID = 1001;
     private static final int SERVICE_NOTIFICATION_ID = 1002;
-
     private static final long POLLING_INTERVAL = 10000; // 10 segundos
 
     private Handler pollingHandler;
@@ -44,52 +39,73 @@ public class ChatNotificationService extends Service {
     private SharedPreferences notificationPrefs;
     private List<Chat> cachedChats = new ArrayList<>();
 
+    /**
+     * Método que se ejecuta cuando se crea el servicio
+     * Inicializa componentes y configura el servicio foreground
+     */
     @SuppressLint("ForegroundServiceType")
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "Servicio de notificaciones creado");
 
         usuarioActual = SharedPreferencesManager.getCurrentUser(this);
         notificationPrefs = getSharedPreferences("chat_notifications", Context.MODE_PRIVATE);
         createNotificationChannel();
 
-        // Iniciar como servicio foreground para Android 8+
         startForeground(SERVICE_NOTIFICATION_ID, createServiceNotification());
     }
 
+    /**
+     * Método que se ejecuta cuando se inicia el servicio
+     * @param intent Intent que inició el servicio
+     * @param flags Flags de inicio
+     * @param startId ID de inicio
+     * @return Modo de comportamiento del servicio
+     */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "Servicio iniciado");
         startPolling();
         return START_STICKY;
     }
 
+    /**
+     * Método para binding del servicio (no utilizado)
+     * @param intent Intent de binding
+     * @return null ya que no se soporta binding
+     */
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
 
+    /**
+     * Crea el canal de notificaciones para Android 8+
+     * Configura las propiedades del canal como luces y vibración
+     */
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
                     CHANNEL_NAME,
-                    android.app.NotificationManager.IMPORTANCE_HIGH  // ⬅️ Agregar android.app.
+                    android.app.NotificationManager.IMPORTANCE_HIGH
             );
-            channel.setDescription("Notificaciones de chats y mensajes");
+            channel.setDescription(getString(R.string.notificaciones_chats_mensajes_desc));
             channel.enableLights(true);
             channel.setLightColor(Color.RED);
             channel.enableVibration(true);
             channel.setVibrationPattern(new long[]{0, 1000, 500, 1000});
 
-            android.app.NotificationManager manager =  // ⬅️ Agregar android.app.
+            android.app.NotificationManager manager =
                     (android.app.NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             manager.createNotificationChannel(channel);
         }
     }
 
+    /**
+     * Crea la notificación del servicio foreground
+     * @return Notificación configurada para el servicio
+     */
     private Notification createServiceNotification() {
         Intent notificationIntent = new Intent(this, FeedDonacion.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -98,7 +114,7 @@ public class ChatNotificationService extends Service {
         );
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("¡Las emergencias no esperan!")
+                .setContentTitle(getString(R.string.emergencias_no_esperan))
                 .setSmallIcon(R.drawable.ico_logo_findtogive)
                 .setContentIntent(pendingIntent)
                 .setOngoing(false)
@@ -106,6 +122,10 @@ public class ChatNotificationService extends Service {
                 .build();
     }
 
+    /**
+     * Inicia el polling periódico para verificar nuevos chats y mensajes
+     * Ejecuta las verificaciones cada 10 segundos
+     */
     private void startPolling() {
         pollingHandler = new Handler();
         pollingRunnable = new Runnable() {
@@ -119,6 +139,10 @@ public class ChatNotificationService extends Service {
         pollingHandler.post(pollingRunnable);
     }
 
+    /**
+     * Verifica si hay nuevos chats para el usuario actual
+     * Actualiza la cache y verifica chats nuevos
+     */
     private void checkForNewChats() {
         if (usuarioActual == null) return;
 
@@ -126,7 +150,6 @@ public class ChatNotificationService extends Service {
             @Override
             public void onSuccess(List<Chat> chats) {
                 if (chats != null) {
-                    // Actualizar el cache de chats
                     updateCachedChats(chats);
 
                     for (Chat chat : chats) {
@@ -137,49 +160,54 @@ public class ChatNotificationService extends Service {
 
             @Override
             public void onError(String error) {
-                Log.e(TAG, "Error checking chats: " + error);
             }
         });
     }
 
+    /**
+     * Actualiza la cache local de chats con la lista más reciente
+     * @param chats Lista actualizada de chats
+     */
     private void updateCachedChats(List<Chat> chats) {
         if (chats != null) {
             cachedChats.clear();
             cachedChats.addAll(chats);
 
-            // Guardar también en SharedPreferences
             for (Chat chat : chats) {
                 saveChatToPreferences(chat);
             }
         }
     }
 
+    /**
+     * Verifica si un chat es nuevo y no ha sido notificado
+     * @param chat Chat a verificar
+     */
     private void checkIfNewChat(Chat chat) {
         String key = "chat_notified_" + chat.getChatid();
         boolean alreadyNotified = notificationPrefs.getBoolean(key, false);
 
         if (!alreadyNotified) {
-            // Verificar si el chat tiene mensajes
             ApiService.getMensajesByChat(chat.getChatid(), new ApiService.ListCallback<Mensaje>() {
                 @Override
                 public void onSuccess(List<Mensaje> mensajes) {
                     if (mensajes != null && !mensajes.isEmpty()) {
-                        // Hay mensajes, es un chat existente
                         notificationPrefs.edit().putBoolean(key, true).apply();
                     } else {
-                        // No hay mensajes, es un chat nuevo
                         notificationPrefs.edit().putBoolean(key, true).apply();
                     }
                 }
 
                 @Override
                 public void onError(String error) {
-                    Log.e(TAG, "Error checking messages for chat: " + error);
                 }
             });
         }
     }
 
+    /**
+     * Verifica si hay mensajes nuevos en todos los chats del usuario
+     */
     private void checkForNewMessages() {
         if (usuarioActual == null) return;
 
@@ -195,17 +223,19 @@ public class ChatNotificationService extends Service {
 
             @Override
             public void onError(String error) {
-                Log.e(TAG, "Error checking chats for messages: " + error);
             }
         });
     }
 
+    /**
+     * Verifica si hay mensajes nuevos en un chat específico
+     * @param chat Chat a verificar
+     */
     private void checkForNewMessagesInChat(Chat chat) {
         ApiService.getMensajesByChat(chat.getChatid(), new ApiService.ListCallback<Mensaje>() {
             @Override
             public void onSuccess(List<Mensaje> mensajes) {
                 if (mensajes != null && !mensajes.isEmpty()) {
-                    // Encontrar el mensaje más reciente
                     Mensaje ultimoMensaje = mensajes.get(0);
                     for (Mensaje mensaje : mensajes) {
                         if (mensaje.getMensajeid() > ultimoMensaje.getMensajeid()) {
@@ -213,7 +243,6 @@ public class ChatNotificationService extends Service {
                         }
                     }
 
-                    // Verificar si es un mensaje nuevo y no es del usuario actual
                     if (ultimoMensaje.getEmisorioid() != usuarioActual.getUsuarioid()) {
                         String key = "last_message_" + chat.getChatid();
                         int lastNotifiedMessageId = notificationPrefs.getInt(key, -1);
@@ -228,18 +257,20 @@ public class ChatNotificationService extends Service {
 
             @Override
             public void onError(String error) {
-                Log.e(TAG, "Error checking messages in chat: " + error);
             }
         });
     }
 
+    /**
+     * Muestra una notificación para un nuevo chat
+     * @param chat Chat que generó la notificación
+     */
     private void showNewChatNotification(Chat chat) {
-        // Obtener información del otro usuario
         int otroUsuarioId = getOtroUsuarioId(chat.getChatid());
 
         if (otroUsuarioId == -1) {
-            createNotification("Nueva conversación",
-                    "Tienes un nuevo chat", chat.getChatid(), true);
+            createNotification(getString(R.string.nueva_conversacion),
+                    getString(R.string.tienes_nuevo_chat), chat.getChatid(), true);
             return;
         }
 
@@ -247,30 +278,32 @@ public class ChatNotificationService extends Service {
             @Override
             public void onSuccess(Usuario usuario) {
                 String nombreUsuario = usuario != null ?
-                        usuario.getNombre() + " " + usuario.getApellido() : "Alguien";
+                        usuario.getNombre() + " " + usuario.getApellido() : getString(R.string.alguien);
 
-                String title = "Nueva conversación";
-                String message = nombreUsuario + " quiere hablar contigo";
+                String title = getString(R.string.nueva_conversacion);
+                String message = nombreUsuario + " " + getString(R.string.quiere_hablar_contigo);
 
                 createNotification(title, message, chat.getChatid(), true);
             }
 
             @Override
             public void onError(String error) {
-                createNotification("Nueva conversación",
-                        "Tienes un nuevo chat", chat.getChatid(), true);
+                createNotification(getString(R.string.nueva_conversacion),
+                        getString(R.string.tienes_nuevo_chat), chat.getChatid(), true);
             }
         });
     }
 
+    /**
+     * Muestra una notificación para un nuevo mensaje
+     * @param chat Chat donde se recibió el mensaje
+     * @param mensaje Mensaje recibido
+     */
     private void showNewMessageNotification(Chat chat, Mensaje mensaje) {
-        // Obtener información del otro usuario
         int otroUsuarioId = getOtroUsuarioId(chat.getChatid());
 
         if (otroUsuarioId == -1) {
-            Log.e(TAG, "No se pudo obtener el otro usuario para el chat: " + chat.getChatid());
-            // Usar notificación genérica
-            createNotification("Nuevo mensaje",
+            createNotification(getString(R.string.nuevo_mensaje),
                     mensaje.getContenido(), chat.getChatid(), false);
             return;
         }
@@ -279,9 +312,9 @@ public class ChatNotificationService extends Service {
             @Override
             public void onSuccess(Usuario usuario) {
                 String nombreUsuario = usuario != null ?
-                        usuario.getNombre() + " " + usuario.getApellido() : "Alguien";
+                        usuario.getNombre() + " " + usuario.getApellido() : getString(R.string.alguien);
 
-                String title = "Mensaje de " + nombreUsuario;
+                String title = getString(R.string.mensaje_de, nombreUsuario);
                 String message = mensaje.getContenido();
 
                 if (message.length() > 50) {
@@ -293,47 +326,44 @@ public class ChatNotificationService extends Service {
 
             @Override
             public void onError(String error) {
-                // Notificación genérica si falla
-                createNotification("Nuevo mensaje",
+                createNotification(getString(R.string.nuevo_mensaje),
                         mensaje.getContenido(), chat.getChatid(), false);
             }
         });
     }
 
+    /**
+     * Obtiene el ID del otro usuario en un chat
+     * @param chatId ID del chat
+     * @return ID del otro usuario o -1 si no se encuentra
+     */
     private int getOtroUsuarioId(int chatId) {
         if (usuarioActual == null) {
-            Log.e(TAG, "Usuario actual es null");
             return -1;
         }
 
-        Log.d(TAG, "Buscando otro usuario para chat: " + chatId + ", usuario actual: " + usuarioActual.getUsuarioid());
-
-        // Método 1: Buscar en cache local
         for (Chat chat : cachedChats) {
             if (chat.getChatid() == chatId) {
                 int otroUsuarioId = (chat.getUsuario1id() == usuarioActual.getUsuarioid()) ?
                         chat.getUsuario2id() : chat.getUsuario1id();
-                Log.d(TAG, "Encontrado en cache: " + otroUsuarioId);
                 return otroUsuarioId;
             }
         }
 
-        Log.d(TAG, "Chat no encontrado en cache, buscando en SharedPreferences...");
-
-        // Método 2: Buscar en SharedPreferences
         String chatKey = "chat_info_" + chatId;
         int savedOtroUsuarioId = notificationPrefs.getInt(chatKey, -1);
         if (savedOtroUsuarioId != -1) {
-            Log.d(TAG, "Encontrado en SharedPreferences: " + savedOtroUsuarioId);
             return savedOtroUsuarioId;
         }
 
-        Log.d(TAG, "No encontrado localmente, consultando API...");
-
-        // Método 3: Consultar API
         return fetchOtroUsuarioIdSynchronous(chatId);
     }
 
+    /**
+     * Obtiene el ID del otro usuario de forma síncrona desde la API
+     * @param chatId ID del chat
+     * @return ID del otro usuario o -1 si no se encuentra
+     */
     private int fetchOtroUsuarioIdSynchronous(int chatId) {
         final int[] resultado = {-1};
         final Object lock = new Object();
@@ -346,11 +376,8 @@ public class ChatNotificationService extends Service {
                         resultado[0] = (chat.getUsuario1id() == usuarioActual.getUsuarioid()) ?
                                 chat.getUsuario2id() : chat.getUsuario1id();
 
-                        // Guardar en cache y SharedPreferences para futuras referencias
                         saveChatToCache(chat);
                         saveChatToPreferences(chat);
-
-                        Log.d(TAG, "Obtenido de API: " + resultado[0]);
                     }
                     lock.notify();
                 }
@@ -359,36 +386,39 @@ public class ChatNotificationService extends Service {
             @Override
             public void onError(String error) {
                 synchronized (lock) {
-                    Log.e(TAG, "Error obteniendo chat de API: " + error);
                     lock.notify();
                 }
             }
         });
 
-        // Esperar máximo 5 segundos por la respuesta
         synchronized (lock) {
             try {
                 lock.wait(5000);
             } catch (InterruptedException e) {
-                Log.e(TAG, "Interrupción esperando respuesta de API", e);
             }
         }
 
         return resultado[0];
     }
 
+    /**
+     * Guarda un chat en la cache local
+     * @param chat Chat a guardar
+     */
     private void saveChatToCache(Chat chat) {
-        // Remover si ya existe
         for (int i = 0; i < cachedChats.size(); i++) {
             if (cachedChats.get(i).getChatid() == chat.getChatid()) {
                 cachedChats.remove(i);
                 break;
             }
         }
-        // Agregar el nuevo
         cachedChats.add(chat);
     }
 
+    /**
+     * Guarda información del chat en SharedPreferences
+     * @param chat Chat a guardar
+     */
     private void saveChatToPreferences(Chat chat) {
         if (usuarioActual != null) {
             int otroUsuarioId = (chat.getUsuario1id() == usuarioActual.getUsuarioid()) ?
@@ -397,22 +427,24 @@ public class ChatNotificationService extends Service {
             String chatKey = "chat_info_" + chat.getChatid();
             notificationPrefs.edit()
                     .putInt(chatKey, otroUsuarioId)
-                    .putInt("chat_solicitud_" + chat.getChatid(), chat.getSolicitudid()) // NUEVO
+                    .putInt("chat_solicitud_" + chat.getChatid(), chat.getSolicitudid())
                     .apply();
-
-            Log.d(TAG, "Chat guardado en preferences: " + chat.getChatid() +
-                    " -> Usuario: " + otroUsuarioId + ", Solicitud: " + chat.getSolicitudid());
         }
     }
 
+    /**
+     * Crea y muestra una notificación
+     * @param title Título de la notificación
+     * @param message Mensaje de la notificación
+     * @param chatId ID del chat relacionado
+     * @param isNewChat Indica si es un chat nuevo
+     */
     private void createNotification(String title, String message, int chatId, boolean isNewChat) {
-        // Generar un ID único para cada notificación
         int notificationId = generateUniqueNotificationId(chatId);
 
         Intent intent;
         if (isNewChat) {
             intent = new Intent(this, Mensajeria.class);
-            // IMPORTANTE: Limpiar el stack y crear nueva tarea
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         } else {
             intent = new Intent(this, ChatC.class);
@@ -420,11 +452,9 @@ public class ChatNotificationService extends Service {
             intent.putExtra("solicitud_id", -1);
             intent.putExtra("otro_usuario_id", getOtroUsuarioId(chatId));
 
-            // NUEVO: Obtener y pasar el solicitud_id real del chat
             int solicitudId = getSolicitudIdFromChat(chatId);
             intent.putExtra("solicitud_id", solicitudId);
 
-            // IMPORTANTE: Configurar flags para navegación correcta
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         }
 
@@ -449,37 +479,44 @@ public class ChatNotificationService extends Service {
             builder.setStyle(new NotificationCompat.BigTextStyle().bigText(message));
         }
 
-        // ⬇️⬇️⬇️ ESTA ES LA LÍNEA CRÍTICA - CAMBIAR POR:
         android.app.NotificationManager notificationManager =
                 (android.app.NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         notificationManager.notify(notificationId, builder.build());
-
-        Log.d(TAG, "Notificación creada - ID: " + notificationId + ", Chat: " + chatId);
     }
 
-    // NUEVO MÉTODO: Obtener solicitud_id del chat
+    /**
+     * Obtiene el ID de solicitud asociado a un chat
+     * @param chatId ID del chat
+     * @return ID de la solicitud o -1 si no se encuentra
+     */
     private int getSolicitudIdFromChat(int chatId) {
-        // Buscar en cache primero
         for (Chat chat : cachedChats) {
             if (chat.getChatid() == chatId) {
                 return chat.getSolicitudid();
             }
         }
 
-        // Si no está en cache, intentar obtener de SharedPreferences o API
         String chatKey = "chat_solicitud_" + chatId;
         return notificationPrefs.getInt(chatKey, -1);
     }
 
+    /**
+     * Genera un ID único para la notificación
+     * @param chatId ID del chat
+     * @return ID único para la notificación
+     */
     private int generateUniqueNotificationId(int chatId) {
-        // Combinar chatId con timestamp para crear un ID único
         return (chatId * 10000) + (int) (System.currentTimeMillis() % 10000);
     }
+
+    /**
+     * Método que se ejecuta cuando se destruye el servicio
+     * Limpia los recursos y detiene el polling
+     */
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "Servicio destruido");
         if (pollingHandler != null && pollingRunnable != null) {
             pollingHandler.removeCallbacks(pollingRunnable);
         }

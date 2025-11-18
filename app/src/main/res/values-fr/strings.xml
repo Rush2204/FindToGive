@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--    ChatC-->
+    <string name="app_name">FindToGive</string>
+    <string name="pegar_texto">Maintenez enfoncé pour coller</string>
+    <string name="chat_cerrado_solicitud">"Chat fermé - Demande "</string>
+    <string name="esta_solicitud">"Cette demande est "</string>
+    <string name="solo_puedes_ver_los_mensajes">. Vous pouvez seulement voir les messages.</string>
+    <string name="error_id_chat_invalido">Erreur : ID de chat invalide</string>
+    <string name="no_puedes_enviar_mensajes_en_solicitudes">"Vous ne pouvez pas envoyer de messages dans les demandes "</string>
+    <string name="escribe_un_mensaje">Écrivez un message</string>
+    <string name="error_no_se_puede_enviar_el_mensaje">Erreur : Impossible d\'envoyer le message</string>
+    <string name="error_enviando_mensaje">"Erreur en envoyant le message: "</string>
+    <string name="tienes_un_nuevo_mensaje">Vous avez un nouveau message</string>
+    <string name="quiere_hablar_contigo">" veut parler avec vous"</string>
+
+    <!--    EdicionPerfil-->
+    <string name="santa_ana_el_salvador">Santa Ana, Salvador</string>
+    <string name="ubicacion_fija">Localisation (Fixe)</string>
+    <string name="error_cargar_info_usuario">Erreur : Impossible de charger les informations de l\'utilisateur</string>
+    <string name="no_se_detectaron_cambios_para_guardar">Aucun changement détecté à sauvegarder</string>
+    <string name="guardando">Sauvegarde en cours…</string>
+    <string name="perfil_actualizado_exitosamente">Profil mis à jour avec succès</string>
+    <string name="email_en_uso">L\'email est déjà utilisé par un autre utilisateur</string>
+    <string name="error_al_actualizar_perfil">"Erreur lors de la mise à jour du profil: "</string>
+    <string name="solo_se_permiten_letras_y_espacios">Seules les lettres et les espaces sont autorisés</string>
+    <string name="correo_valido">Entrez un email valide</string>
+    <string name="formato_telefono">Format : XXXX-XXXX (8 chiffres)</string>
+    <string name="guardar_cambios">Sauvegarder les modifications</string>
+    <string name="email_ya_registrado">Cet email est déjà enregistré</string>
+
+    <!--    FeedDonacion-->
+    <string name="no_hay_solicitudes_activas">Aucune demande active</string>
+    <string name="sin_solicitudes_en_el_area">Actuellement aucune demande de don dans votre région. Les receveurs créeront de nouvelles demandes bientôt.</string>
+    <string name="vuelve_pronto">Il semble que tout le monde soit couvert. Revenez bientôt ou créez-en une si vous en avez besoin !</string>
+    <string name="sin_solicitudes">Aucune demande active pour le moment !</string>
+    <string name="solo_receptores_pueden_crear_solicitudes">Seuls les receveurs peuvent créer des demandes</string>
+    <string name="permisos_de_ubicacion">Autorisations de localisation nécessaires pour utiliser cette fonction</string>
+    <string name="notificaciones_activadas">Notifications activées</string>
+    <string name="las_notificaciones_estaran_desactivadas">Les notifications seront désactivées</string>
+    <string name="error_al_buscar_solicitudes">Erreur lors de la recherche de demandes</string>
+    <string name="resultados_sin_filtros">%d demandes trouvées</string>
+    <string name="resultados_solo_query">%d demandes trouvées pour \"%s\"</string>
+    <string name="resultados_solo_sangre">%d demandes trouvées de type %s</string>
+    <string name="resultados_ambos_filtros">%d demandes trouvées pour \"%s\" de type %s</string>
+    <string name="no_se_encontraron_resultados">Aucun résultat trouvé</string>
+    <string name="empty_state_sin_filtros">Aucune demande disponible pour le moment</string>
+    <string name="empty_state_solo_query">Aucune demande correspondant à \"%s\"</string>
+    <string name="empty_state_solo_sangre">Aucune demande du groupe sanguin %s</string>
+    <string name="empty_state_ambos_filtros">Aucune demande correspondant à \"%s\" et groupe sanguin %s</string>
+    <string name="filtros_limpiados">Filtres effacés</string>
+    <string name="ambos_filtros_activos">Demandes pour \"%s\" - Type : %s</string>
+    <string name="solo_query_activo">Demandes pour \"%s\"</string>
+    <string name="solo_sangre_activo">Demandes - Type : %s</string>
+    <string name="obteniendo_ubicacion">Obtention de votre localisation…</string>
+    <string name="error_al_acceder_al_servicio_de_ubicacion">Erreur d\'accès au service de localisation</string>
+    <string name="por_favor_activa_el_gps">Veuillez activer le GPS</string>
+    <string name="error_al_obtener_ubicacion">Erreur lors de l\'obtention de la localisation</string>
+    <string name="se_encontraron">"Trouvé "</string>
+    <string name="solicitudes">" demandes"</string>
+    <string name="error_filtrar_ubicacion">Erreur lors du filtrage par localisation</string>
+    <string name="filtro_ubicacion_desactivado">Filtre de localisation désactivé</string>
+    <string name="solicitudes_cercanas">Demandes à proximité</string>
+    <string name="solicitudes_donacion">Demandes de don</string>
+    <string name="no_hay_solicitudes_cercanas">Aucune demande à proximité</string>
+    <string name="no_solicitudes_en_km">Aucune demande active trouvée dans un rayon de 3,5 km de votre localisation.</string>
+
+    <!--    HistorialDonaciones-->
+    <string name="debe_iniciar_sesion">Vous devez vous connecter.</string>
+    <string name="solicitudes_activas">Demandes Actives</string>
+    <string name="estado_activas">Actives</string>
+    <string name="estado_completadas">Terminées</string>
+    <string name="estado_canceladas">Annulées</string>
+    <string name="estado_todas">Toutes</string>
+    <string name="rol_receptor">En tant que Receveur</string>
+    <string name="rol_donante">En tant que Donneur</string>
+    <string name="rol_todos">Tous</string>
+    <string name="filtros_aplicados">Filtres appliqués</string>
+    <string name="solo_el_creador_de_la_solicitud_puede_cancelarla">Seul le créateur de la demande peut l\'annuler</string>
+    <string name="desea_cancelar_esta_solicitud">Voulez-vous annuler cette demande ?</string>
+    <string name="cancelar">ANNULER</string>
+    <string name="solo_el_creador_de_la_solicitud_puede_completar">Seul le créateur de la demande peut la terminer</string>
+    <string name="marcar_esta_solicitud_como_completada">Marquer cette demande comme terminée ?</string>
+    <string name="completar">TERMINER</string>
+    <string name="solicitud_cancelada">Demande annulée</string>
+    <string name="error_al_cancelar_solicitud">"Erreur lors de l\'annulation de la demande: "</string>
+    <string name="solicitud_completada">Demande terminée</string>
+    <string name="error_al_completar_solicitud">"Erreur lors de la finalisation de la demande: "</string>
+    <string name="mi_historial_filtrado">Boîte de réception filtrée</string>
+    <string name="estado">"État: "</string>
+    <string name="rol">"Rôle: "</string>
+
+    <!--    Login-->
+    <string name="iniciando_sesion">Connexion en cours…</string>
+    <string name="el_correo_electronico_es_requerido">L\'email est requis</string>
+    <string name="ingresa_un_correo_electronico_valido">Entrez un email valide</string>
+    <string name="la_contrasena_es_requerida">Le mot de passe est requis</string>
+    <string name="la_contrasena_debe_tener_al_menos_6_caracteres">Le mot de passe doit contenir au moins 6 caractères</string>
+    <string name="bienvenida_usuario">Bienvenue %s !</string>
+    <string name="iniciar_sesion">Se connecter</string>
+    <string name="correo_o_contrasena_incorrectos">Email ou mot de passe incorrect</string>
+    <string name="credenciales_incorrectas">Identifiants incorrects</string>
+    <string name="error_de_conexion_verifica_tu_internet">Erreur de connexion. Vérifiez votre internet</string>
+    <string name="error">"Erreur: "</string>
+
+    <!--    Mensajeria-->
+    <string name="edad_formato">Âge : %d ans</string>
+    <string name="tipo_sangre_formato">Groupe sanguin : %s</string>
+    <string name="rol_formato">Rôle : %s</string>
+    <string name="desconocido">Inconnu</string>
+    <string name="donante">Donneur</string>
+    <string name="receptor">Receveur</string>
+    <string name="rol_ambos">Les deux</string>
+    <string name="chats_solicitud">Chats de demande</string>
+    <string name="mensajeria">Messagerie</string>
+
+    <!--    PerfilUsuario-->
+    <string name="edad_formato_perfil">%d ans</string>
+    <string name="no_especificado">Non spécifié</string>
+    <string name="no_especificada">Non spécifiée</string>
+    <string name="error_subir_imagen">Erreur lors du téléchargement de l\'image : %s</string>
+    <string name="foto_perfil_actualizada">Photo de profil mise à jour</string>
+    <string name="error_actualizar_foto">Erreur lors de la mise à jour de la photo : %s</string>
+    <string name="error_generico">Erreur : %s</string>
+    <string name="rol_donante_receptor">Donneur et Receveur</string>
+    <string name="rol_usuario">Utilisateur</string>
+    <string name="error_al_actualizar_foto">"Erreur lors de la mise à jour de la photo: "</string>
+    <string name="registrando">Inscription en cours…</string>
+
+    <!--    Registro-->
+    <!-- Mensajes de validación para registro -->
+    <string name="nombre_requerido">Le nom est requis</string>
+    <string name="nombre_solo_letras_espacios">Le nom ne peut contenir que des lettres et des espaces</string>
+    <string name="nombre_min_caracteres">Le nom doit contenir au moins 2 caractères</string>
+    <string name="apellido_requerido">Le prénom est requis</string>
+    <string name="apellido_solo_letras_espacios">Le prénom ne peut contenir que des lettres et des espaces</string>
+    <string name="apellido_min_caracteres">Le prénom doit contenir au moins 2 caractères</string>
+    <string name="email_requerido">L\'email est requis</string>
+    <string name="email_valido_requerido">Entrez un email valide</string>
+    <string name="password_requerido">Le mot de passe est requis</string>
+    <string name="password_min_caracteres">Le mot de passe doit contenir au moins 8 caractères</string>
+    <string name="password_fuerte_requerida">Le mot de passe doit inclure des majuscules, minuscules et chiffres</string>
+    <string name="edad_requerida">L\'âge est requis</string>
+    <string name="edad_rango_valido">L\'âge doit être entre 18 et 65 ans</string>
+    <string name="edad_valida_requerida">Entrez un âge valide</string>
+    <string name="telefono_requerido">Le téléphone est requis</string>
+    <string name="registrarse">S\'inscrire</string>
+    <string name="registro_exitoso_bienvenida">Inscription réussie ! Bienvenue %s</string>
+    <string name="error_registro">Erreur d\'inscription : %s</string>
+
+    <!--    SolicitudDonacionC-->
+    <string name="imagen_seleccionada_cambiar">Image sélectionnée - Appuyez pour changer</string>
+    <string name="acceso_restringido">Accès restreint</string>
+    <string name="ir_al_feed">Aller au Fil d\'actualité</string>
+    <string name="donantes_no_pueden_crear_solicitudes">Les donneurs ne peuvent pas créer de demandes de don. Votre rôle actuel est : %s</string>
+    <string name="cerrar">Fermer</string>
+    <string name="error_cargar_hospitales">Impossible de charger les hôpitaux</string>
+    <string name="error_cargar_hospitales_detalle">Erreur lors du chargement des hôpitaux : %s</string>
+    <string name="error_obtener_info_usuario">Erreur : Impossible d\'obtenir les informations de l\'utilisateur</string>
+    <string name="error_id_solicitud_invalido">Erreur : ID de demande invalide</string>
+    <string name="creando_solicitud">Création de demande en cours…</string>
+    <string name="enviar_solicitud">Envoyer la demande</string>
+    <string name="error_crear_solicitud">Erreur lors de la création de la demande : %s</string>
+    <string name="error_subir_imagen_solicitud">Demande créée mais erreur lors du téléchargement de l\'image : %s</string>
+    <string name="error_actualizar_imagen_solicitud">Demande créée mais erreur lors de la mise à jour de l\'image : %s</string>
+    <string name="solicitud_creada_exitosamente">Demande créée avec succès !</string>
+    <string name="titulo_requerido">Le titre est requis</string>
+    <string name="titulo_min_caracteres">Le titre doit contenir au moins 5 caractères</string>
+    <string name="descripcion_requerida">La description est requise</string>
+    <string name="descripcion_min_caracteres">La description doit contenir au moins 10 caractères</string>
+    <string name="no_hospitales_disponibles">Aucun hôpital disponible</string>
+
+    <!--    ChatNotificationService-->
+    <string name="emergencias_no_esperan">Les urgences n\'attendent pas !</string>
+    <string name="notificaciones_chats_mensajes_desc">Notifications de chats et messages</string>
+    <string name="nueva_conversacion">Nouvelle conversation</string>
+    <string name="tienes_nuevo_chat">Vous avez un nouveau chat</string>
+    <string name="alguien">Quelqu\'un</string>
+    <string name="nuevo_mensaje">Nouveau message</string>
+    <string name="mensaje_de">Message de %s</string>
+
+    <!--    ChatsAdapter-->
+    <string name="cargando">Chargement…</string>
+    <string name="cargando_mensajes">Chargement des messages…</string>
+    <string name="usuario">Utilisateur</string>
+    <string name="iniciar_conversacion">Démarrer une conversation</string>
+    <string name="ahora">Maintenant</string>
+    <string name="hace_minutos">il y a %d min</string>
+    <string name="hace_horas">il y a %d h</string>
+    <string name="ayer">Hier</string>
+    <string name="hace_dias">il y a %d j</string>
+
+    <!--    FiltroBusquedaDialog-->
+    <string name="todos_los_tipos">Tous les types</string>
+
+    <!--    HistorialAdapter-->
+    <!-- Textos para historial -->
+    <string name="sin_titulo">Sans titre</string>
+    <string name="fecha_prefix">Date : </string>
+    <string name="tipo_sangre_prefix">Groupe sanguin : </string>
+    <string name="hospital_prefix">Hôpital : </string>
+    <string name="hospital">Hôpital</string>
+    <string name="cargando_hospital">Chargement de l\'hôpital…</string>
+    <string name="error_abrir_ubicacion">Erreur lors de l\'ouverture de la localisation</string>
+    <string name="fecha_no_disponible">Date non disponible</string>
+    <string name="fecha_invalida">Date invalide</string>
+
+    <!--    HistorialFiltroDialog-->
+    <string name="todas_las_solicitudes">Toutes les demandes</string>
+    <string name="solo_activas">Seulement actives</string>
+    <string name="solo_completadas">Seulement terminées</string>
+    <string name="solo_canceladas">Seulement annulées</string>
+    <string name="todos_los_roles">Tous les rôles</string>
+    <string name="solicitudes_creadas">Demandes créées</string>
+    <string name="solicitudes_iniciadas">Demandes initiées</string>
+
+    <!--    MensajesAdapter-->
+    <string name="mensaje_chat_label">Message de chat</string>
+    <string name="mensaje_copiado">Message copié</string>
+    <string name="error_copiar">Erreur lors de la copie</string>
+    <string name="mensaje_leido">✓✓</string>
+    <string name="mensaje_enviado">✓</string>
+
+    <!--    NotificacionAdapter-->
+    <string name="reciente">Récent</string>
+    <string name="hace_minutos_notif">il y a %d min</string>
+    <string name="hace_horas_notif">il y a %d h</string>
+    <string name="hace_dias_notif">il y a %d j</string>
+
+    <!--    SolicitudesAdapter-->
+    <string name="sin_descripcion">Aucune description</string>
+    <string name="proximamente">bientôt</string>
+    <string name="hace_segundos">il y a %d secondes</string>
+    <string name="hace_unos_segundos">il y a quelques secondes</string>
+    <string name="receptores_no_pueden_chatear">Les receveurs ne peuvent pas démarrer de chats</string>
+    <string name="no_chatear_contigo_mismo">Vous ne pouvez pas chatter avec vous-même</string>
+    <string name="error_crear_chat">Erreur lors de la création du chat : %s</string>
+
+    <!-- Plurals para tiempos -->
+    <plurals name="en_dias">
+        <item quantity="one">dans %d jour</item>
+        <item quantity="other">dans %d jours</item>
+    </plurals>
+    <plurals name="en_horas">
+        <item quantity="one">dans %d heure</item>
+        <item quantity="other">dans %d heures</item>
+    </plurals>
+    <plurals name="en_minutos">
+        <item quantity="one">dans %d minute</item>
+        <item quantity="other">dans %d minutes</item>
+    </plurals>
+    <plurals name="hace_dias">
+        <item quantity="one">il y a %d jour</item>
+        <item quantity="other">il y a %d jours</item>
+    </plurals>
+    <plurals name="hace_horas">
+        <item quantity="one">il y a %d heure</item>
+        <item quantity="other">il y a %d heures</item>
+    </plurals>
+    <plurals name="hace_minutos">
+        <item quantity="one">il y a %d minute</item>
+        <item quantity="other">il y a %d minutes</item>
+    </plurals>
+
+    <!--    vistas-->
+    <!--    desing_perfil_usuario-->
+    <string name="ajustes">Paramètres</string>
+    <string name="mi_perfil">Mon Profil</string>
+    <string name="logo_findtogive">logo_findtogive</string>
+    <string name="editar_foto">Modifier la photo</string>
+    <string name="informaci_n_y_contacto">Informations et Contact</string>
+    <string name="correo_electr_nico">Email</string>
+    <string name="edad">Âge</string>
+    <string name="tel_fono">Téléphone</string>
+    <string name="ubicaci_n">Localisation</string>
+    <string name="rol_en_findtogive">Rôle dans FindToGive</string>
+    <string name="rol_asignado">Rôle Assigné</string>
+    <string name="editar_perfil">Modifier le profil</string>
+    <string name="cerrar_sesi_n">Déconnexion</string>
+
+    <!--    desing_chat-->
+    <string name="boton_de_retroceso">bouton de retour</string>
+    <string name="escribe_tu_mensaje">écrivez votre message</string>
+    <string name="enviarmensaje">envoyer message</string>
+
+    <!--    desing_edicion_perfil-->
+    <string name="editar_perfil_diseño">Modifier le profil</string>
+    <string name="nombre">Nom</string>
+    <string name="apellido">Prénom</string>
+    <string name="correo_electronico">Email</string>
+    <string name="tel_fono_9_d_gitos">Téléphone (9 chiffres)</string>
+    <string name="ubicacion">Localisation</string>
+    <string name="cambiar_rol">Changer de rôle</string>
+    <string name="cambiar_tipo_de_sangre">Changer le groupe sanguin</string>
+    <string name="guardar_cambio">Sauvegarder les modifications</string>
+
+    <!--    desing_feed_donaciones-->
+    <string name="solicitudes_de_donaci_n">Demandes de don</string>
+    <string name="filtros_activos">Filtres actifs</string>
+    <string name="buscar_o_filtrar">Rechercher ou Filtrer</string>
+    <string name="filtrar_por_ubicaci_n">Filtrer par localisation</string>
+    <string name="icono_de_estado_vac_o">Icône d\'état vide</string>
+    <string name="no_hay_solicitudes_activas_por_ahora">Aucune demande active pour le moment !</string>
+    <string name="parece_que_todos_est_n_cubiertos_vuelve_pronto_o_crea_una_si_lo_necesitas">Il semble que tout le monde soit couvert. Revenez bientôt ou créez-en une si vous en avez besoin !</string>
+    <string name="crear_solicitud">Créer une demande</string>
+
+    <!--    desing_historial_donaciones-->
+    <string name="mi_historial_de_donaciones">Mon historique de dons</string>
+    <string name="filtros_activo">Filtres actifs</string>
+    <string name="filtrar_historial">Filtrer l\'historique</string>
+    <string name="no_hay_historial">Aucun historique</string>
+    <string name="a_n_no_has_realizado_donaciones">Vous n\'avez pas encore effectué de dons !</string>
+    <string name="an_mate_a_salvar_una_vida_hoy_mismo">Soyez encouragé à sauver une vie aujourd\'hui même !</string>
+
+    <!--    desing_item_chat_list-->
+    <string name="foto_de_perfil">Photo de profil</string>
+
+    <!--    desing_item_chat_receive-->
+    <string name="foto_de_perfil_chat">Photo de profil</string>
+
+    <!--    desing_item_chat_send-->
+    <string name="check">✓</string>
+
+    <!--    desing_item_historial-->
+    <string name="icono_de_rol">Icône de rôle</string>
+    <string name="hay_nuevos_mensajes">💬 Il y a de nouveaux messages</string>
+    <string name="completar_solicitud">Terminer la demande</string>
+    <string name="eliminar_registro">Supprimer l\'enregistrement</string>
+
+    <!--    desing_item_notificacion-->
+    <string name="icono_de_notificaci_n">Icône de notification</string>
+
+    <!--    desing_item_solicitud-->
+    <string name="foto_perfil">Photo de profil</string>
+    <string name="chatear">Chatter</string>
+    <string name="hace_2_horas">il y a 2 heures</string>
+    <string name="t_tulo_de_solicitud">Titre de la demande</string>
+    <string name="descripci_n_de_la_solicitud">Description de la demande…</string>
+    <string name="imagen_adjunta">Image jointe</string>
+    <string name="o">O+</string>
+    <string name="santa_ana">Santa Ana</string>
+
+    <!--    desing_login-->
+    <string name="bienvenido_a_findtogive">Bienvenue sur FindToGive</string>
+    <string name="logo_de_findtogive">logo_de_findtogive</string>
+    <string name="introduce_tu_correo_electr_nico">Entrez votre email</string>
+    <string name="introduce_tu_contrase_a">Entrez votre mot de passe</string>
+    <string name="iniciar_sesi_n">Se connecter</string>
+    <string name="no_tienes_una_cuenta">Vous n\'avez pas de compte</string>
+    <string name="reg_strate_aqu">Inscrivez-vous ici</string>
+
+    <!--    desing_mensajeria-->
+    <string name="mensajer_a">Messagerie</string>
+    <string name="icono_de_mensajes_vac_os">Icône de messages vides</string>
+    <string name="a_n_no_tienes_chats_activos">Vous n\'avez pas encore de chats actifs !</string>
+    <string name="los_chats_aparecer_n_aqu_cuando_respondas_o_inicies_una_solicitud_de_donaci_n">Les chats apparaîtront ici lorsque vous répondrez ou initierez une demande de don.</string>
+
+    <!--    desing_notificaciones-->
+    <string name="notificaciones">Activité</string>
+    <string name="todo_en_calma">Tout est calme !</string>
+    <string name="no_tienes_avisos_o_notificaciones_nuevas_por_el_momento_te_avisaremos_cuando_haya_actividad">Vous n\'avez aucune alerte ou notification nouvelle pour le moment. Nous vous avertirons lorsqu\'il y aura de l\'activité.</string>
+
+    <!--    desing_registro-->
+    <string name="crea_tu_cuenta">Créez votre compte</string>
+    <string name="nete_a_la_comunidad_de_findtogive">Rejoignez la communauté FindToGive.</string>
+    <string name="contrase_a_m_nimo_9_digitos">Mot de passe (Minimum 9 chiffres)</string>
+    <string name="n_mero_de_tel_fono">Numéro de téléphone</string>
+    <string name="rol_dentro_de_la_comunidad">Rôle dans la communauté</string>
+    <string name="tipo_de_sangre">Groupe sanguin</string>
+    <string name="ya_tienes_una_cuenta_iniciar_sesi_n">Vous avez déjà un compte ? Se connecter</string>
+
+    <!--    desing_solicitud_donacion-->
+    <string name="crear_solicitud_de_donaci_n">Créer une demande de don</string>
+    <string name="t_tulo">Titre</string>
+    <string name="introduce_un_t_tulo_descriptivo_para_tu_solicitud">Entrez un titre descriptif pour votre demande</string>
+    <string name="descripci_n">Description</string>
+    <string name="detalles_sobre_la_donaci_n_de_sangre">Détails sur le don de sang</string>
+    <string name="tipo_de_sangre_requerido">Groupe sanguin requis</string>
+    <string name="adjuntar_imagen">Joindre une image</string>
+    <string name="vista_previa_de_la_imagen_seleccionada">Aperçu de l\'image sélectionnée</string>
+    <string name="c_mara_icono">icône caméra</string>
+    <string name="sube_una_imagen_relacionada_con_tu_solicitud">Téléchargez une image liée à votre demande</string>
+
+    <!--    desing_filtro_busqueda-->
+    <string name="buscar_y_filtrar">Rechercher et Filtrer</string>
+    <string name="buscar_por_t_tulo">Rechercher par titre</string>
+    <string name="limpiar">Effacer</string>
+    <string name="aplicar">Appliquer</string>
+
+    <!--    desing_historial_filtro-->
+    <string name="filtrar_historiall">Filtrer l\'historique</string>
+    <string name="estado_de_la_solicitud">État de la demande</string>
+    <string name="tu_rol_en_la_solicitud">Votre rôle dans la demande</string>
+
+    <!--    desing_info_usuario-->
+    <string name="nombre_apellido">Nom Prénom</string>
+    <string name="edad_25_a_os">Âge : 25 ans</string>
+    <string name="tipo_de_sangre_o">Groupe sanguin : O+</string>
+    <string name="rol_donante_desing">Rôle : Donneur</string>
+
+    <!--    menu_navegacion-->
+    <string name="inicio">Accueil</string>
+    <string name="crear">Créer</string>
+    <string name="avisos">Alertes</string>
+    <string name="bandeja">Boîte de réception</string>
+    <string name="perfil">Profil</string>
+
+    <string-array name="roles_array">
+        <item>Donneur</item>
+        <item>Receveur</item>
+        <item>Les deux</item>
+    </string-array>
+    <string-array name="tipos_sangre_array">
+        <item>A+</item>
+        <item>A-</item>
+        <item>B+</item>
+        <item>B-</item>
+        <item>AB+</item>
+        <item>AB-</item>
+        <item>O+</item>
+        <item>O-</item>
+    </string-array>
+</resources>

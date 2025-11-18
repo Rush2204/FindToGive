@@ -35,7 +35,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
     private Map<Integer, Usuario> usuariosMap;
     private Map<Integer, List<Mensaje>> mensajesMap;
     private Map<Integer, String> ultimoMensajeMap;
-    private Map<Integer, String> ultimaFechaEnvioMap; // NUEVO: Guardar fecha original
+    private Map<Integer, String> ultimaFechaEnvioMap;
     private Map<Integer, Integer> ultimoMensajeIdMap;
     private Usuario usuarioActual;
 
@@ -45,11 +45,14 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
         this.usuariosMap = new HashMap<>();
         this.mensajesMap = new HashMap<>();
         this.ultimoMensajeMap = new HashMap<>();
-        this.ultimaFechaEnvioMap = new HashMap<>(); // NUEVO
+        this.ultimaFechaEnvioMap = new HashMap<>();
         this.ultimoMensajeIdMap = new HashMap<>();
         this.usuarioActual = SharedPreferencesManager.getCurrentUser(context);
     }
 
+    /**
+     * Crea y retorna una nueva instancia de ChatViewHolder inflando el layout del item del chat
+     */
     @NonNull
     @Override
     public ChatViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -65,29 +68,39 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
 
     private OnFotoPerfilClickListener listener;
 
+    /**
+     * Establece el listener para manejar clicks en la foto de perfil
+     */
     public void setOnFotoPerfilClickListener(OnFotoPerfilClickListener listener) {
         this.listener = listener;
     }
 
+    /**
+     * Vincula los datos del chat en la posición especificada con el ViewHolder
+     */
     @Override
     public void onBindViewHolder(@NonNull ChatViewHolder holder, int position) {
         Chat chat = chatsList.get(position);
         holder.bind(chat);
     }
 
+    /**
+     * Retorna el número total de chats en la lista
+     */
     @Override
     public int getItemCount() {
         return chatsList.size();
     }
 
-    // NUEVO MÉTODO: Ordenar chats por ID del último mensaje (solo una vez)
+    /**
+     * Ordena los chats inicialmente separándolos en dos grupos: con mensajes y sin mensajes.
+     * Los chats con mensajes se ordenan por ID de mensaje descendente y se colocan primero,
+     * seguidos de los chats sin mensajes.
+     */
     private void ordenarChatsInicial() {
-        System.out.println("🔄 Aplicando orden inicial por ID de mensaje");
-
         List<Chat> chatsConMensajes = new ArrayList<>();
         List<Chat> chatsSinMensajes = new ArrayList<>();
 
-        // Separar chats con y sin mensajes
         for (Chat chat : chatsList) {
             Integer ultimoMensajeId = ultimoMensajeIdMap.get(chat.getChatid());
             if (ultimoMensajeId != null && ultimoMensajeId > 0) {
@@ -97,29 +110,25 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
             }
         }
 
-        // Ordenar chats con mensajes por ID descendente
         Collections.sort(chatsConMensajes, new Comparator<Chat>() {
             @Override
             public int compare(Chat chat1, Chat chat2) {
                 Integer id1 = ultimoMensajeIdMap.get(chat1.getChatid());
                 Integer id2 = ultimoMensajeIdMap.get(chat2.getChatid());
-                return id2.compareTo(id1); // Orden descendente
+                return id2.compareTo(id1);
             }
         });
 
-        // Combinar listas
         chatsList.clear();
         chatsList.addAll(chatsConMensajes);
         chatsList.addAll(chatsSinMensajes);
-
-        System.out.println("✅ Orden inicial aplicado - " + chatsConMensajes.size() + " con mensajes, " + chatsSinMensajes.size() + " sin mensajes");
     }
 
-    // Método para actualizar la lista completa de chats
+    /**
+     * Actualiza completamente la lista de chats, limpiando todas las cachés existentes
+     * y cargando nuevamente usuarios y mensajes para cada chat
+     */
     public void actualizarChats(List<Chat> nuevosChats) {
-        System.out.println("💥 ACTUALIZACIÓN DE CHATS: " + nuevosChats.size() + " chats");
-
-        // Limpiar TODO
         chatsList.clear();
         usuariosMap.clear();
         mensajesMap.clear();
@@ -127,15 +136,9 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
         ultimaFechaEnvioMap.clear();
         ultimoMensajeIdMap.clear();
 
-        // Agregar nuevos chats
         chatsList.addAll(nuevosChats);
-
-        // Notificar cambio
         notifyDataSetChanged();
 
-        System.out.println("✅ Lista de chats actualizada - " + chatsList.size() + " chats");
-
-        // Cargar usuarios y mensajes
         for (int i = 0; i < chatsList.size(); i++) {
             Chat chat = chatsList.get(i);
             int otroUsuarioId = (chat.getUsuario1id() == usuarioActual.getUsuarioid()) ?
@@ -146,6 +149,10 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
         }
     }
 
+    /**
+     * Carga la información de un usuario específico desde el servidor y la almacena en caché.
+     * Si el usuario ya está en caché, solo actualiza la vista correspondiente
+     */
     private void cargarUsuario(int usuarioId, int position) {
         if (usuariosMap.containsKey(usuarioId)) {
             runOnUiThread(() -> {
@@ -169,11 +176,14 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
 
             @Override
             public void onError(String error) {
-                System.out.println("❌ Error cargando usuario " + usuarioId);
             }
         });
     }
 
+    /**
+     * Carga todos los mensajes de un chat específico desde el servidor, identifica el último mensaje
+     * y actualiza las cachés correspondientes con su contenido, fecha e ID
+     */
     private void cargarMensajes(int chatId, int position) {
         ApiService.getMensajesByChat(chatId, new ApiService.ListCallback<Mensaje>() {
             @Override
@@ -181,7 +191,6 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
                 mensajesMap.put(chatId, mensajes);
 
                 if (mensajes != null && !mensajes.isEmpty()) {
-                    // Encontrar el mensaje con ID más alto
                     Mensaje ultimoMensaje = mensajes.get(0);
                     for (Mensaje mensaje : mensajes) {
                         if (mensaje.getMensajeid() > ultimoMensaje.getMensajeid()) {
@@ -190,12 +199,9 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
                     }
 
                     ultimoMensajeMap.put(chatId, ultimoMensaje.getContenido());
-                    ultimaFechaEnvioMap.put(chatId, ultimoMensaje.getFechaEnvio()); // Guardar fecha original
+                    ultimaFechaEnvioMap.put(chatId, ultimoMensaje.getFechaEnvio());
                     ultimoMensajeIdMap.put(chatId, ultimoMensaje.getMensajeid());
 
-                    System.out.println("✅ Mensajes cargados para chat " + chatId + " - ID: " + ultimoMensaje.getMensajeid());
-
-                    // Verificar si ya cargamos todos los mensajes para aplicar orden inicial
                     if (todosLosMensajesCargados()) {
                         runOnUiThread(() -> {
                             ordenarChatsInicial();
@@ -210,8 +216,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
                     }
 
                 } else {
-                    // No hay mensajes
-                    ultimoMensajeMap.put(chatId, "Iniciar conversación");
+                    ultimoMensajeMap.put(chatId, context.getString(R.string.iniciar_conversacion));
                     ultimaFechaEnvioMap.put(chatId, null);
                     ultimoMensajeIdMap.put(chatId, -1);
 
@@ -225,12 +230,13 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
 
             @Override
             public void onError(String error) {
-                System.out.println("❌ Error cargando mensajes para chat " + chatId);
             }
         });
     }
 
-    // NUEVO MÉTODO: Verificar si todos los mensajes están cargados
+    /**
+     * Verifica si todos los mensajes de todos los chats han sido cargados completamente
+     */
     private boolean todosLosMensajesCargados() {
         for (Chat chat : chatsList) {
             if (!ultimoMensajeIdMap.containsKey(chat.getChatid())) {
@@ -240,21 +246,18 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
         return true;
     }
 
-    // MÉTODO CLAVE: Solo actualizar si hay un mensaje nuevo
+    /**
+     * Actualiza un chat específico solo si se detecta un mensaje nuevo (con ID mayor al actual).
+     * Si es un mensaje nuevo, mueve el chat a la primera posición y actualiza las cachés
+     */
     public void actualizarChatSiEsNecesario(int chatId, String nuevoMensaje, String fechaEnvio, int nuevoMensajeId) {
         Integer mensajeIdActual = ultimoMensajeIdMap.get(chatId);
 
-        // SOLO actualizar si el ID del mensaje es mayor (mensaje nuevo)
         if (mensajeIdActual == null || nuevoMensajeId > mensajeIdActual) {
-            System.out.println("💬 MENSAJE NUEVO detectado - Chat: " + chatId +
-                    " - ID anterior: " + mensajeIdActual + ", ID nuevo: " + nuevoMensajeId);
-
-            // Actualizar cache
             ultimoMensajeMap.put(chatId, nuevoMensaje);
             ultimaFechaEnvioMap.put(chatId, fechaEnvio);
             ultimoMensajeIdMap.put(chatId, nuevoMensajeId);
 
-            // Mover el chat a la posición 0 solo si hay un mensaje nuevo
             int posicionActual = -1;
             Chat chatActualizado = null;
 
@@ -271,31 +274,31 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
                 chatsList.add(0, chatActualizado);
                 notifyItemMoved(posicionActual, 0);
                 notifyItemChanged(0);
-                System.out.println("🔼 Chat movido a posición 0 por mensaje nuevo (ID: " + nuevoMensajeId + ")");
             } else if (chatActualizado != null) {
                 notifyItemChanged(0);
-                System.out.println("✅ Chat actualizado en posición 0");
             }
-        } else {
-            // No hay mensaje nuevo, solo actualizamos el tiempo si es necesario
-            System.out.println("⏭️ Chat " + chatId + " sin mensajes nuevos (ID actual: " + mensajeIdActual + ")");
         }
     }
 
-    // NUEVO MÉTODO: Actualizar solo los tiempos sin reordenar
+    /**
+     * Actualiza los tiempos de los mensajes en todas las vistas sin reordenar los chats
+     */
     public void actualizarTiempos() {
-        // Solo actualizar las vistas que muestran tiempo, sin cambiar el orden
         for (int i = 0; i < chatsList.size(); i++) {
             notifyItemChanged(i);
         }
     }
 
-    // Método para compatibilidad
+    /**
+     * Método obsoleto para actualizar chat, mantenido por compatibilidad
+     */
     public void actualizarChat(int chatId, String nuevoMensaje, String horaMensaje) {
-        // No hacer nada aquí, usar actualizarChatSiEsNecesario en su lugar
-        System.out.println("⚠️ actualizarChat obsoleto llamado, usar actualizarChatSiEsNecesario");
     }
 
+    /**
+     * Calcula y formatea el tiempo transcurrido desde que se envió un mensaje.
+     * Retorna cadenas como "Ahora", "hace X min", "hace X h", "Ayer", etc.
+     */
     private String calcularTiempoMensaje(String fechaMensaje) {
         if (fechaMensaje == null || fechaMensaje.isEmpty()) {
             return "";
@@ -314,15 +317,15 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
             long dias = horas / 24;
 
             if (dias == 0 && horas == 0 && minutos == 0) {
-                return "Ahora";
+                return context.getString(R.string.ahora);
             } else if (dias == 0 && horas == 0) {
-                return "hace " + minutos + " min";
+                return context.getString(R.string.hace_minutos, minutos);
             } else if (dias == 0) {
-                return "hace " + horas + " h";
+                return context.getString(R.string.hace_horas, horas);
             } else if (dias == 1) {
-                return "Ayer";
+                return context.getString(R.string.ayer);
             } else if (dias < 7) {
-                return "hace " + dias + " d";
+                return context.getString(R.string.hace_dias, dias);
             } else {
                 return fechaLimpia.substring(0, 10);
             }
@@ -332,7 +335,9 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
         }
     }
 
-    // Agrega este método helper para ejecutar en UI thread
+    /**
+     * Ejecuta una acción en el hilo principal de la UI
+     */
     private void runOnUiThread(Runnable action) {
         if (context instanceof android.app.Activity) {
             ((android.app.Activity) context).runOnUiThread(action);
@@ -357,29 +362,28 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
             textLastMessageTime = itemView.findViewById(R.id.text_last_message_time);
         }
 
+        /**
+         * Vincula los datos del chat a los elementos de la vista y configura los listeners de click
+         */
         public void bind(Chat chat) {
             int position = getAdapterPosition();
 
-            // Determinar el ID del otro usuario
             int otroUsuarioId = (chat.getUsuario1id() == usuarioActual.getUsuarioid()) ?
                     chat.getUsuario2id() : chat.getUsuario1id();
 
-            // MOSTRAR DATOS
             Usuario usuario = usuariosMap.get(otroUsuarioId);
             if (usuario != null) {
                 mostrarDatosUsuario(usuario);
             } else {
-                textUserName.setText("Cargando...");
+                textUserName.setText(context.getString(R.string.cargando));
                 imgProfile.setImageResource(R.drawable.ico_logo_findtogive);
             }
 
-            // MOSTRAR MENSAJE Y TIEMPO (calculado en tiempo real)
             String ultimoMensaje = ultimoMensajeMap.get(chat.getChatid());
             String fechaEnvio = ultimaFechaEnvioMap.get(chat.getChatid());
 
             if (ultimoMensaje != null) {
                 textLastMessage.setText(ultimoMensaje);
-                // Calcular el tiempo en tiempo real cada vez que se renderiza
                 if (fechaEnvio != null) {
                     String tiempoActualizado = calcularTiempoMensaje(fechaEnvio);
                     textLastMessageTime.setText(tiempoActualizado);
@@ -387,11 +391,10 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
                     textLastMessageTime.setText("");
                 }
             } else {
-                textLastMessage.setText("Cargando mensajes...");
+                textLastMessage.setText(context.getString(R.string.cargando_mensajes));
                 textLastMessageTime.setText("");
             }
 
-            // Click listener para la foto de perfil
             imgProfile.setOnClickListener(v -> {
                 if (usuario != null && listener != null) {
                     listener.onFotoPerfilClick(usuario);
@@ -399,7 +402,6 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
             });
 
             itemView.setOnClickListener(v -> {
-                System.out.println("👆 Click en chat " + chat.getChatid());
                 Intent intent = new Intent(context, ChatC.class);
                 intent.putExtra("chat_id", chat.getChatid());
                 intent.putExtra("solicitud_id", chat.getSolicitudid());
@@ -407,13 +409,16 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
 
                 Usuario usuarioParaChat = usuariosMap.get(otroUsuarioId);
                 String nombreChat = usuarioParaChat != null ?
-                        usuarioParaChat.getNombre() + " " + usuarioParaChat.getApellido() : "Usuario";
+                        usuarioParaChat.getNombre() + " " + usuarioParaChat.getApellido() : context.getString(R.string.usuario);
                 intent.putExtra("chat_nombre", nombreChat);
 
                 context.startActivity(intent);
             });
         }
 
+        /**
+         * Muestra los datos del usuario en la vista, incluyendo nombre y foto de perfil
+         */
         private void mostrarDatosUsuario(Usuario usuario) {
             String nombreCompleto = usuario.getNombre() + " " + usuario.getApellido();
             textUserName.setText(nombreCompleto);

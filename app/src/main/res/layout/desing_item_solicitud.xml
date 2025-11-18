@@ -29,7 +29,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 tools:src="@drawable/logo_findtogive"
-                android:contentDescription="Foto de perfil" />
+                android:contentDescription="@string/foto_perfil" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -42,7 +42,7 @@
                     android:id="@+id/text_user_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Usuario"
+                    android:text="@string/usuario"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@android:color/black" />
@@ -51,7 +51,7 @@
                     android:id="@+id/text_time_ago"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="hace 2 horas"
+                    android:text="@string/hace_2_horas"
                     android:textColor="#9ca3af"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -63,7 +63,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Título de solicitud"
+            android:text="@string/t_tulo_de_solicitud"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="#DC2626" />
@@ -73,7 +73,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Descripción de la solicitud..."
+            android:text="@string/descripci_n_de_la_solicitud"
             android:textColor="#374151"
             android:textSize="14sp" />
 
@@ -86,7 +86,7 @@
             android:scaleType="centerCrop"
             android:background="#f5f5f5"
             android:visibility="gone"
-            android:contentDescription="Imagen adjunta"
+            android:contentDescription="@string/imagen_adjunta"
             tools:visibility="visible" />
 
         <!-- 4. Footer -->
@@ -104,7 +104,7 @@
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="6dp"
                 android:background="@drawable/badge_background_red"
-                android:text="O+"
+                android:text="@string/o"
                 android:textColor="@android:color/white"
                 android:textSize="14sp"
                 android:textStyle="bold" />
@@ -114,21 +114,23 @@
                 android:id="@+id/text_location_details"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_marginStart="8dp"
-                android:text="Santa Ana"
-                android:textColor="#2563EB"
-                android:textSize="14sp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
-                android:background="?attr/selectableItemBackground"
-                android:padding="4dp" />
+                android:minHeight="40dp"
+                android:padding="4dp"
+                android:text="@string/santa_ana"
+                android:textColor="#2563EB"
+                android:textSize="14sp"
+                tools:ignore="TouchTargetSizeCheck" />
 
             <Button
                 android:id="@+id/btnchatear"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Chatear"
+                android:text="@string/chatear"
                 android:backgroundTint="#4b5563"
                 android:textColor="@android:color/white" />
 

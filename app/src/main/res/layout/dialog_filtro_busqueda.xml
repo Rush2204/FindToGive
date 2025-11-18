@@ -11,7 +11,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Buscar y Filtrar"
+        android:text="@string/buscar_y_filtrar"
         android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="@android:color/black"
@@ -23,7 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:hint="Buscar por título">
+        android:hint="@string/buscar_por_t_tulo">
 
         <EditText
             android:id="@+id/et_buscar"
@@ -39,7 +39,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
-        android:hint="Tipo de sangre">
+        android:hint="@string/tipo_de_sangre">
 
         <Spinner
             android:id="@+id/spinner_tipo_sangre"
@@ -61,7 +61,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
-            android:text="Limpiar"
+            android:text="@string/limpiar"
             android:backgroundTint="@android:color/darker_gray"
             android:textColor="@android:color/white" />
 
@@ -71,7 +71,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:text="Aplicar"
+            android:text="@string/aplicar"
             android:backgroundTint="#C50A0A"
             android:textColor="@android:color/white" />
 

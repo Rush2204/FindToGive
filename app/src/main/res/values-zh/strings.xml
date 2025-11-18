@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--    ChatC-->
+    <string name="app_name">FindToGive</string>
+    <string name="pegar_texto">长按粘贴</string>
+    <string name="chat_cerrado_solicitud">"聊天已关闭 - 请求 "</string>
+    <string name="esta_solicitud">"此请求已 "</string>
+    <string name="solo_puedes_ver_los_mensajes">。您只能查看消息。</string>
+    <string name="error_id_chat_invalido">错误：无效的聊天ID</string>
+    <string name="no_puedes_enviar_mensajes_en_solicitudes">"您不能在请求中发送消息 "</string>
+    <string name="escribe_un_mensaje">写一条消息</string>
+    <string name="error_no_se_puede_enviar_el_mensaje">错误：无法发送消息</string>
+    <string name="error_enviando_mensaje">"发送消息时出错: "</string>
+    <string name="tienes_un_nuevo_mensaje">您有新消息</string>
+    <string name="quiere_hablar_contigo">" 想与您交谈"</string>
+
+    <!--    EdicionPerfil-->
+    <string name="santa_ana_el_salvador">圣安娜，萨尔瓦多</string>
+    <string name="ubicacion_fija">位置（固定）</string>
+    <string name="error_cargar_info_usuario">错误：无法加载用户信息</string>
+    <string name="no_se_detectaron_cambios_para_guardar">未检测到要保存的更改</string>
+    <string name="guardando">保存中…</string>
+    <string name="perfil_actualizado_exitosamente">个人资料更新成功</string>
+    <string name="email_en_uso">该邮箱已被其他用户使用</string>
+    <string name="error_al_actualizar_perfil">"更新个人资料时出错: "</string>
+    <string name="solo_se_permiten_letras_y_espacios">只允许字母和空格</string>
+    <string name="correo_valido">请输入有效的电子邮件地址</string>
+    <string name="formato_telefono">格式：XXXX-XXXX（8位数字）</string>
+    <string name="guardar_cambios">保存更改</string>
+    <string name="email_ya_registrado">该邮箱已注册</string>
+
+    <!--    FeedDonacion-->
+    <string name="no_hay_solicitudes_activas">没有活跃请求</string>
+    <string name="sin_solicitudes_en_el_area">您所在地区目前没有献血请求。接收者很快就会创建新的请求。</string>
+    <string name="vuelve_pronto">看起来所有人都已得到满足。请稍后再来，或者如果您需要就创建一个！</string>
+    <string name="sin_solicitudes">暂时没有活跃请求！</string>
+    <string name="solo_receptores_pueden_crear_solicitudes">只有接收者可以创建请求</string>
+    <string name="permisos_de_ubicacion">需要使用位置权限</string>
+    <string name="notificaciones_activadas">通知已激活</string>
+    <string name="las_notificaciones_estaran_desactivadas">通知将被禁用</string>
+    <string name="error_al_buscar_solicitudes">搜索请求时出错</string>
+    <string name="resultados_sin_filtros">找到 %d 个请求</string>
+    <string name="resultados_solo_query">找到 %d 个关于 \"%s\" 的请求</string>
+    <string name="resultados_solo_sangre">找到 %d 个 %s 类型的请求</string>
+    <string name="resultados_ambos_filtros">找到 %d 个关于 \"%s\" 的 %s 类型请求</string>
+    <string name="no_se_encontraron_resultados">未找到结果</string>
+    <string name="empty_state_sin_filtros">目前没有可用的请求</string>
+    <string name="empty_state_solo_query">没有匹配 \"%s\" 的请求</string>
+    <string name="empty_state_solo_sangre">没有 %s 血型的请求</string>
+    <string name="empty_state_ambos_filtros">没有匹配 \"%s\" 和 %s 血型的请求</string>
+    <string name="filtros_limpiados">筛选器已清除</string>
+    <string name="ambos_filtros_activos">\"%s\" 的请求 - 类型：%s</string>
+    <string name="solo_query_activo">\"%s\" 的请求</string>
+    <string name="solo_sangre_activo">请求 - 类型：%s</string>
+    <string name="obteniendo_ubicacion">正在获取您的位置…</string>
+    <string name="error_al_acceder_al_servicio_de_ubicacion">访问位置服务时出错</string>
+    <string name="por_favor_activa_el_gps">请启用GPS</string>
+    <string name="error_al_obtener_ubicacion">获取位置时出错</string>
+    <string name="se_encontraron">"找到 "</string>
+    <string name="solicitudes">" 个请求"</string>
+    <string name="error_filtrar_ubicacion">按位置筛选时出错</string>
+    <string name="filtro_ubicacion_desactivado">位置筛选器已禁用</string>
+    <string name="solicitudes_cercanas">附近请求</string>
+    <string name="solicitudes_donacion">献血请求</string>
+    <string name="no_hay_solicitudes_cercanas">附近没有请求</string>
+    <string name="no_solicitudes_en_km">在您位置3.5公里半径内未找到活跃请求。</string>
+
+    <!--    HistorialDonaciones-->
+    <string name="debe_iniciar_sesion">您必须登录。</string>
+    <string name="solicitudes_activas">活跃请求</string>
+    <string name="estado_activas">活跃</string>
+    <string name="estado_completadas">已完成</string>
+    <string name="estado_canceladas">已取消</string>
+    <string name="estado_todas">全部</string>
+    <string name="rol_receptor">作为接收者</string>
+    <string name="rol_donante">作为捐献者</string>
+    <string name="rol_todos">全部</string>
+    <string name="filtros_aplicados">筛选器已应用</string>
+    <string name="solo_el_creador_de_la_solicitud_puede_cancelarla">只有请求创建者可以取消它</string>
+    <string name="desea_cancelar_esta_solicitud">您要取消此请求吗？</string>
+    <string name="cancelar">取消</string>
+    <string name="solo_el_creador_de_la_solicitud_puede_completar">只有请求创建者可以完成它</string>
+    <string name="marcar_esta_solicitud_como_completada">将此请求标记为已完成？</string>
+    <string name="completar">完成</string>
+    <string name="solicitud_cancelada">请求已取消</string>
+    <string name="error_al_cancelar_solicitud">"取消请求时出错: "</string>
+    <string name="solicitud_completada">请求已完成</string>
+    <string name="error_al_completar_solicitud">"完成请求时出错: "</string>
+    <string name="mi_historial_filtrado">筛选后的收件箱</string>
+    <string name="estado">"状态: "</string>
+    <string name="rol">"角色: "</string>
+
+    <!--    Login-->
+    <string name="iniciando_sesion">登录中…</string>
+    <string name="el_correo_electronico_es_requerido">电子邮件是必需的</string>
+    <string name="ingresa_un_correo_electronico_valido">请输入有效的电子邮件地址</string>
+    <string name="la_contrasena_es_requerida">密码是必需的</string>
+    <string name="la_contrasena_debe_tener_al_menos_6_caracteres">密码必须至少6个字符</string>
+    <string name="bienvenida_usuario">欢迎 %s！</string>
+    <string name="iniciar_sesion">登录</string>
+    <string name="correo_o_contrasena_incorrectos">电子邮件或密码错误</string>
+    <string name="credenciales_incorrectas">凭据错误</string>
+    <string name="error_de_conexion_verifica_tu_internet">连接错误。请检查您的网络</string>
+    <string name="error">"错误: "</string>
+
+    <!--    Mensajeria-->
+    <string name="edad_formato">年龄：%d 岁</string>
+    <string name="tipo_sangre_formato">血型：%s</string>
+    <string name="rol_formato">角色：%s</string>
+    <string name="desconocido">未知</string>
+    <string name="donante">捐献者</string>
+    <string name="receptor">接收者</string>
+    <string name="rol_ambos">两者</string>
+    <string name="chats_solicitud">请求聊天</string>
+    <string name="mensajeria">消息</string>
+
+    <!--    PerfilUsuario-->
+    <string name="edad_formato_perfil">%d 岁</string>
+    <string name="no_especificado">未指定</string>
+    <string name="no_especificada">未指定</string>
+    <string name="error_subir_imagen">上传图片时出错：%s</string>
+    <string name="foto_perfil_actualizada">个人资料照片已更新</string>
+    <string name="error_actualizar_foto">更新照片时出错：%s</string>
+    <string name="error_generico">错误：%s</string>
+    <string name="rol_donante_receptor">捐献者和接收者</string>
+    <string name="rol_usuario">用户</string>
+    <string name="error_al_actualizar_foto">"更新照片时出错: "</string>
+    <string name="registrando">注册中…</string>
+
+    <!--    Registro-->
+    <!-- Mensajes de validación para registro -->
+    <string name="nombre_requerido">姓名是必需的</string>
+    <string name="nombre_solo_letras_espacios">姓名只能包含字母和空格</string>
+    <string name="nombre_min_caracteres">姓名必须至少2个字符</string>
+    <string name="apellido_requerido">姓氏是必需的</string>
+    <string name="apellido_solo_letras_espacios">姓氏只能包含字母和空格</string>
+    <string name="apellido_min_caracteres">姓氏必须至少2个字符</string>
+    <string name="email_requerido">电子邮件是必需的</string>
+    <string name="email_valido_requerido">请输入有效的电子邮件地址</string>
+    <string name="password_requerido">密码是必需的</string>
+    <string name="password_min_caracteres">密码必须至少8个字符</string>
+    <string name="password_fuerte_requerida">密码必须包含大写字母、小写字母和数字</string>
+    <string name="edad_requerida">年龄是必需的</string>
+    <string name="edad_rango_valido">年龄必须在18至65岁之间</string>
+    <string name="edad_valida_requerida">请输入有效的年龄</string>
+    <string name="telefono_requerido">电话是必需的</string>
+    <string name="registrarse">注册</string>
+    <string name="registro_exitoso_bienvenida">注册成功！欢迎 %s</string>
+    <string name="error_registro">注册错误：%s</string>
+
+    <!--    SolicitudDonacionC-->
+    <string name="imagen_seleccionada_cambiar">已选择图片 - 点击更改</string>
+    <string name="acceso_restringido">访问受限</string>
+    <string name="ir_al_feed">前往动态</string>
+    <string name="donantes_no_pueden_crear_solicitudes">捐献者不能创建献血请求。您当前的角色是：%s</string>
+    <string name="cerrar">关闭</string>
+    <string name="error_cargar_hospitales">无法加载医院</string>
+    <string name="error_cargar_hospitales_detalle">加载医院时出错：%s</string>
+    <string name="error_obtener_info_usuario">错误：无法获取用户信息</string>
+    <string name="error_id_solicitud_invalido">错误：无效的请求ID</string>
+    <string name="creando_solicitud">创建请求中…</string>
+    <string name="enviar_solicitud">发送请求</string>
+    <string name="error_crear_solicitud">创建请求时出错：%s</string>
+    <string name="error_subir_imagen_solicitud">请求已创建但上传图片时出错：%s</string>
+    <string name="error_actualizar_imagen_solicitud">请求已创建但更新图片时出错：%s</string>
+    <string name="solicitud_creada_exitosamente">请求创建成功！</string>
+    <string name="titulo_requerido">标题是必需的</string>
+    <string name="titulo_min_caracteres">标题必须至少5个字符</string>
+    <string name="descripcion_requerida">描述是必需的</string>
+    <string name="descripcion_min_caracteres">描述必须至少10个字符</string>
+    <string name="no_hospitales_disponibles">没有可用的医院</string>
+
+    <!--    ChatNotificationService-->
+    <string name="emergencias_no_esperan">紧急情况不等人！</string>
+    <string name="notificaciones_chats_mensajes_desc">聊天和消息通知</string>
+    <string name="nueva_conversacion">新对话</string>
+    <string name="tienes_nuevo_chat">您有新聊天</string>
+    <string name="alguien">某人</string>
+    <string name="nuevo_mensaje">新消息</string>
+    <string name="mensaje_de">来自 %s 的消息</string>
+
+    <!--    ChatsAdapter-->
+    <string name="cargando">加载中…</string>
+    <string name="cargando_mensajes">加载消息中…</string>
+    <string name="usuario">用户</string>
+    <string name="iniciar_conversacion">开始对话</string>
+    <string name="ahora">现在</string>
+    <string name="hace_minutos">%d 分钟前</string>
+    <string name="hace_horas">%d 小时前</string>
+    <string name="ayer">昨天</string>
+    <string name="hace_dias">%d 天前</string>
+
+    <!--    FiltroBusquedaDialog-->
+    <string name="todos_los_tipos">所有类型</string>
+
+    <!--    HistorialAdapter-->
+    <!-- Textos para historial -->
+    <string name="sin_titulo">无标题</string>
+    <string name="fecha_prefix">日期：</string>
+    <string name="tipo_sangre_prefix">血型：</string>
+    <string name="hospital_prefix">医院：</string>
+    <string name="hospital">医院</string>
+    <string name="cargando_hospital">加载医院中…</string>
+    <string name="error_abrir_ubicacion">打开位置时出错</string>
+    <string name="fecha_no_disponible">日期不可用</string>
+    <string name="fecha_invalida">无效日期</string>
+
+    <!--    HistorialFiltroDialog-->
+    <string name="todas_las_solicitudes">所有请求</string>
+    <string name="solo_activas">仅活跃</string>
+    <string name="solo_completadas">仅已完成</string>
+    <string name="solo_canceladas">仅已取消</string>
+    <string name="todos_los_roles">所有角色</string>
+    <string name="solicitudes_creadas">已创建的请求</string>
+    <string name="solicitudes_iniciadas">已发起的请求</string>
+
+    <!--    MensajesAdapter-->
+    <string name="mensaje_chat_label">聊天消息</string>
+    <string name="mensaje_copiado">消息已复制</string>
+    <string name="error_copiar">复制时出错</string>
+    <string name="mensaje_leido">✓✓</string>
+    <string name="mensaje_enviado">✓</string>
+
+    <!--    NotificacionAdapter-->
+    <string name="reciente">最近</string>
+    <string name="hace_minutos_notif">%d 分钟前</string>
+    <string name="hace_horas_notif">%d 小时前</string>
+    <string name="hace_dias_notif">%d 天前</string>
+
+    <!--    SolicitudesAdapter-->
+    <string name="sin_descripcion">无描述</string>
+    <string name="proximamente">即将推出</string>
+    <string name="hace_segundos">%d 秒前</string>
+    <string name="hace_unos_segundos">几秒前</string>
+    <string name="receptores_no_pueden_chatear">接收者不能发起聊天</string>
+    <string name="no_chatear_contigo_mismo">您不能与自己聊天</string>
+    <string name="error_crear_chat">创建聊天时出错：%s</string>
+
+    <!-- Plurals para tiempos -->
+    <plurals name="en_dias">
+        <item quantity="one">%d 天后</item>
+        <item quantity="other">%d 天后</item>
+    </plurals>
+    <plurals name="en_horas">
+        <item quantity="one">%d 小时后</item>
+        <item quantity="other">%d 小时后</item>
+    </plurals>
+    <plurals name="en_minutos">
+        <item quantity="one">%d 分钟后</item>
+        <item quantity="other">%d 分钟后</item>
+    </plurals>
+    <plurals name="hace_dias">
+        <item quantity="one">%d 天前</item>
+        <item quantity="other">%d 天前</item>
+    </plurals>
+    <plurals name="hace_horas">
+        <item quantity="one">%d 小时前</item>
+        <item quantity="other">%d 小时前</item>
+    </plurals>
+    <plurals name="hace_minutos">
+        <item quantity="one">%d 分钟前</item>
+        <item quantity="other">%d 分钟前</item>
+    </plurals>
+
+    <!--    vistas-->
+    <!--    desing_perfil_usuario-->
+    <string name="ajustes">设置</string>
+    <string name="mi_perfil">我的个人资料</string>
+    <string name="logo_findtogive">logo_findtogive</string>
+    <string name="editar_foto">编辑照片</string>
+    <string name="informaci_n_y_contacto">信息和联系</string>
+    <string name="correo_electr_nico">电子邮件</string>
+    <string name="edad">年龄</string>
+    <string name="tel_fono">电话</string>
+    <string name="ubicaci_n">位置</string>
+    <string name="rol_en_findtogive">在FindToGive中的角色</string>
+    <string name="rol_asignado">分配的角色</string>
+    <string name="editar_perfil">编辑个人资料</string>
+    <string name="cerrar_sesi_n">退出登录</string>
+
+    <!--    desing_chat-->
+    <string name="boton_de_retroceso">返回按钮</string>
+    <string name="escribe_tu_mensaje">写您的消息</string>
+    <string name="enviarmensaje">发送消息</string>
+
+    <!--    desing_edicion_perfil-->
+    <string name="editar_perfil_diseño">编辑个人资料</string>
+    <string name="nombre">姓名</string>
+    <string name="apellido">姓氏</string>
+    <string name="correo_electronico">电子邮件</string>
+    <string name="tel_fono_9_d_gitos">电话（9位数字）</string>
+    <string name="ubicacion">位置</string>
+    <string name="cambiar_rol">更改角色</string>
+    <string name="cambiar_tipo_de_sangre">更改血型</string>
+    <string name="guardar_cambio">保存更改</string>
+
+    <!--    desing_feed_donaciones-->
+    <string name="solicitudes_de_donaci_n">献血请求</string>
+    <string name="filtros_activos">活跃筛选器</string>
+    <string name="buscar_o_filtrar">搜索或筛选</string>
+    <string name="filtrar_por_ubicaci_n">按位置筛选</string>
+    <string name="icono_de_estado_vac_o">空状态图标</string>
+    <string name="no_hay_solicitudes_activas_por_ahora">暂时没有活跃请求！</string>
+    <string name="parece_que_todos_est_n_cubiertos_vuelve_pronto_o_crea_una_si_lo_necesitas">看起来所有人都已得到满足。请稍后再来，或者如果您需要就创建一个！</string>
+    <string name="crear_solicitud">创建请求</string>
+
+    <!--    desing_historial_donaciones-->
+    <string name="mi_historial_de_donaciones">我的献血历史</string>
+    <string name="filtros_activo">活跃筛选器</string>
+    <string name="filtrar_historial">筛选历史</string>
+    <string name="no_hay_historial">没有历史记录</string>
+    <string name="a_n_no_has_realizado_donaciones">您还没有进行过献血！</string>
+    <string name="an_mate_a_salvar_una_vida_hoy_mismo">今天就行动起来拯救生命！</string>
+
+    <!--    desing_item_chat_list-->
+    <string name="foto_de_perfil">个人资料照片</string>
+
+    <!--    desing_item_chat_receive-->
+    <string name="foto_de_perfil_chat">个人资料照片</string>
+
+    <!--    desing_item_chat_send-->
+    <string name="check">✓</string>
+
+    <!--    desing_item_historial-->
+    <string name="icono_de_rol">角色图标</string>
+    <string name="hay_nuevos_mensajes">💬 有新消息</string>
+    <string name="completar_solicitud">完成请求</string>
+    <string name="eliminar_registro">删除记录</string>
+
+    <!--    desing_item_notificacion-->
+    <string name="icono_de_notificaci_n">通知图标</string>
+
+    <!--    desing_item_solicitud-->
+    <string name="foto_perfil">个人资料照片</string>
+    <string name="chatear">聊天</string>
+    <string name="hace_2_horas">2小时前</string>
+    <string name="t_tulo_de_solicitud">请求标题</string>
+    <string name="descripci_n_de_la_solicitud">请求描述…</string>
+    <string name="imagen_adjunta">附件图片</string>
+    <string name="o">O+</string>
+    <string name="santa_ana">圣安娜</string>
+
+    <!--    desing_login-->
+    <string name="bienvenido_a_findtogive">欢迎使用FindToGive</string>
+    <string name="logo_de_findtogive">logo_de_findtogive</string>
+    <string name="introduce_tu_correo_electr_nico">输入您的电子邮件</string>
+    <string name="introduce_tu_contrase_a">输入您的密码</string>
+    <string name="iniciar_sesi_n">登录</string>
+    <string name="no_tienes_una_cuenta">没有账户</string>
+    <string name="reg_strate_aqu">在此注册</string>
+
+    <!--    desing_mensajeria-->
+    <string name="mensajer_a">消息</string>
+    <string name="icono_de_mensajes_vac_os">空消息图标</string>
+    <string name="a_n_no_tienes_chats_activos">您还没有活跃的聊天！</string>
+    <string name="los_chats_aparecer_n_aqu_cuando_respondas_o_inicies_una_solicitud_de_donaci_n">当您回复或发起献血请求时，聊天将出现在这里。</string>
+
+    <!--    desing_notificaciones-->
+    <string name="notificaciones">活動</string>
+    <string name="todo_en_calma">一切平静！</string>
+    <string name="no_tienes_avisos_o_notificaciones_nuevas_por_el_momento_te_avisaremos_cuando_haya_actividad">您目前没有新的提醒或通知。有活动时我们会通知您。</string>
+
+    <!--    desing_registro-->
+    <string name="crea_tu_cuenta">创建您的账户</string>
+    <string name="nete_a_la_comunidad_de_findtogive">加入FindToGive社区。</string>
+    <string name="contrase_a_m_nimo_9_digitos">密码（至少9位数字）</string>
+    <string name="n_mero_de_tel_fono">电话号码</string>
+    <string name="rol_dentro_de_la_comunidad">社区中的角色</string>
+    <string name="tipo_de_sangre">血型</string>
+    <string name="ya_tienes_una_cuenta_iniciar_sesi_n">已有账户？登录</string>
+
+    <!--    desing_solicitud_donacion-->
+    <string name="crear_solicitud_de_donaci_n">创建献血请求</string>
+    <string name="t_tulo">标题</string>
+    <string name="introduce_un_t_tulo_descriptivo_para_tu_solicitud">为您的请求输入描述性标题</string>
+    <string name="descripci_n">描述</string>
+    <string name="detalles_sobre_la_donaci_n_de_sangre">关于献血的详细信息</string>
+    <string name="tipo_de_sangre_requerido">所需血型</string>
+    <string name="adjuntar_imagen">附加图片</string>
+    <string name="vista_previa_de_la_imagen_seleccionada">所选图片预览</string>
+    <string name="c_mara_icono">相机图标</string>
+    <string name="sube_una_imagen_relacionada_con_tu_solicitud">上传与您的请求相关的图片</string>
+
+    <!--    desing_filtro_busqueda-->
+    <string name="buscar_y_filtrar">搜索和筛选</string>
+    <string name="buscar_por_t_tulo">按标题搜索</string>
+    <string name="limpiar">清除</string>
+    <string name="aplicar">应用</string>
+
+    <!--    desing_historial_filtro-->
+    <string name="filtrar_historiall">筛选历史</string>
+    <string name="estado_de_la_solicitud">请求状态</string>
+    <string name="tu_rol_en_la_solicitud">您在请求中的角色</string>
+
+    <!--    desing_info_usuario-->
+    <string name="nombre_apellido">姓名 姓氏</string>
+    <string name="edad_25_a_os">年龄：25岁</string>
+    <string name="tipo_de_sangre_o">血型：O+</string>
+    <string name="rol_donante_desing">角色：捐献者</string>
+
+    <!--    menu_navegacion-->
+    <string name="inicio">首页</string>
+    <string name="crear">创建</string>
+    <string name="avisos">提醒</string>
+    <string name="bandeja">收件箱</string>
+    <string name="perfil">个人资料</string>
+
+    <string-array name="roles_array">
+        <item>捐献者</item>
+        <item>接收者</item>
+        <item>两者</item>
+    </string-array>
+    <string-array name="tipos_sangre_array">
+        <item>A+</item>
+        <item>A-</item>
+        <item>B+</item>
+        <item>B-</item>
+        <item>AB+</item>
+        <item>AB-</item>
+        <item>O+</item>
+        <item>O-</item>
+    </string-array>
+</resources>

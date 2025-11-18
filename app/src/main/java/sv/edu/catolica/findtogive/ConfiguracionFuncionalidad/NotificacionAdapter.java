@@ -37,6 +37,9 @@ public class NotificacionAdapter extends RecyclerView.Adapter<NotificacionAdapte
         this.context = context;
     }
 
+    /**
+     * Crea y retorna una nueva instancia de NotificacionViewHolder inflando el layout del item
+     */
     @NonNull
     @Override
     public NotificacionViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -45,17 +48,26 @@ public class NotificacionAdapter extends RecyclerView.Adapter<NotificacionAdapte
         return new NotificacionViewHolder(view);
     }
 
+    /**
+     * Vincula los datos de la notificación en la posición especificada con el ViewHolder
+     */
     @Override
     public void onBindViewHolder(@NonNull NotificacionViewHolder holder, int position) {
         Notificacion notificacion = notificaciones.get(position);
         holder.bind(notificacion);
     }
 
+    /**
+     * Retorna el número total de notificaciones en la lista
+     */
     @Override
     public int getItemCount() {
         return notificaciones != null ? notificaciones.size() : 0;
     }
 
+    /**
+     * Reemplaza completamente la lista de notificaciones y notifica el cambio
+     */
     public void setNotificaciones(List<Notificacion> notificaciones) {
         this.notificaciones = notificaciones;
         notifyDataSetChanged();
@@ -77,23 +89,23 @@ public class NotificacionAdapter extends RecyclerView.Adapter<NotificacionAdapte
             imgNotificationIcon = itemView.findViewById(R.id.img_notification_icon);
         }
 
+        /**
+         * Vincula todos los datos de la notificación a los elementos de la vista,
+         * incluyendo título, mensaje, fecha, estado de leído y manejo de clicks
+         */
         public void bind(Notificacion notificacion) {
             textNotificationTitle.setText(notificacion.getTitulo());
             textNotificationContent.setText(notificacion.getMensaje());
 
-            // Formatear fecha
             if (notificacion.getFechaEnvio() != null) {
                 String fechaFormateada = formatFecha(notificacion.getFechaEnvio());
                 textNotificationDate.setText(fechaFormateada);
             }
 
-            // Mostrar indicador de no leído
             noLeido.setVisibility(!notificacion.isLeida() ? View.VISIBLE : View.INVISIBLE);
 
-            // Cargar foto de perfil del usuario que generó la notificación
             imgNotificationIcon.setImageResource(R.drawable.ico_logo_findtogive);
 
-            // Marcar como leída al hacer clic
             itemView.setOnClickListener(v -> {
                 if (!notificacion.isLeida()) {
                     marcarComoLeida(notificacion);
@@ -101,13 +113,17 @@ public class NotificacionAdapter extends RecyclerView.Adapter<NotificacionAdapte
             });
         }
 
+        /**
+         * Formatea la fecha de la notificación a un formato legible y relativo.
+         * Convierte fechas ISO a textos como "Ahora", "hace X min", "hace X h",
+         * "Ayer", "hace X d" o fecha completa para notificaciones antiguas
+         */
         private String formatFecha(String fecha) {
             try {
                 if (fecha == null || fecha.isEmpty()) {
-                    return "Reciente";
+                    return context.getString(R.string.reciente);
                 }
 
-                // Limpiar formato de Supabase
                 String fechaLimpia = fecha.replace(" ", "T");
                 java.time.LocalDateTime fechaNotif = java.time.LocalDateTime.parse(fechaLimpia);
                 java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
@@ -120,30 +136,34 @@ public class NotificacionAdapter extends RecyclerView.Adapter<NotificacionAdapte
                 long dias = horas / 24;
 
                 if (minutos < 1) {
-                    return "Ahora";
+                    return context.getString(R.string.ahora);
                 } else if (minutos < 60) {
-                    return "hace " + minutos + " min";
+                    return context.getString(R.string.hace_minutos_notif, minutos);
                 } else if (horas < 24) {
-                    return "hace " + horas + " h";
+                    return context.getString(R.string.hace_horas_notif, horas);
                 } else if (dias == 1) {
-                    return "Ayer";
+                    return context.getString(R.string.ayer);
                 } else if (dias < 7) {
-                    return "hace " + dias + " d";
+                    return context.getString(R.string.hace_dias_notif, dias);
                 } else {
-                    return fechaLimpia.substring(0, 10); // YYYY-MM-DD
+                    return fechaLimpia.substring(0, 10);
                 }
 
             } catch (Exception e) {
-                return "Reciente";
+                return context.getString(R.string.reciente);
             }
         }
 
+        /**
+         * Marca una notificación como leída mediante una petición a la API.
+         * Actualiza la interfaz visualmente ocultando el indicador de no leído
+         * una vez que la operación se completa exitosamente
+         */
         private void marcarComoLeida(Notificacion notificacion) {
             ApiService.updateNotificacionLeida(notificacion.getNotificacionid(),
                     new ApiService.ApiCallback<Notificacion>() {
                         @Override
                         public void onSuccess(Notificacion result) {
-                            // Actualizar UI
                             notificacion.setLeida(true);
                             noLeido.setVisibility(View.INVISIBLE);
                             notifyItemChanged(getAdapterPosition());
@@ -151,7 +171,6 @@ public class NotificacionAdapter extends RecyclerView.Adapter<NotificacionAdapte
 
                         @Override
                         public void onError(String error) {
-                            System.out.println("❌ Error marcando notificación como leída: " + error);
                         }
                     });
         }

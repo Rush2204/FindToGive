@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -45,16 +44,19 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
 
     private List<SolicitudDonacion> solicitudesList;
     private Context context;
-    private Map<Integer, Usuario> usuariosMap; // Cache de usuarios
-    private Map<Integer, HospitalUbicacion> hospitalesMap; // Cache de hospitales
+    private Map<Integer, Usuario> usuariosMap;
+    private Map<Integer, HospitalUbicacion> hospitalesMap;
 
     public SolicitudesAdapter(List<SolicitudDonacion> solicitudesList, Context context) {
         this.solicitudesList = solicitudesList;
         this.context = context;
         this.usuariosMap = new HashMap<>();
-        this.hospitalesMap = new HashMap<>(); // Inicializar cache de hospitales
+        this.hospitalesMap = new HashMap<>();
     }
 
+    /**
+     * Crea y retorna una nueva instancia de SolicitudViewHolder inflando el layout del item
+     */
     @NonNull
     @Override
     public SolicitudViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -63,122 +65,108 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
         return new SolicitudViewHolder(view);
     }
 
+    /**
+     * Vincula los datos de la solicitud en la posición especificada con el ViewHolder
+     */
     @Override
     public void onBindViewHolder(@NonNull SolicitudViewHolder holder, int position) {
         SolicitudDonacion solicitud = solicitudesList.get(position);
         holder.bind(solicitud);
     }
 
+    /**
+     * Retorna el número total de solicitudes en la lista
+     */
     @Override
     public int getItemCount() {
         return solicitudesList.size();
     }
 
-    // ========== MÉTODOS PARA REALTIME ==========
-
-    // Método para forzar la actualización de todas las vistas
+    /**
+     * Fuerza la actualización completa de todas las vistas del RecyclerView
+     */
     public void forzarActualizacionCompleta() {
         notifyDataSetChanged();
-        System.out.println("🔄 FEED: Actualización forzada de todas las solicitudes");
     }
 
-    // Método para forzar la carga de usuarios
+    /**
+     * Fuerza la carga de usuarios para todas las solicitudes que no estén en caché
+     */
     public void forzarCargaUsuarios() {
-        System.out.println("👥 FEED: Forzando carga de usuarios para todas las solicitudes");
-
         for (int i = 0; i < solicitudesList.size(); i++) {
             SolicitudDonacion solicitud = solicitudesList.get(i);
             int usuarioId = solicitud.getUsuarioid();
 
-            // Si el usuario no está en cache, forzar su carga
             if (!usuariosMap.containsKey(usuarioId)) {
-                System.out.println("🔍 FEED: Forzando carga de usuario: " + usuarioId);
                 cargarUsuarioForzado(usuarioId, i);
-            } else {
-                System.out.println("✅ FEED: Usuario " + usuarioId + " ya está en cache");
             }
         }
     }
 
-    // Método para agregar una nueva solicitud (Realtime)
+    /**
+     * Agrega una nueva solicitud al principio de la lista y fuerza la carga de su usuario
+     */
     public void agregarSolicitud(SolicitudDonacion solicitud) {
-        System.out.println("🆕 FEED: Agregando nueva solicitud - " + solicitud.getTitulo());
-
-        // Agregar al principio de la lista
         solicitudesList.add(0, solicitud);
         notifyItemInserted(0);
-
-        // Forzar carga del usuario inmediatamente
         cargarUsuarioForzado(solicitud.getUsuarioid(), 0);
-
-        System.out.println("✅ FEED: Nueva solicitud agregada en posición 0");
     }
 
-    // Método para actualizar una solicitud existente (Realtime)
+    /**
+     * Actualiza una solicitud existente en la lista y recarga los datos del usuario
+     */
     public void actualizarSolicitud(SolicitudDonacion solicitud) {
         for (int i = 0; i < solicitudesList.size(); i++) {
             if (solicitudesList.get(i).getSolicitudid() == solicitud.getSolicitudid()) {
                 solicitudesList.set(i, solicitud);
                 notifyItemChanged(i);
-                System.out.println("✏️ FEED: Solicitud actualizada en posición " + i);
-
-                // Recargar datos del usuario por si cambió
                 cargarUsuarioForzado(solicitud.getUsuarioid(), i);
                 break;
             }
         }
     }
 
-    // Método para eliminar una solicitud (Realtime)
+    /**
+     * Elimina una solicitud de la lista basándose en su ID
+     */
     public void eliminarSolicitud(int solicitudId) {
         for (int i = 0; i < solicitudesList.size(); i++) {
             if (solicitudesList.get(i).getSolicitudid() == solicitudId) {
                 solicitudesList.remove(i);
                 notifyItemRemoved(i);
-                System.out.println("🗑️ FEED: Solicitud eliminada de posición " + i);
                 break;
             }
         }
     }
 
-    // Método para actualizar la lista completa de solicitudes
+    /**
+     * Actualiza completamente la lista de solicitudes manteniendo los caches existentes
+     * y forzando la carga de usuarios y hospitales para las nuevas solicitudes
+     */
     public void updateData(List<SolicitudDonacion> nuevasSolicitudes) {
-        System.out.println("💥 FEED: ACTUALIZACIÓN AGRESIVA DE SOLICITUDES: " + nuevasSolicitudes.size() + " solicitudes");
-
-        // Limpiar solo las solicitudes, mantener caches
         this.solicitudesList.clear();
-        // NO limpiar usuariosMap ni hospitalesMap para mantener el cache
-
-        // Agregar nuevas solicitudes
         this.solicitudesList.addAll(nuevasSolicitudes);
-
-        // Notificar cambio INMEDIATO
         notifyDataSetChanged();
-
-        System.out.println("✅ FEED: Lista de solicitudes actualizada - " + solicitudesList.size() + " solicitudes");
-
-        // Forzar carga de usuarios inmediatamente
         forzarCargaUsuarios();
-
-        // Cargar datos de hospitales
         cargarHospitalesParaSolicitudes();
-
-        // Cargar datos de usuarios para las nuevas solicitudes
         cargarDatosUsuarios();
     }
 
+    /**
+     * Establece el mapa de usuarios y actualiza las vistas
+     */
     public void setUsuariosData(Map<Integer, Usuario> usuariosMap) {
         this.usuariosMap.clear();
         this.usuariosMap.putAll(usuariosMap);
         notifyDataSetChanged();
     }
 
-    // ========== MÉTODOS PARA CARGAR HOSPITALES ==========
-
+    /**
+     * Carga los hospitales necesarios para las solicitudes que no estén en caché
+     */
     private void cargarHospitalesParaSolicitudes() {
         Set<Integer> hospitalIds = new HashSet<>();
 
-        // Identificar hospitales que necesitan ser cargados
         for (SolicitudDonacion solicitud : solicitudesList) {
             int hospitalId = solicitud.getHospitalid();
             if (!hospitalesMap.containsKey(hospitalId)) {
@@ -186,30 +174,24 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
             }
         }
 
-        System.out.println("🏥 FEED: Cargando " + hospitalIds.size() + " hospitales desde API");
-
-        // Cargar cada hospital individualmente
         for (Integer hospitalId : hospitalIds) {
             cargarHospitalIndividual(hospitalId);
         }
     }
 
+    /**
+     * Carga un hospital individual desde la API y lo almacena en caché
+     */
     private void cargarHospitalIndividual(int hospitalId) {
         ApiService.getHospitalById(hospitalId, new ApiService.ApiCallback<HospitalUbicacion>() {
             @Override
             public void onSuccess(HospitalUbicacion hospital) {
                 hospitalesMap.put(hospitalId, hospital);
-                System.out.println("✅ FEED: Hospital cargado: " + hospital.getNombre());
-
-                // Actualizar todas las solicitudes que usen este hospital
                 actualizarSolicitudesConHospital(hospitalId, hospital);
             }
 
             @Override
             public void onError(String error) {
-                System.out.println("❌ FEED: Error cargando hospital " + hospitalId + ": " + error);
-
-                // Reintentar después de 2 segundos
                 new Handler().postDelayed(() -> {
                     cargarHospitalIndividual(hospitalId);
                 }, 2000);
@@ -217,12 +199,13 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
         });
     }
 
+    /**
+     * Actualiza todas las solicitudes que referencian un hospital específico
+     */
     private void actualizarSolicitudesConHospital(int hospitalId, HospitalUbicacion hospital) {
         for (int i = 0; i < solicitudesList.size(); i++) {
             if (solicitudesList.get(i).getHospitalid() == hospitalId) {
                 solicitudesList.get(i).setHospital(hospital);
-
-                // Actualizar la vista específica
                 final int position = i;
                 runOnUiThread(() -> {
                     if (position >= 0 && position < solicitudesList.size()) {
@@ -233,16 +216,14 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
         }
     }
 
-    // ========== MÉTODOS PRIVADOS ==========
-
+    /**
+     * Carga forzadamente un usuario específico y actualiza su vista correspondiente
+     */
     private void cargarUsuarioForzado(int usuarioId, int position) {
         ApiService.getUsuarioById(usuarioId, new ApiService.ApiCallback<Usuario>() {
             @Override
             public void onSuccess(Usuario usuario) {
                 usuariosMap.put(usuarioId, usuario);
-                System.out.println("✅ FEED: Usuario forzado cargado: " + usuario.getNombre());
-
-                // Actualizar la vista específica
                 if (position >= 0 && position < solicitudesList.size()) {
                     runOnUiThread(() -> notifyItemChanged(position));
                 }
@@ -250,9 +231,6 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
 
             @Override
             public void onError(String error) {
-                System.out.println("❌ FEED: Error forzando carga de usuario " + usuarioId + ": " + error);
-
-                // Reintentar después de 2 segundos
                 new Handler().postDelayed(() -> {
                     if (position < solicitudesList.size() && solicitudesList.get(position).getUsuarioid() == usuarioId) {
                         cargarUsuarioForzado(usuarioId, position);
@@ -262,15 +240,14 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
         });
     }
 
-    // NUEVO MÉTODO: Para cargar usuarios individuales desde la clase principal
+    /**
+     * Carga un usuario individual y actualiza su vista específica
+     */
     private void cargarUsuarioIndividual(int usuarioId, int position) {
         ApiService.getUsuarioById(usuarioId, new ApiService.ApiCallback<Usuario>() {
             @Override
             public void onSuccess(Usuario usuario) {
                 usuariosMap.put(usuarioId, usuario);
-                System.out.println("✅ FEED: Usuario individual cargado: " + usuario.getNombre());
-
-                // Actualizar específicamente este item INMEDIATAMENTE
                 if (position >= 0 && position < solicitudesList.size()) {
                     runOnUiThread(() -> notifyItemChanged(position));
                 }
@@ -278,8 +255,6 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
 
             @Override
             public void onError(String error) {
-                System.out.println("❌ FEED: Error cargando usuario individual " + usuarioId);
-                // Intentar de nuevo después de 1 segundo
                 new Handler().postDelayed(() -> {
                     if (position < solicitudesList.size() && solicitudesList.get(position).getUsuarioid() == usuarioId) {
                         cargarUsuarioIndividual(usuarioId, position);
@@ -289,13 +264,14 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
         });
     }
 
+    /**
+     * Carga los datos de usuarios para todas las solicitudes que no estén en caché
+     */
     private void cargarDatosUsuarios() {
         if (solicitudesList.isEmpty()) {
-            System.out.println("📭 FEED: No hay solicitudes para cargar usuarios");
             return;
         }
 
-        // Obtener IDs únicos de usuarios
         List<Integer> usuarioIds = new ArrayList<>();
         for (SolicitudDonacion solicitud : solicitudesList) {
             if (!usuariosMap.containsKey(solicitud.getUsuarioid())) {
@@ -304,37 +280,25 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
         }
 
         if (usuarioIds.isEmpty()) {
-            System.out.println("✅ FEED: Todos los usuarios ya están en cache");
             return;
         }
 
-        System.out.println("👥 FEED: Cargando " + usuarioIds.size() + " usuarios desde API");
-
-        // Cargar usuarios desde la API
         ApiService.getUsuariosByIds(usuarioIds, new ApiService.ListCallback<Usuario>() {
             @Override
             public void onSuccess(List<Usuario> usuarios) {
                 for (Usuario usuario : usuarios) {
                     usuariosMap.put(usuario.getUsuarioid(), usuario);
                 }
-                System.out.println("✅ FEED: " + usuarios.size() + " usuarios cargados exitosamente");
-
-                // Forzar actualización completa
                 runOnUiThread(() -> {
                     notifyDataSetChanged();
-                    System.out.println("🔄 FEED: Vistas actualizadas después de carga de usuarios");
                 });
             }
 
             @Override
             public void onError(String error) {
-                System.out.println("❌ FEED: Error cargando usuarios: " + error);
-
-                // Intentar carga individual como fallback
                 for (Integer usuarioId : usuarioIds) {
                     for (int i = 0; i < solicitudesList.size(); i++) {
                         if (solicitudesList.get(i).getUsuarioid() == usuarioId) {
-                            // Usar el nuevo método de la clase principal
                             cargarUsuarioIndividual(usuarioId, i);
                             break;
                         }
@@ -344,7 +308,9 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
         });
     }
 
-    // Agrega este método helper para ejecutar en UI thread
+    /**
+     * Ejecuta una acción en el hilo principal de la UI
+     */
     private void runOnUiThread(Runnable action) {
         if (context instanceof android.app.Activity) {
             ((android.app.Activity) context).runOnUiThread(action);
@@ -352,8 +318,6 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
             new Handler(android.os.Looper.getMainLooper()).post(action);
         }
     }
-
-    // ========== VIEW HOLDER ==========
 
     public class SolicitudViewHolder extends RecyclerView.ViewHolder {
 
@@ -376,8 +340,10 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
             btnChatear = itemView.findViewById(R.id.btnchatear);
         }
 
+        /**
+         * Carga los datos de un hospital específico si no está en caché
+         */
         private void cargarDatosHospital(int hospitalId, int position) {
-            // Si ya está en cache, no cargar de nuevo
             if (hospitalesMap.containsKey(hospitalId)) {
                 return;
             }
@@ -386,12 +352,9 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
                 @Override
                 public void onSuccess(HospitalUbicacion hospital) {
                     hospitalesMap.put(hospitalId, hospital);
-
-                    // Actualizar todas las solicitudes que usen este hospital
                     for (int i = 0; i < solicitudesList.size(); i++) {
                         if (solicitudesList.get(i).getHospitalid() == hospitalId) {
                             solicitudesList.get(i).setHospital(hospital);
-
                             final int pos = i;
                             runOnUiThread(() -> {
                                 if (pos >= 0 && pos < solicitudesList.size()) {
@@ -404,50 +367,47 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
 
                 @Override
                 public void onError(String error) {
-                    System.out.println("❌ Error cargando hospital: " + error);
                 }
             });
         }
 
+        /**
+         * Vincula todos los datos de la solicitud a los elementos de la vista,
+         * incluyendo información del usuario, hospital, imagen adjunta y configurando los listeners
+         */
         public void bind(SolicitudDonacion solicitud) {
             int position = getAdapterPosition();
-            System.out.println("🎯 FEED: RENDERIZANDO solicitud " + solicitud.getSolicitudid() + " en posición " + position);
 
-            // Título y descripción
-            textTitle.setText(solicitud.getTitulo() != null ? solicitud.getTitulo() : "Sin título");
-            textDescription.setText(solicitud.getDescripcion() != null ? solicitud.getDescripcion() : "Sin descripción");
+            textTitle.setText(solicitud.getTitulo() != null ? solicitud.getTitulo() : context.getString(R.string.sin_titulo));
+            textDescription.setText(solicitud.getDescripcion() != null ? solicitud.getDescripcion() : context.getString(R.string.sin_descripcion));
 
-            // UBICACIÓN - Usar el cache de hospitales
             configurarUbicacion(solicitud, position);
 
-            // Tipo de sangre
             textBloodTypeBadge.setText(obtenerTipoSangreCompleto(solicitud.getTiposangreid()));
 
-            // Tiempo de publicación
             textTimeAgo.setText(calcularTiempoTranscurrido(solicitud.getFechaPublicacion()));
 
-            // ✅ Cargar datos REALES del usuario - VERSIÓN AGRESIVA
             cargarDatosUsuarioAgresivo(solicitud.getUsuarioid(), position);
 
-            // ✅ Cargar imagen adjunta
             cargarImagenAdjunta(solicitud);
 
-            // Click listeners
             btnChatear.setOnClickListener(v -> abrirChat(solicitud));
             itemView.setOnClickListener(v -> {
                 Toast.makeText(context, "Abriendo detalles de: " + solicitud.getTitulo(), Toast.LENGTH_SHORT).show();
             });
         }
 
+        /**
+         * Configura la visualización de la ubicación del hospital, haciendo el texto
+         * clickeable si hay un enlace disponible para abrir en Google Maps
+         */
         private void configurarUbicacion(SolicitudDonacion solicitud, int position) {
             HospitalUbicacion hospital = hospitalesMap.get(solicitud.getHospitalid());
 
             if (hospital != null) {
-                // Tenemos datos del hospital en cache
                 solicitud.setHospital(hospital);
                 textLocationDetails.setText(hospital.getNombre());
 
-                // Hacer clickeable si tiene link
                 if (hospital.getLink() != null && !hospital.getLink().isEmpty()) {
                     textLocationDetails.setTextColor(context.getResources().getColor(android.R.color.holo_blue_dark));
                     textLocationDetails.setClickable(true);
@@ -457,29 +417,27 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
                         abrirGoogleMaps(hospital);
                     });
                 } else {
-                    // No tiene link, mostrar normal
                     textLocationDetails.setTextColor(context.getResources().getColor(android.R.color.darker_gray));
                     textLocationDetails.setClickable(false);
                     textLocationDetails.setFocusable(false);
                 }
             } else {
-                // No tenemos datos del hospital, mostrar loading
-                textLocationDetails.setText("Cargando hospital...");
+                textLocationDetails.setText(context.getString(R.string.cargando_hospital));
                 textLocationDetails.setTextColor(context.getResources().getColor(android.R.color.darker_gray));
                 textLocationDetails.setClickable(false);
                 textLocationDetails.setFocusable(false);
-
-                // Forzar carga del hospital
                 cargarDatosHospital(solicitud.getHospitalid(), position);
             }
         }
 
-        // Método para abrir Google Maps
+        /**
+         * Abre Google Maps con la ubicación del hospital usando el enlace disponible
+         * o creando uno con las coordenadas
+         */
         private void abrirGoogleMaps(HospitalUbicacion hospital) {
             try {
                 String mapsUrl = hospital.getLink();
 
-                // Si no hay link específico, crear uno con las coordenadas
                 if (mapsUrl == null || mapsUrl.isEmpty()) {
                     mapsUrl = "https://www.google.com/maps/search/?api=1&query=" +
                             hospital.getLatitud() + "," + hospital.getLongitud() +
@@ -489,30 +447,29 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(mapsUrl));
                 intent.setPackage("com.google.android.apps.maps");
 
-                // Verificar si Google Maps está instalado
                 if (intent.resolveActivity(context.getPackageManager()) != null) {
                     context.startActivity(intent);
                 } else {
-                    // Si Google Maps no está instalado, abrir en navegador
                     intent.setPackage(null);
                     context.startActivity(intent);
                 }
 
             } catch (Exception e) {
-                Toast.makeText(context, "Error al abrir la ubicación", Toast.LENGTH_SHORT).show();
-                Log.e("Maps", "Error al abrir Google Maps: " + e.getMessage());
+                Toast.makeText(context, context.getString(R.string.error_abrir_ubicacion), Toast.LENGTH_SHORT).show();
             }
         }
 
+        /**
+         * Carga agresivamente los datos del usuario, mostrando información real si está en caché
+         * o forzando la carga desde la API si no está disponible
+         */
         private void cargarDatosUsuarioAgresivo(int usuarioId, int position) {
             Usuario usuario = usuariosMap.get(usuarioId);
 
             if (usuario != null) {
-                // ✅ DATOS REALES del usuario - MOSTRAR INMEDIATAMENTE
                 String nombreCompleto = usuario.getNombre() + " " + usuario.getApellido();
                 textUserName.setText(nombreCompleto);
 
-                // ✅ FOTO DE PERFIL REAL - MOSTRAR INMEDIATAMENTE
                 if (usuario.getFotoUrl() != null && !usuario.getFotoUrl().isEmpty()) {
                     Glide.with(context)
                             .load(usuario.getFotoUrl())
@@ -521,30 +478,23 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
                             .apply(RequestOptions.circleCropTransform())
                             .into(imgProfile);
                 } else {
-                    // Foto por defecto si no tiene
                     imgProfile.setImageResource(R.drawable.logo_findtogive);
                 }
-
-                System.out.println("✅ FEED: Usuario " + usuarioId + " mostrado desde cache");
             } else {
-                // Datos temporales mientras se carga
-                textUserName.setText("Cargando...");
+                textUserName.setText(context.getString(R.string.cargando));
                 imgProfile.setImageResource(R.drawable.logo_findtogive);
-                System.out.println("⏳ FEED: Cargando usuario " + usuarioId + " desde API...");
-
-                // Cargar usuario individual si no está en el cache - VERSIÓN AGRESIVA
                 cargarUsuarioIndividualAgresivo(usuarioId, position);
             }
         }
 
+        /**
+         * Carga agresivamente un usuario individual desde la API con reintentos automáticos
+         */
         private void cargarUsuarioIndividualAgresivo(int usuarioId, int position) {
             ApiService.getUsuarioById(usuarioId, new ApiService.ApiCallback<Usuario>() {
                 @Override
                 public void onSuccess(Usuario usuario) {
                     usuariosMap.put(usuarioId, usuario);
-                    System.out.println("✅ FEED: Usuario individual cargado: " + usuario.getNombre());
-
-                    // Actualizar específicamente este item INMEDIATAMENTE
                     if (position >= 0 && position < solicitudesList.size()) {
                         runOnUiThread(() -> notifyItemChanged(position));
                     }
@@ -552,8 +502,6 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
 
                 @Override
                 public void onError(String error) {
-                    System.out.println("❌ FEED: Error cargando usuario individual " + usuarioId);
-                    // Intentar de nuevo después de 1 segundo
                     new Handler().postDelayed(() -> {
                         if (position < solicitudesList.size() && solicitudesList.get(position).getUsuarioid() == usuarioId) {
                             cargarUsuarioIndividualAgresivo(usuarioId, position);
@@ -563,17 +511,14 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
             });
         }
 
+        /**
+         * Carga la imagen adjunta de la solicitud usando Glide con manejo de errores
+         * y transformaciones para mejor visualización
+         */
         private void cargarImagenAdjunta(SolicitudDonacion solicitud) {
-            Log.d("SolicitudesAdapter", "🖼️ Cargando imagen para solicitud: " + solicitud.getSolicitudid());
-            Log.d("SolicitudesAdapter", "📸 URL: " + solicitud.getImagenUrl());
-
             if (solicitud.getImagenUrl() != null && !solicitud.getImagenUrl().isEmpty()) {
-                Log.d("SolicitudesAdapter", "✅ URL válida, mostrando imagen");
-
-                // Asegurar visibilidad
                 imgAdjunta.setVisibility(View.VISIBLE);
 
-                // Cargar con Glide - VERSIÓN MÁS ROBUSTA
                 Glide.with(context)
                         .load(solicitud.getImagenUrl())
                         .apply(new RequestOptions()
@@ -586,8 +531,6 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
                             @Override
                             public boolean onLoadFailed(@Nullable GlideException e, Object model,
                                                         Target<Drawable> target, boolean isFirstResource) {
-                                Log.e("SolicitudesAdapter", "❌ Error Glide: " +
-                                        (e != null ? e.getMessage() : "Desconocido"));
                                 return false;
                             }
 
@@ -595,23 +538,19 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
                             public boolean onResourceReady(Drawable resource, Object model,
                                                            Target<Drawable> target, DataSource dataSource,
                                                            boolean isFirstResource) {
-                                Log.d("SolicitudesAdapter", "✅ Imagen cargada exitosamente - Tamaño: " +
-                                        resource.getIntrinsicWidth() + "x" + resource.getIntrinsicHeight());
                                 return false;
                             }
                         })
                         .into(imgAdjunta);
 
             } else {
-                Log.d("SolicitudesAdapter", "❌ No hay imagen, ocultando contenedor");
                 imgAdjunta.setVisibility(View.GONE);
             }
         }
 
-        private void expandirImagen(String imageUrl) {
-            Toast.makeText(context, "Ver imagen completa", Toast.LENGTH_SHORT).show();
-        }
-
+        /**
+         * Convierte un ID de tipo de sangre a su representación textual completa
+         */
         private String obtenerTipoSangreCompleto(int tiposangreid) {
             switch (tiposangreid) {
                 case 1: return "A+";
@@ -622,13 +561,17 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
                 case 6: return "AB-";
                 case 7: return "O+";
                 case 8: return "O-";
-                default: return "Desconocido";
+                default: return context.getString(R.string.desconocido);
             }
         }
 
+        /**
+         * Calcula y formatea el tiempo transcurrido desde la publicación de la solicitud
+         * mostrando tiempos relativos como "hace X minutos", "hace X horas", etc.
+         */
         private String calcularTiempoTranscurrido(String fechaPublicacion) {
             if (fechaPublicacion == null || fechaPublicacion.isEmpty()) {
-                return "Reciente";
+                return context.getString(R.string.reciente);
             }
 
             try {
@@ -637,63 +580,62 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
 
                 java.time.Duration duracion = java.time.Duration.between(fecha, ahora);
 
-                long segundos = Math.abs(duracion.getSeconds()); // Usar valor absoluto
+                long segundos = Math.abs(duracion.getSeconds());
                 long minutos = segundos / 60;
                 long horas = minutos / 60;
                 long dias = horas / 24;
 
-                // Si la fecha es futura, mostrar "Próximamente"
                 if (duracion.isNegative()) {
                     if (dias > 0) {
-                        return "en " + dias + (dias == 1 ? " día" : " días");
+                        return context.getResources().getQuantityString(R.plurals.en_dias, (int) dias, dias);
                     } else if (horas > 0) {
-                        return "en " + horas + (horas == 1 ? " hora" : " horas");
+                        return context.getResources().getQuantityString(R.plurals.en_horas, (int) horas, horas);
                     } else if (minutos > 0) {
-                        return "en " + minutos + (minutos == 1 ? " minuto" : " minutos");
+                        return context.getResources().getQuantityString(R.plurals.en_minutos, (int) minutos, minutos);
                     } else {
-                        return "próximamente";
+                        return context.getString(R.string.proximamente);
                     }
                 }
 
-                // Si la fecha es pasada
                 if (dias > 0) {
-                    return "hace " + dias + (dias == 1 ? " día" : " días");
+                    return context.getResources().getQuantityString(R.plurals.hace_dias, (int) dias, dias);
                 } else if (horas > 0) {
-                    return "hace " + horas + (horas == 1 ? " hora" : " horas");
+                    return context.getResources().getQuantityString(R.plurals.hace_horas, (int) horas, horas);
                 } else if (minutos > 0) {
-                    return "hace " + minutos + (minutos == 1 ? " minuto" : " minutos");
+                    return context.getResources().getQuantityString(R.plurals.hace_minutos, (int) minutos, minutos);
                 } else if (segundos > 30) {
-                    return "hace " + segundos + " segundos";
+                    return context.getString(R.string.hace_segundos, segundos);
                 } else {
-                    return "hace unos segundos";
+                    return context.getString(R.string.hace_unos_segundos);
                 }
 
             } catch (Exception e) {
-                return "Reciente";
+                return context.getString(R.string.reciente);
             }
         }
 
+        /**
+         * Abre un chat para la solicitud actual, verificando primero los permisos del usuario
+         * y creando un nuevo chat si no existe uno previo
+         */
         private void abrirChat(SolicitudDonacion solicitud) {
             Usuario usuarioActual = SharedPreferencesManager.getCurrentUser(context);
 
             if (usuarioActual == null) {
-                Toast.makeText(context, "Error: No se pudo obtener información del usuario", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, context.getString(R.string.error_obtener_info_usuario), Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Verificar rol del usuario - solo donantes (1) o ambos (3) pueden iniciar chats
-            // Receptores (2) NO pueden iniciar chats
             if (usuarioActual.getRolid() == 2) {
-                Toast.makeText(context, "Los receptores no pueden iniciar chats", Toast.LENGTH_LONG).show();
+                Toast.makeText(context, context.getString(R.string.receptores_no_pueden_chatear), Toast.LENGTH_LONG).show();
                 return;
             }
 
             if (usuarioActual.getUsuarioid() == solicitud.getUsuarioid()) {
-                Toast.makeText(context, "No puedes chatear contigo mismo", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, context.getString(R.string.no_chatear_contigo_mismo), Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Buscar si ya existe un chat
             ApiService.getChatByUsuariosAndSolicitud(
                     usuarioActual.getUsuarioid(),
                     solicitud.getUsuarioid(),
@@ -701,13 +643,11 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
                     new ApiService.ApiCallback<Chat>() {
                         @Override
                         public void onSuccess(Chat chatExistente) {
-                            // Chat existe, abrir directamente
                             abrirActivityChat(chatExistente, solicitud);
                         }
 
                         @Override
                         public void onError(String error) {
-                            // No existe chat, crear uno nuevo
                             Chat nuevoChat = new Chat(
                                     usuarioActual.getUsuarioid(),
                                     solicitud.getUsuarioid(),
@@ -722,7 +662,7 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
 
                                 @Override
                                 public void onError(String error) {
-                                    Toast.makeText(context, "Error al crear chat: " + error, Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(context, context.getString(R.string.error_crear_chat, error), Toast.LENGTH_SHORT).show();
                                 }
                             });
                         }
@@ -730,11 +670,13 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
             );
         }
 
+        /**
+         * Abre la actividad de chat con toda la información necesaria
+         */
         private void abrirActivityChat(Chat chat, SolicitudDonacion solicitud) {
-            // Obtener información del otro usuario para el título del chat
             Usuario otroUsuario = usuariosMap.get(solicitud.getUsuarioid());
             String nombreChat = otroUsuario != null ?
-                    otroUsuario.getNombre() + " " + otroUsuario.getApellido() : "Usuario";
+                    otroUsuario.getNombre() + " " + otroUsuario.getApellido() : context.getString(R.string.usuario);
 
             Intent intent = new Intent(context, ChatC.class);
             intent.putExtra("chat_id", chat.getChatid());

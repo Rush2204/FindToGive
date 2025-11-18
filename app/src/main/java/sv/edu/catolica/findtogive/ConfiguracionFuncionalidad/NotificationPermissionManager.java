@@ -13,7 +13,11 @@ public class NotificationPermissionManager {
 
     public static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 1001;
 
-    // Verificar si los permisos están concedidos
+    /**
+     * Verifica si los permisos de notificación están concedidos.
+     * En Android 13 (TIRAMISU) y superiores, verifica el permiso POST_NOTIFICATIONS.
+     * En versiones anteriores, retorna true ya que los permisos se conceden automáticamente.
+     */
     public static boolean areNotificationsEnabled(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             return ContextCompat.checkSelfPermission(context,
@@ -23,7 +27,11 @@ public class NotificationPermissionManager {
         return true;
     }
 
-    // Solicitar permisos
+    /**
+     * Solicita los permisos de notificación al usuario si es necesario.
+     * Solo aplica para Android 13 (TIRAMISU) y superiores.
+     * En versiones anteriores no realiza ninguna acción.
+     */
     public static void requestNotificationPermission(Activity activity) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (!areNotificationsEnabled(activity)) {
@@ -34,7 +42,11 @@ public class NotificationPermissionManager {
         }
     }
 
-    // Manejar el resultado de la solicitud de permisos
+    /**
+     * Maneja el resultado de la solicitud de permisos.
+     * Verifica si el código de solicitud coincide y si el permiso fue concedido.
+     * Retorna true si el permiso fue concedido, false en caso contrario.
+     */
     public static boolean handlePermissionResult(int requestCode, int[] grantResults) {
         if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE) {
             return grantResults.length > 0 &&

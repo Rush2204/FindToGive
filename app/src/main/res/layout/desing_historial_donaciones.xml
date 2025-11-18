@@ -11,7 +11,7 @@
         android:id="@+id/text_header"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Mi Historial de Donaciones"
+        android:text="@string/mi_historial_de_donaciones"
         android:textSize="22sp"
         android:textStyle="bold"
         android:textColor="@android:color/black"
@@ -25,7 +25,7 @@
         android:id="@+id/text_filter_indicator"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Filtros activos"
+        android:text="@string/filtros_activo"
         android:textSize="12sp"
         android:textColor="#EB255D"
         android:visibility="gone"
@@ -41,7 +41,7 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Filtrar historial"
+        android:contentDescription="@string/filtrar_historial"
         android:padding="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -91,13 +91,13 @@
             android:layout_width="80dp"
             android:layout_height="80dp"
             android:src="@drawable/ico_cleaning"
-            android:contentDescription="No hay historial" />
+            android:contentDescription="@string/no_hay_historial" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="¡Aún no has realizado donaciones!"
+            android:text="@string/a_n_no_has_realizado_donaciones"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="#374151" />
@@ -106,7 +106,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="¡Anímate a salvar una vida hoy mismo!"
+            android:text="@string/an_mate_a_salvar_una_vida_hoy_mismo"
             android:textColor="#6b7280" />
     </LinearLayout>
 

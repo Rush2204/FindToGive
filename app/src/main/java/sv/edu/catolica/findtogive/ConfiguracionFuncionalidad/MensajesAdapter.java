@@ -40,12 +40,20 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
         this.usuariosMap = new HashMap<>();
     }
 
+    /**
+     * Determina el tipo de vista para cada posición basado en si el mensaje
+     * fue enviado por el usuario actual o recibido de otro usuario
+     */
     @Override
     public int getItemViewType(int position) {
         Mensaje mensaje = mensajesList.get(position);
         return mensaje.getEmisorioid() == usuarioActualId ? TYPE_SEND : TYPE_RECEIVE;
     }
 
+    /**
+     * Crea y retorna una nueva instancia de MensajeViewHolder inflando
+     * el layout correspondiente según el tipo de mensaje (enviado/recibido)
+     */
     @NonNull
     @Override
     public MensajeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -61,20 +69,28 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
         return new MensajeViewHolder(view, viewType);
     }
 
+    /**
+     * Vincula los datos del mensaje en la posición especificada con el ViewHolder
+     */
     @Override
     public void onBindViewHolder(@NonNull MensajeViewHolder holder, int position) {
         Mensaje mensaje = mensajesList.get(position);
         holder.bind(mensaje);
     }
 
+    /**
+     * Retorna el número total de mensajes en la lista
+     */
     @Override
     public int getItemCount() {
         return mensajesList.size();
     }
 
-    // Método para agregar un nuevo mensaje
+    /**
+     * Agrega un nuevo mensaje a la lista verificando primero que no exista
+     * para evitar duplicados. Notifica la inserción para actualizar la vista
+     */
     public void agregarMensaje(Mensaje mensaje) {
-        // Verificar que el mensaje no exista ya
         for (Mensaje existing : mensajesList) {
             if (existing.getMensajeid() == mensaje.getMensajeid()) {
                 return; // Ya existe, no agregar
@@ -85,7 +101,9 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
         notifyItemInserted(mensajesList.size() - 1);
     }
 
-    // Método para verificar si un mensaje ya existe
+    /**
+     * Verifica si un mensaje con el ID especificado ya existe en la lista
+     */
     public boolean contieneMensaje(int mensajeId) {
         for (Mensaje mensaje : mensajesList) {
             if (mensaje.getMensajeid() == mensajeId) {
@@ -95,21 +113,30 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
         return false;
     }
 
-    // Método para actualizar toda la lista
+    /**
+     * Reemplaza completamente la lista de mensajes con una nueva lista
+     * y notifica el cambio para actualizar toda la vista
+     */
     public void actualizarMensajes(List<Mensaje> nuevosMensajes) {
         mensajesList.clear();
         mensajesList.addAll(nuevosMensajes);
         notifyDataSetChanged();
     }
 
-    // Método para precargar el usuario
+    /**
+     * Precarga la información de un usuario en el mapa de caché para
+     * uso posterior en la visualización de fotos de perfil
+     */
     public void precargarUsuario(Usuario usuario) {
         if (usuario != null) {
             usuariosMap.put(usuario.getUsuarioid(), usuario);
         }
     }
 
-    // NUEVO MÉTODO: Actualizar estado de leído de un mensaje específico
+    /**
+     * Actualiza el estado de leído de un mensaje específico identificado por su ID.
+     * Busca el mensaje en la lista y actualiza su vista si es encontrado
+     */
     public void actualizarEstadoLeido(int mensajeId, boolean leido) {
         for (int i = 0; i < mensajesList.size(); i++) {
             Mensaje mensaje = mensajesList.get(i);
@@ -121,12 +148,14 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
         }
     }
 
-    // NUEVO MÉTODO: Actualizar estado de leído para todos los mensajes del otro usuario
+    /**
+     * Marca todos los mensajes del otro usuario como leídos.
+     * Solo afecta a mensajes recibidos que no estaban previamente marcados como leídos
+     */
     public void marcarTodosComoLeidos() {
         boolean changed = false;
         for (int i = 0; i < mensajesList.size(); i++) {
             Mensaje mensaje = mensajesList.get(i);
-            // Solo marcar mensajes del otro usuario que no estén leídos
             if (mensaje.getEmisorioid() != usuarioActualId && !mensaje.isLeido()) {
                 mensaje.setLeido(true);
                 changed = true;
@@ -141,7 +170,7 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
 
         private TextView textMessageContent;
         private TextView textMessageTime;
-        private TextView textLeidoStatus; // NUEVO: Para mostrar estado de leído
+        private TextView textLeidoStatus;
         private ImageView imgProfile;
         private int viewType;
         private View itemView;
@@ -154,7 +183,6 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
             textMessageContent = itemView.findViewById(R.id.text_message_content);
             textMessageTime = itemView.findViewById(R.id.text_message_time);
 
-            // NUEVO: Inicializar TextView para estado de leído (solo en mensajes enviados)
             if (viewType == TYPE_SEND) {
                 textLeidoStatus = itemView.findViewById(R.id.text_leido_status);
             }
@@ -165,55 +193,59 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
 
             setupLongClick();
         }
-        // NUEVO MÉTODO: Configurar el long click para copiar
+
+        /**
+         * Configura el listener de long click para permitir copiar el contenido
+         * del mensaje al portapapeles del dispositivo
+         */
         private void setupLongClick() {
             itemView.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    // Obtener el mensaje actual
                     int position = getAdapterPosition();
                     if (position != RecyclerView.NO_POSITION) {
                         Mensaje mensaje = mensajesList.get(position);
                         copiarTexto(mensaje.getContenido());
-                        return true; // Indica que el evento fue manejado
+                        return true;
                     }
                     return false;
                 }
             });
         }
 
-        // NUEVO MÉTODO: Copiar texto al portapapeles
+        /**
+         * Copia el texto especificado al portapapeles del sistema y muestra
+         * un mensaje toast de confirmación o error
+         */
         private void copiarTexto(String texto) {
             try {
-                // Obtener el clipboard del sistema
                 android.content.ClipboardManager clipboard =
                         (android.content.ClipboardManager) itemView.getContext()
                                 .getSystemService(Context.CLIPBOARD_SERVICE);
 
-                // Crear el clip de datos
                 android.content.ClipData clip = android.content.ClipData
-                        .newPlainText("Mensaje de chat", texto);
+                        .newPlainText(itemView.getContext().getString(R.string.mensaje_chat_label), texto);
 
-                // Establecer el clip en el clipboard
                 clipboard.setPrimaryClip(clip);
 
-                // Mostrar mensaje de confirmación
                 Toast.makeText(itemView.getContext(),
-                        "Mensaje copiado",
+                        itemView.getContext().getString(R.string.mensaje_copiado),
                         Toast.LENGTH_SHORT).show();
 
             } catch (Exception e) {
                 Toast.makeText(itemView.getContext(),
-                        "Error al copiar",
+                        itemView.getContext().getString(R.string.error_copiar),
                         Toast.LENGTH_SHORT).show();
-                e.printStackTrace();
             }
         }
 
+        /**
+         * Vincula los datos del mensaje a los elementos de la vista,
+         * incluyendo contenido, hora, estado de leído y foto de perfil
+         */
         public void bind(Mensaje mensaje) {
             textMessageContent.setText(mensaje.getContenido());
 
-            // Usar el mismo método para formatear la hora en los mensajes del chat
             if (mensaje.getFechaEnvio() != null) {
                 String hora = calcularTiempoMensaje(mensaje.getFechaEnvio());
                 textMessageTime.setText(hora);
@@ -221,33 +253,35 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
                 textMessageTime.setText("");
             }
 
-            // NUEVO: Mostrar estado de leído para mensajes enviados
             if (viewType == TYPE_SEND && textLeidoStatus != null) {
                 if (mensaje.isLeido()) {
-                    textLeidoStatus.setText("✓✓"); // Doble check para leído
-                    textLeidoStatus.setTextColor(Color.parseColor("#4CAF50")); // Verde
-                    textLeidoStatus.setAlpha(1.0f); // Totalmente visible
+                    textLeidoStatus.setText(itemView.getContext().getString(R.string.mensaje_leido));
+                    textLeidoStatus.setTextColor(Color.parseColor("#4CAF50"));
+                    textLeidoStatus.setAlpha(1.0f);
                 } else {
-                    textLeidoStatus.setText("✓"); // Check simple para enviado
-                    textLeidoStatus.setTextColor(Color.parseColor("#CCFFFFFF")); // Blanco semitransparente
-                    textLeidoStatus.setAlpha(0.7f); // Semitransparente
+                    textLeidoStatus.setText(itemView.getContext().getString(R.string.mensaje_enviado));
+                    textLeidoStatus.setTextColor(Color.parseColor("#CCFFFFFF"));
+                    textLeidoStatus.setAlpha(0.7f);
                 }
                 textLeidoStatus.setVisibility(View.VISIBLE);
             }
 
-            // Para mensajes recibidos, cargar la foto del OTRO usuario
             if (viewType == TYPE_RECEIVE && imgProfile != null) {
                 cargarFotoPerfil();
             }
         }
 
+        /**
+         * Calcula y formatea el tiempo del mensaje para mostrar en la interfaz.
+         * Muestra "Ahora" para mensajes recientes, hora (HH:mm) para mensajes del mismo día,
+         * o fecha (MM-DD) para mensajes más antiguos
+         */
         private String calcularTiempoMensaje(String fechaMensaje) {
             if (fechaMensaje == null || fechaMensaje.isEmpty()) {
                 return "";
             }
 
             try {
-                // Formato de Supabase: "2025-10-21 06:05:51.520241" o "2025-10-21T06:05:51.520241"
                 String fechaLimpia = fechaMensaje.replace(" ", "T");
                 java.time.LocalDateTime fecha = java.time.LocalDateTime.parse(fechaLimpia);
                 java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
@@ -258,15 +292,14 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
                 long minutos = segundos / 60;
                 long horas = minutos / 60;
 
-                // Para mensajes en el chat, mostrar solo la hora (HH:mm)
                 if (duracion.isNegative() || minutos < 1) {
-                    return "Ahora";
+                    return itemView.getContext().getString(R.string.ahora);
                 } else if (minutos < 60) {
-                    return fechaLimpia.substring(11, 16); // HH:mm
+                    return fechaLimpia.substring(11, 16);
                 } else if (horas < 24) {
-                    return fechaLimpia.substring(11, 16); // HH:mm
+                    return fechaLimpia.substring(11, 16);
                 } else {
-                    return fechaLimpia.substring(5, 10); // MM-DD
+                    return fechaLimpia.substring(5, 10);
                 }
 
             } catch (Exception e) {
@@ -274,12 +307,14 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
             }
         }
 
+        /**
+         * Carga la foto de perfil del otro usuario en el ImageView correspondiente.
+         * Usa caché de usuarios y realiza una petición a la API si no está disponible
+         */
         private void cargarFotoPerfil() {
-            // Siempre cargar la foto del OTRO usuario del chat
             Usuario usuario = usuariosMap.get(otroUsuarioId);
 
             if (usuario != null && usuario.getFotoUrl() != null && !usuario.getFotoUrl().isEmpty()) {
-                // Cargar la foto real
                 Glide.with(itemView.getContext())
                         .load(usuario.getFotoUrl())
                         .placeholder(R.drawable.logo_findtogive)
@@ -287,23 +322,24 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
                         .apply(RequestOptions.circleCropTransform())
                         .into(imgProfile);
             } else {
-                // Usar placeholder
                 imgProfile.setImageResource(R.drawable.logo_findtogive);
 
-                // Si no tenemos el usuario en cache, cargarlo
                 if (usuario == null) {
                     cargarUsuario(otroUsuarioId);
                 }
             }
         }
 
+        /**
+         * Carga la información de un usuario específico desde la API y actualiza
+         * la foto de perfil una vez obtenidos los datos
+         */
         private void cargarUsuario(int usuarioId) {
             ApiService.getUsuarioById(usuarioId, new ApiService.ApiCallback<Usuario>() {
                 @Override
                 public void onSuccess(Usuario usuario) {
                     usuariosMap.put(usuarioId, usuario);
 
-                    // Actualizar la imagen si este ViewHolder todavía es válido
                     if (getAdapterPosition() != RecyclerView.NO_POSITION) {
                         if (usuario.getFotoUrl() != null && !usuario.getFotoUrl().isEmpty()) {
                             Glide.with(itemView.getContext())
@@ -318,7 +354,6 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
 
                 @Override
                 public void onError(String error) {
-                    // Mantener el placeholder
                     imgProfile.setImageResource(R.drawable.logo_findtogive);
                 }
             });

@@ -3,7 +3,6 @@ package sv.edu.catolica.findtogive.ConfiguracionFuncionalidad;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -49,12 +48,10 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
     private Usuario usuarioActual;
     private Context context;
 
-    // Nuevas variables para manejar mensajes no leídos
     private Map<Integer, Boolean> solicitudTieneMensajesNoLeidos;
     private Map<Integer, List<Chat>> chatsPorSolicitud;
     private Map<Integer, Boolean> esDonantePorSolicitud;
 
-    // Mapa para cache de hospitales - NUEVO: Hacerlo estático para persistir entre recreaciones
     private static Map<Integer, HospitalUbicacion> hospitalesCache = new HashMap<>();
 
     public HistorialAdapter(List<SolicitudDonacion> solicitudList,
@@ -66,118 +63,108 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
         this.completeListener = completeListener;
         this.usuarioActual = usuarioActual;
 
-        // Inicializar las nuevas estructuras de datos
         this.solicitudTieneMensajesNoLeidos = new HashMap<>();
         this.chatsPorSolicitud = new HashMap<>();
         this.esDonantePorSolicitud = new HashMap<>();
-
-        // NUEVO: El cache de hospitales ya es estático, no necesita reinicialización
-        Log.d("HistorialAdapter", "🏥 Cache de hospitales inicializado con " + hospitalesCache.size() + " hospitales");
     }
 
-    // NUEVO MÉTODO: Limpiar cache de hospitales (opcional, para cuando sea necesario)
+    /**
+     * Limpia el cache estático de hospitales, útil para liberar memoria
+     * o forzar recarga de datos
+     */
     public static void limpiarCacheHospitales() {
         hospitalesCache.clear();
-        Log.d("HistorialAdapter", "🗑️ Cache de hospitales limpiado");
     }
 
-    // NUEVO MÉTODO: Obtener estadísticas del cache
+    /**
+     * Retorna estadísticas del cache de hospitales para monitoreo
+     */
     public static String obtenerEstadisticasCache() {
         return "Hospitales en cache: " + hospitalesCache.size();
     }
 
+    /**
+     * Establece el listener para manejar clicks en los items de la lista
+     */
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.itemClickListener = listener;
     }
 
-    // NUEVO MÉTODO MEJORADO: Actualizar información de chats y mensajes
+    /**
+     * Actualiza la información de chats y mensajes no leídos para las solicitudes.
+     * Organiza los chats por solicitud y determina el rol del usuario (donante/receptor)
+     * en cada una de ellas
+     */
     public void actualizarInfoChats(List<Chat> chatsDelUsuario, Map<Integer, Boolean> mensajesNoLeidosPorSolicitud) {
         this.chatsPorSolicitud.clear();
         this.esDonantePorSolicitud.clear();
 
-        // NUEVO: Limpiar y actualizar completamente el mapa de mensajes no leídos
         this.solicitudTieneMensajesNoLeidos.clear();
         if (mensajesNoLeidosPorSolicitud != null) {
             this.solicitudTieneMensajesNoLeidos.putAll(mensajesNoLeidosPorSolicitud);
         }
 
-        // Organizar chats por solicitud y determinar rol
         for (Chat chat : chatsDelUsuario) {
             int solicitudId = chat.getSolicitudid();
 
-            // Agregar chat a la lista por solicitud
             if (!chatsPorSolicitud.containsKey(solicitudId)) {
                 chatsPorSolicitud.put(solicitudId, new ArrayList<>());
             }
             chatsPorSolicitud.get(solicitudId).add(chat);
 
-            // Determinar si es donante en esta solicitud
             boolean esDonante = chat.getUsuario1id() == usuarioActual.getUsuarioid();
             esDonantePorSolicitud.put(solicitudId, esDonante);
         }
 
-        // Log para debugging
-        System.out.println("🔄 Adapter: " + this.solicitudTieneMensajesNoLeidos.size() +
-                " solicitudes con info de mensajes no leídos");
-
         notifyDataSetChanged();
     }
 
-    // NUEVO MÉTODO: Cargar TODOS los hospitales de una vez
+    /**
+     * Carga todos los hospitales necesarios para las solicitudes en la lista.
+     * Optimiza las peticiones agrupando hospitales únicos y usando cache
+     */
     public void cargarTodosLosHospitales() {
         if (solicitudList == null || solicitudList.isEmpty()) {
-            Log.d("HistorialAdapter", "📭 No hay solicitudes para cargar hospitales");
             return;
         }
 
-        // Obtener IDs únicos de hospitales
-        Map<Integer, List<Integer>> hospitalIdsMap = new HashMap<>(); // hospitalId -> lista de posiciones
+        Map<Integer, List<Integer>> hospitalIdsMap = new HashMap<>();
         for (int i = 0; i < solicitudList.size(); i++) {
             SolicitudDonacion solicitud = solicitudList.get(i);
             int hospitalId = solicitud.getHospitalid();
 
-            // NUEVO: Verificar si el hospital ya está cargado en el objeto solicitud
             if (solicitud.getHospital() == null && !hospitalesCache.containsKey(hospitalId)) {
                 if (!hospitalIdsMap.containsKey(hospitalId)) {
                     hospitalIdsMap.put(hospitalId, new ArrayList<>());
                 }
                 hospitalIdsMap.get(hospitalId).add(i);
             } else if (solicitud.getHospital() == null && hospitalesCache.containsKey(hospitalId)) {
-                // NUEVO: Si está en cache pero no en la solicitud, asignarlo inmediatamente
                 solicitud.setHospital(hospitalesCache.get(hospitalId));
-                Log.d("HistorialAdapter", "✅ Hospital asignado desde cache: " + hospitalId);
             }
         }
 
         if (hospitalIdsMap.isEmpty()) {
-            Log.d("HistorialAdapter", "✅ Todos los hospitales ya están cargados");
-            // NUEVO: Forzar actualización para mostrar hospitales desde cache
             notifyDataSetChanged();
             return;
         }
 
-        Log.d("HistorialAdapter", "🏥 Cargando " + hospitalIdsMap.size() + " hospitales únicos desde API");
-
-        // Cargar cada hospital único
         for (Map.Entry<Integer, List<Integer>> entry : hospitalIdsMap.entrySet()) {
             int hospitalId = entry.getKey();
             List<Integer> posiciones = entry.getValue();
-
             cargarHospitalUnico(hospitalId, posiciones);
         }
     }
 
-    // NUEVO MÉTODO: Cargar un hospital único y actualizar todas sus solicitudes
+    /**
+     * Carga un hospital específico desde la API y actualiza todas las solicitudes
+     * que lo referencian. Guarda el resultado en cache para uso futuro
+     */
     private void cargarHospitalUnico(int hospitalId, List<Integer> posiciones) {
         ApiService.getHospitalById(hospitalId, new ApiService.ApiCallback<HospitalUbicacion>() {
             @Override
             public void onSuccess(HospitalUbicacion hospital) {
-                // Guardar en cache estático
                 hospitalesCache.put(hospitalId, hospital);
 
-                Log.d("HistorialAdapter", "✅ Hospital cargado: " + hospital.getNombre() + " (ID: " + hospitalId + ")");
-
-                // Actualizar todas las solicitudes que usen este hospital
                 for (int position : posiciones) {
                     if (position >= 0 && position < solicitudList.size()) {
                         solicitudList.get(position).setHospital(hospital);
@@ -188,14 +175,10 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
 
             @Override
             public void onError(String error) {
-                Log.e("HistorialAdapter", "❌ Error cargando hospital " + hospitalId + ": " + error);
-
-                // Mostrar nombre genérico en caso de error
                 HospitalUbicacion hospitalGenerico = new HospitalUbicacion();
-                hospitalGenerico.setNombre("Hospital");
+                hospitalGenerico.setNombre(context.getString(R.string.hospital));
                 hospitalesCache.put(hospitalId, hospitalGenerico);
 
-                // Actualizar todas las solicitudes con nombre genérico
                 for (int position : posiciones) {
                     if (position >= 0 && position < solicitudList.size()) {
                         solicitudList.get(position).setHospital(hospitalGenerico);
@@ -206,100 +189,108 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
         });
     }
 
-    // NUEVO MÉTODO: Verificar si una solicitud tiene mensajes no leídos
+    /**
+     * Verifica si una solicitud específica tiene mensajes no leídos
+     */
     private boolean tieneMensajesNoLeidos(int solicitudId) {
         return solicitudTieneMensajesNoLeidos.containsKey(solicitudId) &&
                 solicitudTieneMensajesNoLeidos.get(solicitudId);
     }
 
-    // NUEVO MÉTODO: Determinar el rol del usuario en la solicitud
+    /**
+     * Determina si el usuario actual es donante en una solicitud específica.
+     * Primero verifica si es el creador, luego consulta la información de chats
+     */
     private boolean esDonanteEnSolicitud(int solicitudId) {
-        // Primero verificar si es el creador de la solicitud
         for (SolicitudDonacion solicitud : solicitudList) {
             if (solicitud.getSolicitudid() == solicitudId) {
                 if (solicitud.getUsuarioid() == usuarioActual.getUsuarioid()) {
-                    return false; // Es receptor (creador de la solicitud)
+                    return false;
                 }
                 break;
             }
         }
 
-        // Si no es el creador, verificar en los chats
         return esDonantePorSolicitud.containsKey(solicitudId) &&
                 esDonantePorSolicitud.get(solicitudId);
     }
 
+    /**
+     * Crea y retorna una nueva instancia de HistorialViewHolder inflando el layout del item
+     */
     @NonNull
     @Override
     public HistorialViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.desing_item_historial, parent, false);
-        this.context = parent.getContext(); // Guardar contexto
+        this.context = parent.getContext();
         return new HistorialViewHolder(view);
     }
 
+    /**
+     * Vincula los datos de la solicitud en la posición especificada con el ViewHolder.
+     * Incluye manejo de errores robusto para prevenir crashes
+     */
     @Override
     public void onBindViewHolder(@NonNull HistorialViewHolder holder, int position) {
         if (position < 0 || position >= solicitudList.size()) {
-            Log.e("HistorialAdapter", "❌ Posición inválida: " + position + ", tamaño: " + solicitudList.size());
             return;
         }
 
         try {
             SolicitudDonacion solicitud = solicitudList.get(position);
 
-            // NUEVO: Verificar y cargar hospital si falta
             if (solicitud.getHospital() == null && hospitalesCache.containsKey(solicitud.getHospitalid())) {
                 solicitud.setHospital(hospitalesCache.get(solicitud.getHospitalid()));
-                Log.d("HistorialAdapter", "🏥 Hospital recuperado desde cache para posición " + position);
             }
 
             holder.bind(solicitud, position);
         } catch (Exception e) {
-            Log.e("HistorialAdapter", "💥 Error crítico en onBindViewHolder: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
+    /**
+     * Retorna el número total de solicitudes en la lista
+     */
     @Override
     public int getItemCount() {
         return solicitudList != null ? solicitudList.size() : 0;
     }
 
-    // ✅ MÉTODO SIMPLIFICADO: Solo notificar cambios
+    /**
+     * Notifica cambios en el dataset de manera segura con manejo de excepciones
+     */
     public void notifyDataChanged() {
         try {
             notifyDataSetChanged();
         } catch (Exception e) {
-            Log.e("HistorialAdapter", "💥 Error en notifyDataChanged: " + e.getMessage());
         }
     }
 
-    // NUEVO MÉTODO MODIFICADO: Actualizar la lista de solicitudes de manera segura
+    /**
+     * Actualiza completamente la lista de solicitudes, asigna hospitales desde cache
+     * y programa la carga de hospitales faltantes
+     */
     public void actualizarListaSolicitudes(List<SolicitudDonacion> nuevasSolicitudes) {
         try {
             this.solicitudList.clear();
             if (nuevasSolicitudes != null) {
                 this.solicitudList.addAll(nuevasSolicitudes);
 
-                // NUEVO: Asignar hospitales desde cache inmediatamente
                 for (SolicitudDonacion solicitud : this.solicitudList) {
                     if (solicitud.getHospital() == null && hospitalesCache.containsKey(solicitud.getHospitalid())) {
                         solicitud.setHospital(hospitalesCache.get(solicitud.getHospitalid()));
-                        Log.d("HistorialAdapter", "✅ Hospital asignado desde cache al actualizar lista");
                     }
                 }
             }
 
             notifyDataChanged();
 
-            // NUEVO: Forzar carga inmediata de hospitales que falten
             new android.os.Handler().postDelayed(() -> {
                 cargarTodosLosHospitales();
             }, 100);
 
         } catch (Exception e) {
-            Log.e("HistorialAdapter", "💥 Error actualizando lista: " + e.getMessage());
         }
     }
 
@@ -328,41 +319,39 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
             clickableArea = itemView.findViewById(R.id.clickable_area);
         }
 
+        /**
+         * Vincula todos los datos de la solicitud a los elementos de la vista,
+         * configurando la información básica, iconos, mensajes y botones
+         */
         public void bind(SolicitudDonacion solicitud, int position) {
-            // Configurar información básica
-            textTypeDonation.setText(solicitud.getTitulo() != null ? solicitud.getTitulo() : "Sin título");
-            textDateDonation.setText("Fecha: " + formatearFecha(solicitud.getFechaPublicacion()));
+            textTypeDonation.setText(solicitud.getTitulo() != null ? solicitud.getTitulo() : context.getString(R.string.sin_titulo));
+            textDateDonation.setText(context.getString(R.string.fecha_prefix) + formatearFecha(solicitud.getFechaPublicacion()));
 
-            // MOSTRAR HOSPITAL - VERSIÓN MEJORADA
             configurarUbicacionHospital(solicitud, position);
 
-            textTypebDonation.setText("Tipo de sangre: " + obtenerTipoSangre(solicitud.getTiposangreid()));
+            textTypebDonation.setText(context.getString(R.string.tipo_sangre_prefix) + obtenerTipoSangre(solicitud.getTiposangreid()));
 
-            // NUEVO: Configurar icono de rol
             configurarIconoRol(solicitud.getSolicitudid());
 
-            // NUEVO MEJORADO: Configurar indicador de mensajes nuevos con logging
             configurarIndicadorMensajes(solicitud.getSolicitudid());
 
-            // NUEVO: Aplicar estilo según el estado (fondo gris para completadas/canceladas)
             aplicarEstiloSegunEstado(solicitud.getEstado());
 
-            // Configurar botones según el estado y rol
             configurarBotones(solicitud, position);
 
-            // Configurar click listeners
             configurarClickListeners(solicitud, position);
         }
 
-        // NUEVO MÉTODO MEJORADO: Configurar ubicación del hospital
+        /**
+         * Configura la visualización de la ubicación del hospital, haciendo el texto
+         * clickeable si hay un enlace disponible para abrir en Google Maps
+         */
         private void configurarUbicacionHospital(SolicitudDonacion solicitud, int position) {
             HospitalUbicacion hospital = solicitud.getHospital();
 
-            if (hospital != null && hospital.getNombre() != null && !hospital.getNombre().equals("Hospital")) {
-                // Tenemos datos reales del hospital
-                textPlaceDonation.setText("Hospital: " + hospital.getNombre());
+            if (hospital != null && hospital.getNombre() != null && !hospital.getNombre().equals(context.getString(R.string.hospital))) {
+                textPlaceDonation.setText(context.getString(R.string.hospital_prefix) + hospital.getNombre());
 
-                // Hacer clickeable si tiene link
                 if (hospital.getLink() != null && !hospital.getLink().isEmpty()) {
                     textPlaceDonation.setTextColor(ContextCompat.getColor(itemView.getContext(), android.R.color.holo_blue_dark));
                     textPlaceDonation.setClickable(true);
@@ -372,28 +361,26 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                         abrirGoogleMaps(hospital);
                     });
                 } else {
-                    // No tiene link, mostrar normal
                     textPlaceDonation.setTextColor(ContextCompat.getColor(itemView.getContext(), android.R.color.darker_gray));
                     textPlaceDonation.setClickable(false);
                     textPlaceDonation.setFocusable(false);
                 }
             } else {
-                // No tenemos datos del hospital o son genéricos
-                textPlaceDonation.setText("Cargando hospital...");
+                textPlaceDonation.setText(context.getString(R.string.cargando_hospital));
                 textPlaceDonation.setTextColor(ContextCompat.getColor(itemView.getContext(), android.R.color.darker_gray));
                 textPlaceDonation.setClickable(false);
                 textPlaceDonation.setFocusable(false);
 
-                // NUEVO: Intentar cargar el hospital si no está disponible
-                if (hospital == null || hospital.getNombre() == null || hospital.getNombre().equals("Hospital")) {
+                if (hospital == null || hospital.getNombre() == null || hospital.getNombre().equals(context.getString(R.string.hospital))) {
                     cargarHospitalIndividual(solicitud.getHospitalid(), position);
                 }
             }
         }
 
-        // NUEVO MÉTODO: Cargar hospital individual para esta posición
+        /**
+         * Carga un hospital individual desde la API o cache para una posición específica
+         */
         private void cargarHospitalIndividual(int hospitalId, int position) {
-            // Verificar si ya está en cache
             if (hospitalesCache.containsKey(hospitalId)) {
                 HospitalUbicacion hospital = hospitalesCache.get(hospitalId);
                 if (position >= 0 && position < solicitudList.size()) {
@@ -403,14 +390,11 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                 return;
             }
 
-            // Cargar desde API
             ApiService.getHospitalById(hospitalId, new ApiService.ApiCallback<HospitalUbicacion>() {
                 @Override
                 public void onSuccess(HospitalUbicacion hospital) {
-                    // Guardar en cache
                     hospitalesCache.put(hospitalId, hospital);
 
-                    // Actualizar la solicitud específica
                     if (position >= 0 && position < solicitudList.size()) {
                         solicitudList.get(position).setHospital(hospital);
                         notifyItemChanged(position);
@@ -419,10 +403,8 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
 
                 @Override
                 public void onError(String error) {
-                    Log.e("HistorialAdapter", "❌ Error cargando hospital individual: " + error);
-                    // En caso de error, asignar hospital genérico
                     HospitalUbicacion hospitalGenerico = new HospitalUbicacion();
-                    hospitalGenerico.setNombre("Hospital");
+                    hospitalGenerico.setNombre(context.getString(R.string.hospital));
                     hospitalesCache.put(hospitalId, hospitalGenerico);
 
                     if (position >= 0 && position < solicitudList.size()) {
@@ -433,12 +415,14 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
             });
         }
 
-        // NUEVO MÉTODO: Abrir Google Maps
+        /**
+         * Abre Google Maps con la ubicación del hospital, usando el enlace disponible
+         * o creando uno con las coordenadas. Maneja fallbacks si Google Maps no está instalado
+         */
         private void abrirGoogleMaps(HospitalUbicacion hospital) {
             try {
                 String mapsUrl = hospital.getLink();
 
-                // Si no hay link específico, crear uno con las coordenadas
                 if (mapsUrl == null || mapsUrl.isEmpty()) {
                     mapsUrl = "https://www.google.com/maps/search/?api=1&query=" +
                             hospital.getLatitud() + "," + hospital.getLongitud() +
@@ -448,45 +432,41 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(mapsUrl));
                 intent.setPackage("com.google.android.apps.maps");
 
-                // Verificar si Google Maps está instalado
                 if (intent.resolveActivity(itemView.getContext().getPackageManager()) != null) {
                     itemView.getContext().startActivity(intent);
                 } else {
-                    // Si Google Maps no está instalado, abrir en navegador
                     intent.setPackage(null);
                     itemView.getContext().startActivity(intent);
                 }
 
             } catch (Exception e) {
-                Toast.makeText(itemView.getContext(), "Error al abrir la ubicación", Toast.LENGTH_SHORT).show();
-                Log.e("HistorialMaps", "Error al abrir Google Maps: " + e.getMessage());
+                Toast.makeText(itemView.getContext(), context.getString(R.string.error_abrir_ubicacion), Toast.LENGTH_SHORT).show();
             }
         }
 
-        // NUEVO MÉTODO: Aplicar estilo visual según el estado de la solicitud (versión sutil)
+        /**
+         * Aplica estilos visuales diferentes según el estado de la solicitud:
+         * activa (normal), completada o cancelada (atenuadas)
+         */
         private void aplicarEstiloSegunEstado(String estado) {
             try {
-                // Obtener la tarjeta principal
                 com.google.android.material.card.MaterialCardView cardView =
                         (com.google.android.material.card.MaterialCardView) itemView;
 
-                // Obtener el contexto
                 Context context = itemView.getContext();
 
                 switch (estado) {
                     case "activa":
-                        // Estado activo - aspecto normal
                         cardView.setCardBackgroundColor(ContextCompat.getColor(context, android.R.color.white));
                         cardView.setAlpha(1.0f);
-                        cardView.setCardElevation(4f); // Elevación normal
+                        cardView.setCardElevation(4f);
                         break;
 
                     case "completada":
                     case "cancelada":
-                        // Estados no activos - aspecto deshabilitado
                         cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.light_gray));
                         cardView.setAlpha(0.8f);
-                        cardView.setCardElevation(2f); // Menos elevación
+                        cardView.setCardElevation(2f);
                         break;
 
                     default:
@@ -495,57 +475,55 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                         break;
                 }
             } catch (Exception e) {
-                Log.e("HistorialAdapter", "Error aplicando estilo: " + e.getMessage());
             }
         }
 
-        // NUEVO MÉTODO: Configurar icono de rol (donante/receptor)
+        /**
+         * Configura el icono que indica si el usuario es donante o receptor en esta solicitud
+         */
         private void configurarIconoRol(int solicitudId) {
             try {
                 boolean esDonante = esDonanteEnSolicitud(solicitudId);
 
                 if (esDonante) {
                     imgRolIcon.setImageResource(R.drawable.ico_donante);
-                    imgRolIcon.setContentDescription("Donante");
+                    imgRolIcon.setContentDescription(context.getString(R.string.donante));
                 } else {
                     imgRolIcon.setImageResource(R.drawable.ico_receptor);
-                    imgRolIcon.setContentDescription("Receptor");
+                    imgRolIcon.setContentDescription(context.getString(R.string.receptor));
                 }
             } catch (Exception e) {
-                Log.e("HistorialAdapter", "Error configurando icono de rol: " + e.getMessage());
             }
         }
 
-        // NUEVO MÉTODO MEJORADO: Configurar indicador de mensajes nuevos con logging
+        /**
+         * Muestra u oculta el indicador de mensajes nuevos según si la solicitud
+         * tiene mensajes no leídos
+         */
         private void configurarIndicadorMensajes(int solicitudId) {
             try {
                 boolean tieneMensajesNoLeidos = tieneMensajesNoLeidos(solicitudId);
 
                 if (tieneMensajesNoLeidos) {
                     textNewMessages.setVisibility(View.VISIBLE);
-                    System.out.println("🔴 Mostrando indicador para solicitud " + solicitudId);
                 } else {
                     textNewMessages.setVisibility(View.GONE);
                 }
-
-                // Log para debugging
-                System.out.println("💬 Solicitud " + solicitudId +
-                        " - Mensajes no leídos: " + tieneMensajesNoLeidos);
-
             } catch (Exception e) {
-                Log.e("HistorialAdapter", "Error configurando indicador de mensajes: " + e.getMessage());
-                textNewMessages.setVisibility(View.GONE); // Por seguridad, ocultar en caso de error
+                textNewMessages.setVisibility(View.GONE);
             }
         }
 
+        /**
+         * Configura la visibilidad y comportamiento de los botones de completar y eliminar
+         * según el estado de la solicitud y si el usuario es el creador
+         */
         private void configurarBotones(SolicitudDonacion solicitud, int position) {
             try {
-                // Mostrar/ocultar botones según el estado y si el usuario es el creador
                 boolean esCreador = solicitud.getUsuarioid() == usuarioActual.getUsuarioid();
                 boolean estaActiva = "activa".equals(solicitud.getEstado());
 
                 if (esCreador && estaActiva) {
-                    // El usuario es el creador y la solicitud está activa
                     btnCheckHistory.setVisibility(View.VISIBLE);
                     btnDeleteHistory.setVisibility(View.VISIBLE);
 
@@ -561,12 +539,10 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                         }
                     });
                 } else {
-                    // Ocultar botones para solicitudes completadas/canceladas o cuando no es el creador
                     btnCheckHistory.setVisibility(View.GONE);
                     btnDeleteHistory.setVisibility(View.GONE);
                 }
 
-                // Cambiar icono y color según el estado
                 switch (solicitud.getEstado()) {
                     case "activa":
                         btnCheckHistory.setImageResource(android.R.drawable.arrow_down_float);
@@ -582,10 +558,12 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                         break;
                 }
             } catch (Exception e) {
-                Log.e("HistorialAdapter", "Error configurando botones: " + e.getMessage());
             }
         }
 
+        /**
+         * Configura los listeners de click para el área principal del item
+         */
         private void configurarClickListeners(SolicitudDonacion solicitud, int position) {
             try {
                 clickableArea.setOnClickListener(v -> {
@@ -594,17 +572,18 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                     }
                 });
             } catch (Exception e) {
-                Log.e("HistorialAdapter", "Error configurando click listeners: " + e.getMessage());
             }
         }
 
+        /**
+         * Formatea una fecha en formato ISO a un formato legible en español (día/mes/año)
+         */
         private String formatearFecha(String fecha) {
             if (fecha == null || fecha.isEmpty()) {
-                return "Fecha no disponible";
+                return context.getString(R.string.fecha_no_disponible);
             }
 
             try {
-                // Formato de Supabase: "2024-01-15T14:30:00.000000" o "2024-01-15 14:30:00.000000"
                 String fechaLimpia = fecha.replace(" ", "T");
                 String[] partesFecha = fechaLimpia.split("T")[0].split("-");
 
@@ -615,20 +594,24 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                     return dia + "/" + mes + "/" + año;
                 }
             } catch (Exception e) {
-                Log.e("HistorialAdapter", "Error formateando fecha: " + fecha, e);
             }
 
-            return "Fecha inválida";
+            return context.getString(R.string.fecha_invalida);
         }
 
+        /**
+         * Convierte un número de mes (1-12) a su nombre en español
+         */
         private String obtenerNombreMes(int numeroMes) {
             String[] meses = {"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
                     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"};
             return (numeroMes >= 1 && numeroMes <= 12) ? meses[numeroMes - 1] : String.valueOf(numeroMes);
         }
 
+        /**
+         * Convierte un ID de tipo de sangre a su representación textual (A+, B-, etc.)
+         */
         private String obtenerTipoSangre(int tiposangreid) {
-            // Mapeo simple de IDs a tipos de sangre (ajusta según tu base de datos)
             Map<Integer, String> tiposSangre = new HashMap<>();
             tiposSangre.put(1, "A+");
             tiposSangre.put(2, "A-");
@@ -639,7 +622,7 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
             tiposSangre.put(7, "O+");
             tiposSangre.put(8, "O-");
 
-            return tiposSangre.getOrDefault(tiposangreid, "Desconocido");
+            return tiposSangre.getOrDefault(tiposangreid, context.getString(R.string.desconocido));
         }
     }
 }

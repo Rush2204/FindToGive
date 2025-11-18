@@ -26,7 +26,7 @@
                 android:layout_height="48dp"
                 android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Ajustes"
+                android:contentDescription="@string/ajustes"
                 android:padding="12dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
@@ -36,7 +36,7 @@
                 android:id="@+id/text_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Mi Perfil"
+                android:text="@string/mi_perfil"
                 android:textSize="26sp"
                 android:textStyle="bold"
                 android:textColor="#2C3E50"
@@ -59,6 +59,7 @@
                     android:id="@+id/img_profile"
                     android:layout_width="120dp"
                     android:layout_height="120dp"
+                    android:contentDescription="@string/logo_findtogive"
                     android:src="@drawable/logo_findtogive"
                     android:padding="4dp"
                     android:elevation="4dp"
@@ -70,10 +71,9 @@
                     android:id="@+id/btn_edit_photo"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
-                    android:contentDescription="Editar Foto"
+                    android:contentDescription="@string/editar_foto"
                     android:elevation="8dp"
                     android:padding="8dp"
-                    android:background="@android:color/white"
                     app:layout_constraintBottom_toBottomOf="@+id/img_profile"
                     app:layout_constraintEnd_toEndOf="@+id/img_profile"
                     tools:ignore="TouchTargetSizeCheck"
@@ -119,7 +119,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="40dp"
-                android:text="Información y Contacto"
+                android:text="@string/informaci_n_y_contacto"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#2C3E50"
@@ -149,7 +149,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Correo Electrónico"
+                        android:text="@string/correo_electr_nico"
                         android:textStyle="bold"
                         android:textColor="#34495E" />
 
@@ -181,7 +181,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Edad"
+                        android:text="@string/edad"
                         android:textStyle="bold"
                         android:textColor="#34495E" />
 
@@ -213,7 +213,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Teléfono"
+                        android:text="@string/tel_fono"
                         android:textStyle="bold"
                         android:textColor="#34495E" />
 
@@ -245,7 +245,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Ubicación"
+                        android:text="@string/ubicaci_n"
                         android:textStyle="bold"
                         android:textColor="#34495E" />
 
@@ -268,7 +268,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
-                android:text="Rol en FindToGive"
+                android:text="@string/rol_en_findtogive"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#2C3E50"
@@ -296,7 +296,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Rol Asignado"
+                        android:text="@string/rol_asignado"
                         android:textStyle="bold"
                         android:textColor="#34495E" />
 
@@ -319,7 +319,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
-                android:text="Editar Perfil"
+                android:text="@string/editar_perfil"
                 android:backgroundTint="#3498DB"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
@@ -334,7 +334,7 @@
                 style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Cerrar Sesión"
+                android:text="@string/cerrar_sesi_n"
                 android:textColor="#E74C3C"
                 android:textSize="16sp"
                 app:layout_constraintTop_toBottomOf="@+id/btn_edit_profile"

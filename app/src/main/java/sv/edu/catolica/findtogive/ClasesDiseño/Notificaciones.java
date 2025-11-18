@@ -34,6 +34,10 @@ public class Notificaciones extends AppCompatActivity {
     private Usuario usuarioActual;
     private BottomNavigationView bottomNavigation;
 
+    /**
+     * Método principal que inicializa la actividad de notificaciones
+     * Configura la vista, navegación y carga las notificaciones del usuario
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,16 +55,22 @@ public class Notificaciones extends AppCompatActivity {
         setupRecyclerView();
         setupBottomNavigation();
         loadNotificaciones();
-
-        debugNotificaciones();
     }
 
+    /**
+     * Inicializa todos los componentes visuales de la interfaz
+     * Obtiene referencias a los views del layout
+     */
     private void initializeViews() {
         recyclerViewNotifications = findViewById(R.id.recycler_view_notifications);
         layoutEmptyState = findViewById(R.id.layout_empty_state);
         bottomNavigation = findViewById(R.id.bottom_navigation_bar);
     }
 
+    /**
+     * Configura el RecyclerView para mostrar la lista de notificaciones
+     * Inicializa el adapter y establece el layout manager
+     */
     private void setupRecyclerView() {
         notificacionesList = new ArrayList<>();
         notificacionAdapter = new NotificacionAdapter(notificacionesList, this);
@@ -69,7 +79,11 @@ public class Notificaciones extends AppCompatActivity {
         recyclerViewNotifications.setLayoutManager(layoutManager);
         recyclerViewNotifications.setAdapter(notificacionAdapter);
     }
-    // ⭐⭐ NUEVO MÉTODO: Actualizar navegación según rol ⭐⭐
+
+    /**
+     * Actualiza la navegación inferior según el rol del usuario
+     * Oculta el ítem de creación para usuarios donantes
+     */
     private void actualizarNavegacionSegunRol() {
         if (usuarioActual != null) {
             boolean esDonante = usuarioActual.getRolid() == 1;
@@ -77,6 +91,10 @@ public class Notificaciones extends AppCompatActivity {
         }
     }
 
+    /**
+     * Configura la navegación inferior de la aplicación
+     * Define las acciones para cada ítem del menú de navegación
+     */
     private void setupBottomNavigation() {
         actualizarNavegacionSegunRol();
         bottomNavigation.setOnItemSelectedListener(item -> {
@@ -93,11 +111,10 @@ public class Notificaciones extends AppCompatActivity {
                     intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                     startActivity(intent);
                 } else {
-                    Toast.makeText(this, "Solo receptores pueden crear solicitudes", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.solo_receptores_pueden_crear_solicitudes, Toast.LENGTH_SHORT).show();
                 }
                 return true;
             } else if (itemId == R.id.nav_notificaciones) {
-                // Ya estamos en notificaciones
                 return true;
             } else if (itemId == R.id.nav_historial) {
                 Intent intent = new Intent(this, HistorialDonaciones.class);
@@ -120,25 +137,23 @@ public class Notificaciones extends AppCompatActivity {
         bottomNavigation.setSelectedItemId(R.id.nav_notificaciones);
     }
 
-
+    /**
+     * Carga las notificaciones del usuario desde la API
+     * Actualiza la lista de notificaciones en el adapter
+     */
     private void loadNotificaciones() {
         if (usuarioActual == null) {
-            System.out.println("❌ Usuario actual es null");
             return;
         }
-
-        System.out.println("🔄 Cargando notificaciones para usuario: " + usuarioActual.getUsuarioid());
 
         ApiService.getNotificacionesByUsuario(usuarioActual.getUsuarioid(), new ApiService.ListCallback<Notificacion>() {
             @Override
             public void onSuccess(List<Notificacion> notificaciones) {
                 runOnUiThread(() -> {
                     if (notificaciones != null && !notificaciones.isEmpty()) {
-                        System.out.println("✅ " + notificaciones.size() + " notificaciones cargadas");
                         notificacionAdapter.setNotificaciones(notificaciones);
                         showNotificationsList();
                     } else {
-                        System.out.println("ℹ️ No hay notificaciones");
                         showEmptyState();
                     }
                 });
@@ -147,54 +162,35 @@ public class Notificaciones extends AppCompatActivity {
             @Override
             public void onError(String error) {
                 runOnUiThread(() -> {
-                    System.out.println("❌ Error cargando notificaciones: " + error);
                     showEmptyState();
                 });
             }
         });
     }
 
-    private void debugNotificaciones() {
-        System.out.println("🐛 DEBUG: Verificando notificaciones en BD");
-
-        ApiService.getNotificacionesByUsuario(usuarioActual.getUsuarioid(), new ApiService.ListCallback<Notificacion>() {
-            @Override
-            public void onSuccess(List<Notificacion> notificaciones) {
-                System.out.println("📋 NOTIFICACIONES EN BD: " + (notificaciones != null ? notificaciones.size() : 0));
-                if (notificaciones != null) {
-                    for (Notificacion notif : notificaciones) {
-                        System.out.println("🔔 ID: " + notif.getNotificacionid() +
-                                " - Título: " + notif.getTitulo() +
-                                " - Mensaje: " + notif.getMensaje() +
-                                " - Leída: " + notif.isLeida());
-                    }
-                }
-            }
-
-            @Override
-            public void onError(String error) {
-                System.out.println("❌ ERROR obteniendo notificaciones: " + error);
-            }
-        });
-    }
-
-    // Llama a este método en onCreate después de loadNotificaciones()
-
-
+    /**
+     * Muestra la lista de notificaciones (oculta estado vacío)
+     */
     private void showNotificationsList() {
         recyclerViewNotifications.setVisibility(View.VISIBLE);
         layoutEmptyState.setVisibility(View.GONE);
     }
 
+    /**
+     * Muestra el estado vacío (oculta lista de notificaciones)
+     */
     private void showEmptyState() {
         recyclerViewNotifications.setVisibility(View.GONE);
         layoutEmptyState.setVisibility(View.VISIBLE);
     }
 
+    /**
+     * Método del ciclo de vida que se ejecuta al reanudar la actividad
+     * Recarga las notificaciones y actualiza la navegación
+     */
     @Override
     protected void onResume() {
         super.onResume();
-        // Recargar notificaciones al volver a la actividad
         actualizarNavegacionSegunRol();
         loadNotificaciones();
         bottomNavigation.setSelectedItemId(R.id.nav_notificaciones);

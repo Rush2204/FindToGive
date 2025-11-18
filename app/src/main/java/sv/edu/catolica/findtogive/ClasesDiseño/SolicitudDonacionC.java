@@ -55,43 +55,50 @@ public class SolicitudDonacionC extends AppCompatActivity {
 
     private BottomNavigationView bottomNavigation;
 
-    // Activity result launcher para seleccionar imágenes
+    /**
+     * Activity result launcher para seleccionar imágenes de la galería
+     */
     private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                     selectedImageUri = result.getData().getData();
                     if (selectedImageUri != null) {
-                        // Mostrar preview de la imagen
                         if (imagePreview != null) {
                             imagePreview.setImageURI(selectedImageUri);
                             imagePreview.setVisibility(View.VISIBLE);
                         }
-                        // Cambiar el texto del layout para indicar que hay imagen seleccionada
                         TextView uploadText = layoutUploadImage.findViewById(R.id.upload_text);
                         if (uploadText != null) {
-                            uploadText.setText("Imagen seleccionada - Toca para cambiar");
+                            uploadText.setText(getString(R.string.imagen_seleccionada_cambiar));
                         }
                     }
                 }
             }
     );
 
+    /**
+     * Obtiene el nombre del rol del usuario actual
+     * @return Nombre del rol (Donante, Receptor, Ambos)
+     */
     private String obtenerNombreRol() {
-        if (usuarioActual == null) return "Desconocido";
+        if (usuarioActual == null) return getString(R.string.desconocido);
 
         switch (usuarioActual.getRolid()) {
-            case 1: return "Donante";
-            case 2: return "Receptor";
-            case 3: return "Ambos";
-            default: return "Desconocido";
+            case 1: return getString(R.string.rol_donante);
+            case 2: return getString(R.string.rol_receptor);
+            case 3: return getString(R.string.rol_ambos);
+            default: return getString(R.string.desconocido);
         }
     }
 
+    /**
+     * Método principal que inicializa la actividad de creación de solicitud
+     * Configura la vista, verifica permisos y carga los datos necesarios
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Configurar para que el teclado no empuje el contenido
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         setContentView(R.layout.desing_solicitud_donacion);
@@ -102,10 +109,8 @@ public class SolicitudDonacionC extends AppCompatActivity {
             return insets;
         });
 
-        // Obtener usuario actual
         usuarioActual = SharedPreferencesManager.getCurrentUser(this);
 
-        // Verificar si puede crear solicitudes (solo rolid=2 y 3)
         if (!puedeCrearSolicitudes()) {
             mostrarErrorRol();
             return;
@@ -118,57 +123,63 @@ public class SolicitudDonacionC extends AppCompatActivity {
         setupBottomNavigation();
     }
 
+    /**
+     * Verifica si el usuario actual puede crear solicitudes de donación
+     * @return true si el usuario es receptor o ambos, false si es donante
+     */
     private boolean puedeCrearSolicitudes() {
         if (usuarioActual == null) {
             return false;
         }
 
-        // Solo receptores (rolid=2) y ambos (rolid=3) pueden crear solicitudes
-        // Donantes (rolid=1) NO pueden crear solicitudes
         return usuarioActual.getRolid() == 2 || usuarioActual.getRolid() == 3;
     }
 
+    /**
+     * Muestra un diálogo de error cuando el usuario no tiene permisos para crear solicitudes
+     * Redirige al feed principal después de mostrar el mensaje
+     */
     private void mostrarErrorRol() {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
-        builder.setTitle("Acceso restringido")
-                .setMessage("Los donantes no pueden crear solicitudes de donación. Tu rol actual es: " + obtenerNombreRol())
-                .setPositiveButton("Ir al Feed", (dialog, which) -> {
+        builder.setTitle(R.string.acceso_restringido)
+                .setMessage(getString(R.string.donantes_no_pueden_crear_solicitudes, obtenerNombreRol()))
+                .setPositiveButton(R.string.ir_al_feed, (dialog, which) -> {
                     Intent intent = new Intent(this, FeedDonacion.class);
                     startActivity(intent);
                     finish();
                 })
-                .setNegativeButton("Cerrar", (dialog, which) -> {
+                .setNegativeButton(R.string.cerrar, (dialog, which) -> {
                     finish();
                 })
                 .setCancelable(false)
                 .show();
     }
 
+    /**
+     * Inicializa todos los componentes visuales de la interfaz
+     * Obtiene referencias a los views del layout
+     */
     private void initializeViews() {
-        // Text inputs
         inputLayoutTitulo = findViewById(R.id.input_layout_titulo);
         inputLayoutDescripcion = findViewById(R.id.input_layout_descripcion);
         editTextTitulo = findViewById(R.id.edit_text_titulo);
         editTextDescripcion = findViewById(R.id.edit_text_descripcion);
 
-        // Spinners
         spinnerTipoSangre = findViewById(R.id.spinner_tipo_sangre);
         spinnerHospital = findViewById(R.id.spinner_hospital);
 
-        // Upload image section
         layoutUploadImage = findViewById(R.id.layout_upload_image);
-
-        // Image preview
         imagePreview = findViewById(R.id.image_preview);
 
-        // Button
         btnEnviarSolicitud = findViewById(R.id.btn_enviar_solicitud);
-
         bottomNavigation = findViewById(R.id.bottom_navigation_bar);
     }
 
+    /**
+     * Configura los spinners de tipo de sangre y hospitales
+     * Establece los adapters y listeners para cada spinner
+     */
     private void setupSpinners() {
-        // Configurar spinner de tipos de sangre
         ArrayAdapter<CharSequence> sangreAdapter = ArrayAdapter.createFromResource(this,
                 R.array.tipos_sangre_array, android.R.layout.simple_spinner_item);
         sangreAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -177,16 +188,15 @@ public class SolicitudDonacionC extends AppCompatActivity {
         spinnerTipoSangre.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                selectedTipoSangreId = position + 1; // 1=A+, 2=A-, etc.
+                selectedTipoSangreId = position + 1;
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
-                selectedTipoSangreId = 1; // A+ por defecto
+                selectedTipoSangreId = 1;
             }
         });
 
-        // Configurar spinner de hospitales (inicialmente vacío)
         hospitalesList = new ArrayList<>();
         hospitalAdapter = new ArrayAdapter<HospitalUbicacion>(this,
                 android.R.layout.simple_spinner_item, hospitalesList) {
@@ -230,6 +240,10 @@ public class SolicitudDonacionC extends AppCompatActivity {
         });
     }
 
+    /**
+     * Carga la lista de hospitales desde la API
+     * Actualiza el spinner de hospitales con los datos obtenidos
+     */
     private void loadHospitales() {
         ApiService.getHospitales(new ApiService.ListCallback<HospitalUbicacion>() {
             @Override
@@ -240,13 +254,12 @@ public class SolicitudDonacionC extends AppCompatActivity {
                         hospitalesList.addAll(hospitales);
                         hospitalAdapter.notifyDataSetChanged();
 
-                        // Seleccionar el primer hospital por defecto
                         if (!hospitalesList.isEmpty()) {
                             selectedHospitalId = hospitalesList.get(0).getHospitalid();
                         }
                     } else {
                         Toast.makeText(SolicitudDonacionC.this,
-                                "No se pudieron cargar los hospitales", Toast.LENGTH_SHORT).show();
+                                R.string.error_cargar_hospitales, Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -255,20 +268,21 @@ public class SolicitudDonacionC extends AppCompatActivity {
             public void onError(String error) {
                 runOnUiThread(() -> {
                     Toast.makeText(SolicitudDonacionC.this,
-                            "Error al cargar hospitales: " + error, Toast.LENGTH_SHORT).show();
+                            getString(R.string.error_cargar_hospitales_detalle, error), Toast.LENGTH_SHORT).show();
                 });
             }
         });
     }
 
+    /**
+     * Configura los listeners de clic para los botones y campos
+     * Asigna las acciones a realizar cuando se interactúa con los elementos
+     */
     private void setupClickListeners() {
-        // Botón de enviar solicitud
         btnEnviarSolicitud.setOnClickListener(v -> crearSolicitud());
 
-        // Sección de upload de imagen
         layoutUploadImage.setOnClickListener(v -> seleccionarImagen());
 
-        // Limpiar errores al escribir
         editTextTitulo.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) inputLayoutTitulo.setError(null);
         });
@@ -278,12 +292,20 @@ public class SolicitudDonacionC extends AppCompatActivity {
         });
     }
 
+    /**
+     * Abre el selector de imágenes para que el usuario seleccione una foto
+     * Utiliza el launcher de activity result para manejar la selección
+     */
     private void seleccionarImagen() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         intent.setType("image/*");
         imagePickerLauncher.launch(intent);
     }
 
+    /**
+     * Crea una nueva solicitud de donación
+     * Valida los datos, crea el objeto solicitud y lo envía a la API
+     */
     private void crearSolicitud() {
         String titulo = editTextTitulo.getText().toString().trim();
         String descripcion = editTextDescripcion.getText().toString().trim();
@@ -292,14 +314,12 @@ public class SolicitudDonacionC extends AppCompatActivity {
             return;
         }
 
-        // Obtener usuario actual
         Usuario usuarioActual = SharedPreferencesManager.getCurrentUser(this);
         if (usuarioActual == null) {
-            Toast.makeText(this, "Error: No se pudo obtener información del usuario", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.error_obtener_info_usuario, Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Crear objeto solicitud
         SolicitudDonacion solicitud = new SolicitudDonacion(
                 usuarioActual.getUsuarioid(),
                 titulo,
@@ -308,19 +328,15 @@ public class SolicitudDonacionC extends AppCompatActivity {
                 selectedHospitalId
         );
 
-        // Deshabilitar botón mientras se procesa
         btnEnviarSolicitud.setEnabled(false);
-        btnEnviarSolicitud.setText("Creando solicitud...");
+        btnEnviarSolicitud.setText(getString(R.string.creando_solicitud));
 
-        // Primero crear la solicitud en la base de datos
         ApiService.createSolicitud(solicitud, new ApiService.ApiCallback<SolicitudDonacion>() {
             @Override
             public void onSuccess(SolicitudDonacion solicitudCreada) {
-                // Si hay imagen seleccionada, subirla
                 if (selectedImageUri != null) {
                     subirImagenSolicitud(solicitudCreada);
                 } else {
-                    // Si no hay imagen, finalizar
                     runOnUiThread(() -> {
                         onSolicitudCreadaExitosamente(solicitudCreada);
                     });
@@ -331,20 +347,23 @@ public class SolicitudDonacionC extends AppCompatActivity {
             public void onError(String error) {
                 runOnUiThread(() -> {
                     btnEnviarSolicitud.setEnabled(true);
-                    btnEnviarSolicitud.setText("Enviar solicitud");
+                    btnEnviarSolicitud.setText(getString(R.string.enviar_solicitud));
                     Toast.makeText(SolicitudDonacionC.this,
-                            "Error al crear solicitud: " + error, Toast.LENGTH_LONG).show();
+                            getString(R.string.error_crear_solicitud, error), Toast.LENGTH_LONG).show();
                 });
             }
         });
     }
 
+    /**
+     * Sube la imagen de la solicitud al servidor de almacenamiento
+     * @param solicitud Solicitud a la que se asociará la imagen
+     */
     private void subirImagenSolicitud(SolicitudDonacion solicitud) {
-        // Verificar que tenemos un ID válido
         if (solicitud.getSolicitudid() <= 0) {
             runOnUiThread(() -> {
                 Toast.makeText(SolicitudDonacionC.this,
-                        "Error: ID de solicitud inválido", Toast.LENGTH_LONG).show();
+                        R.string.error_id_solicitud_invalido, Toast.LENGTH_LONG).show();
                 onSolicitudCreadaExitosamente(solicitud);
             });
             return;
@@ -354,9 +373,6 @@ public class SolicitudDonacionC extends AppCompatActivity {
                 new StorageService.UploadCallback() {
                     @Override
                     public void onSuccess(String imageUrl) {
-                        System.out.println("✅ Imagen subida: " + imageUrl);
-
-                        // Actualizar la solicitud con la URL de la imagen
                         solicitud.setImagenUrl(imageUrl);
                         actualizarSolicitudConImagen(solicitud);
                     }
@@ -364,10 +380,8 @@ public class SolicitudDonacionC extends AppCompatActivity {
                     @Override
                     public void onError(String error) {
                         runOnUiThread(() -> {
-                            System.out.println("❌ Error subiendo imagen: " + error);
-                            // Aún así la solicitud se creó, solo que sin imagen
                             Toast.makeText(SolicitudDonacionC.this,
-                                    "Solicitud creada pero error al subir imagen: " + error,
+                                    getString(R.string.error_subir_imagen_solicitud, error),
                                     Toast.LENGTH_LONG).show();
                             onSolicitudCreadaExitosamente(solicitud);
                         });
@@ -375,6 +389,10 @@ public class SolicitudDonacionC extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Actualiza la solicitud con la URL de la imagen subida
+     * @param solicitud Solicitud a actualizar con la URL de la imagen
+     */
     private void actualizarSolicitudConImagen(SolicitudDonacion solicitud) {
         ApiService.updateSolicitud(solicitud, new ApiService.ApiCallback<SolicitudDonacion>() {
             @Override
@@ -387,9 +405,8 @@ public class SolicitudDonacionC extends AppCompatActivity {
             @Override
             public void onError(String error) {
                 runOnUiThread(() -> {
-                    // Aún así la solicitud se creó
                     Toast.makeText(SolicitudDonacionC.this,
-                            "Solicitud creada pero error al actualizar imagen: " + error,
+                            getString(R.string.error_actualizar_imagen_solicitud, error),
                             Toast.LENGTH_SHORT).show();
                     onSolicitudCreadaExitosamente(solicitud);
                 });
@@ -397,50 +414,61 @@ public class SolicitudDonacionC extends AppCompatActivity {
         });
     }
 
+    /**
+     * Se ejecuta cuando la solicitud se crea exitosamente
+     * Muestra mensaje de éxito y navega al feed principal
+     * @param solicitud Solicitud creada exitosamente
+     */
     private void onSolicitudCreadaExitosamente(SolicitudDonacion solicitud) {
-        Toast.makeText(this, "¡Solicitud creada exitosamente!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, R.string.solicitud_creada_exitosamente, Toast.LENGTH_SHORT).show();
 
-        // Regresar al feed de donaciones
         Intent intent = new Intent(this, FeedDonacion.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
         finish();
     }
 
+    /**
+     * Valida todos los campos de entrada antes de crear la solicitud
+     * @param titulo Título de la solicitud
+     * @param descripcion Descripción de la solicitud
+     * @return true si todos los campos son válidos, false en caso contrario
+     */
     private boolean validarInputs(String titulo, String descripcion) {
         boolean isValid = true;
 
-        // Validar título
         if (titulo.isEmpty()) {
-            inputLayoutTitulo.setError("El título es requerido");
+            inputLayoutTitulo.setError(getString(R.string.titulo_requerido));
             isValid = false;
         } else if (titulo.length() < 5) {
-            inputLayoutTitulo.setError("El título debe tener al menos 5 caracteres");
+            inputLayoutTitulo.setError(getString(R.string.titulo_min_caracteres));
             isValid = false;
         } else {
             inputLayoutTitulo.setError(null);
         }
 
-        // Validar descripción
         if (descripcion.isEmpty()) {
-            inputLayoutDescripcion.setError("La descripción es requerida");
+            inputLayoutDescripcion.setError(getString(R.string.descripcion_requerida));
             isValid = false;
         } else if (descripcion.length() < 10) {
-            inputLayoutDescripcion.setError("La descripción debe tener al menos 10 caracteres");
+            inputLayoutDescripcion.setError(getString(R.string.descripcion_min_caracteres));
             isValid = false;
         } else {
             inputLayoutDescripcion.setError(null);
         }
 
-        // Validar que se haya seleccionado un hospital
         if (hospitalesList.isEmpty()) {
-            Toast.makeText(this, "No hay hospitales disponibles", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.no_hospitales_disponibles, Toast.LENGTH_SHORT).show();
             isValid = false;
         }
 
         return isValid;
     }
 
+    /**
+     * Configura la navegación inferior de la aplicación
+     * Define las acciones para cada ítem del menú de navegación
+     */
     private void setupBottomNavigation() {
         bottomNavigation.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
@@ -474,15 +502,22 @@ public class SolicitudDonacionC extends AppCompatActivity {
         bottomNavigation.setSelectedItemId(R.id.nav_crear);
     }
 
+    /**
+     * Método del ciclo de vida que se ejecuta al reanudar la actividad
+     * Actualiza la selección de la navegación inferior
+     */
     @Override
     protected void onResume() {
         super.onResume();
         bottomNavigation.setSelectedItemId(R.id.nav_crear);
     }
 
+    /**
+     * Método del ciclo de vida que se ejecuta al destruir la actividad
+     * Limpia recursos si es necesario
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Limpiar recursos si es necesario
     }
 }

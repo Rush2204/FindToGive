@@ -25,7 +25,7 @@
                 android:id="@+id/text_title"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Crear solicitud de donación"
+                android:text="@string/crear_solicitud_de_donaci_n"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 android:layout_marginTop="16dp"
@@ -40,7 +40,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
-                android:text="Título"
+                android:text="@string/t_tulo"
                 android:textStyle="bold"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/text_title" />
@@ -60,7 +60,7 @@
                     android:inputType="textCapSentences"
                     android:maxLines="1"
                     android:imeOptions="actionNext"
-                    android:hint="Introduce un título descriptivo para tu solicitud" />
+                    android:hint="@string/introduce_un_t_tulo_descriptivo_para_tu_solicitud" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Campo Descripción -->
@@ -69,7 +69,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Descripción"
+                android:text="@string/descripci_n"
                 android:textStyle="bold"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/input_layout_titulo" />
@@ -89,7 +89,7 @@
                     android:gravity="top"
                     android:inputType="textMultiLine"
                     android:imeOptions="actionDone"
-                    android:hint="Detalles sobre la donación de sangre" />
+                    android:hint="@string/detalles_sobre_la_donaci_n_de_sangre" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Tipo de Sangre Requerido (Spinner) -->
@@ -98,7 +98,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Tipo de sangre requerido"
+                android:text="@string/tipo_de_sangre_requerido"
                 android:textStyle="bold"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/input_layout_descripcion" />
@@ -120,7 +120,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Hospital"
+                android:text="@string/hospital"
                 android:textStyle="bold"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/spinner_tipo_sangre" />
@@ -141,7 +141,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Adjuntar imagen"
+                android:text="@string/adjuntar_imagen"
                 android:textStyle="bold"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/spinner_hospital" />
@@ -163,21 +163,21 @@
                     android:layout_height="120dp"
                     android:visibility="gone"
                     android:scaleType="centerCrop"
-                    android:contentDescription="Vista previa de la imagen seleccionada" />
+                    android:contentDescription="@string/vista_previa_de_la_imagen_seleccionada" />
 
                 <ImageView
                     android:id="@+id/icon_camera"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:src="@drawable/logo_findtogive"
-                    android:contentDescription="cámara icono" />
+                    android:contentDescription="@string/c_mara_icono" />
 
                 <TextView
                     android:id="@+id/upload_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Sube una imagen relacionada con tu solicitud"
+                    android:text="@string/sube_una_imagen_relacionada_con_tu_solicitud"
                     android:textAlignment="center"
                     android:textColor="#9ca3af" />
             </LinearLayout>
@@ -189,7 +189,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
                 android:layout_marginBottom="16dp"
-                android:text="Enviar solicitud"
+                android:text="@string/enviar_solicitud"
                 android:backgroundTint="@color/dark_gray"
                 app:layout_constraintTop_toBottomOf="@+id/layout_upload_image"
                 app:layout_constraintBottom_toBottomOf="parent"

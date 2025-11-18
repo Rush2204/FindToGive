@@ -1,9 +1,9 @@
 package sv.edu.catolica.findtogive.ClasesDiseño;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -50,17 +50,20 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
 
     private Handler autoRefreshHandler;
     private Runnable autoRefreshRunnable;
-    private static final long AUTO_REFRESH_INTERVAL = 500; // 0.5 segundos
+    private static final long AUTO_REFRESH_INTERVAL = 500;
 
     // Variables para filtros
     private String currentQuery = "";
     private int currentTipoSangreId = -1;
 
-    // Agregar después de las variables existentes
     private ImageButton btnFilterLocation;
     private boolean filtroUbicacionActivo = false;
     private static final int PERMISSION_REQUEST_LOCATION = 1001;
 
+    /**
+     * Método principal que inicializa la actividad del feed de donaciones
+     * Configura la vista, permisos, navegación y carga las solicitudes
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,11 +80,9 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
             return insets;
         });
 
-        // Verificar permisos y solicitar si es necesario
         if (!NotificationPermissionManager.areNotificationsEnabled(this)) {
             NotificationPermissionManager.requestNotificationPermission(this);
         } else {
-            // Solo iniciar servicio si tiene permisos
             if (AppNotificationManager.areNotificationsEnabled(this)) {
                 AppNotificationManager.startNotificationService(this);
             }
@@ -95,32 +96,38 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
         configurarVistaSegunRol();
         loadSolicitudes();
 
-        // Iniciar actualización automática AGRESIVA
         startAggressiveAutoRefresh();
     }
 
+    /**
+     * Inicializa todos los componentes visuales de la interfaz
+     * Obtiene referencias a los views del layout
+     */
     private void initializeViews() {
         rvSolicitudes = findViewById(R.id.rv_solicitudes);
         layoutEmptyState = findViewById(R.id.layout_empty_state);
         btnCreateFirstRequest = findViewById(R.id.btn_create_first_request);
         btnFilterSearch = findViewById(R.id.btn_filter_search);
-        btnFilterLocation = findViewById(R.id.btn_filter_location); // NUEVO
+        btnFilterLocation = findViewById(R.id.btn_filter_location);
         textTitle = findViewById(R.id.text_title);
         bottomNavigation = findViewById(R.id.bottom_navigation_bar);
 
         solicitudesList = new ArrayList<>();
     }
 
+    /**
+     * Configura la vista según el rol del usuario (donante o receptor)
+     * Modifica mensajes y visibilidad de elementos según el tipo de usuario
+     */
+    @SuppressLint("SetTextI18n")
     private void configurarVistaSegunRol() {
         if (usuarioActual == null) return;
 
         actualizarNavegacionSegunRol();
 
-        // Obtener referencias a los textos del empty state
         TextView emptyStateTitle = null;
         TextView emptyStateMessage = null;
 
-        // Buscar los TextViews en el layout empty state
         for (int i = 0; i < layoutEmptyState.getChildCount(); i++) {
             View child = layoutEmptyState.getChildAt(i);
             if (child instanceof TextView) {
@@ -133,33 +140,31 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
             }
         }
 
-        // Configurar según el rol
-        if (usuarioActual.getRolid() == 1) { // DONANTE
-            // Ocultar botón de crear solicitud
+        if (usuarioActual.getRolid() == 1) {
             btnCreateFirstRequest.setVisibility(View.GONE);
 
-            // Modificar mensajes del empty state
             if (emptyStateTitle != null) {
-                emptyStateTitle.setText("No hay solicitudes activas");
+                emptyStateTitle.setText(R.string.no_hay_solicitudes_activas);
             }
             if (emptyStateMessage != null) {
-                emptyStateMessage.setText("Actualmente no hay solicitudes de donación en tu área. Los receptores crearán nuevas solicitudes pronto.");
+                emptyStateMessage.setText(R.string.sin_solicitudes_en_el_area);
             }
-        } else { // RECEPTOR (2) o AMBOS (3)
-            // Mostrar botón de crear solicitud
+        } else {
             btnCreateFirstRequest.setVisibility(View.VISIBLE);
 
-            // Mensajes normales para receptores
             if (emptyStateTitle != null) {
-                emptyStateTitle.setText("¡No hay solicitudes activas por ahora!");
+                emptyStateTitle.setText(R.string.sin_solicitudes);
             }
             if (emptyStateMessage != null) {
-                emptyStateMessage.setText("Parece que todos están cubiertos. ¡Vuelve pronto o crea una si lo necesitas!");
+                emptyStateMessage.setText(R.string.vuelve_pronto);
             }
         }
     }
 
-    // ⭐⭐ NUEVO MÉTODO: Actualizar navegación según rol ⭐⭐
+    /**
+     * Actualiza la navegación inferior según el rol del usuario
+     * Oculta el ítem de creación para donantes
+     */
     private void actualizarNavegacionSegunRol() {
         if (usuarioActual != null) {
             boolean esDonante = usuarioActual.getRolid() == 1;
@@ -167,29 +172,35 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
         }
     }
 
+    /**
+     * Configura el RecyclerView para mostrar la lista de solicitudes
+     * Inicializa el adapter y establece el layout manager
+     */
     private void setupRecyclerView() {
         adapter = new SolicitudesAdapter(solicitudesList, this);
         rvSolicitudes.setLayoutManager(new LinearLayoutManager(this));
         rvSolicitudes.setAdapter(adapter);
 
-        // FORZAR la medición y layout inmediatamente
         rvSolicitudes.post(new Runnable() {
             @Override
             public void run() {
-                System.out.println("🎯 FORZANDO PRIMERA ACTUALIZACIÓN DEL RECYCLERVIEW EN FEED");
                 adapter.notifyDataSetChanged();
                 forceImmediateRedraw();
             }
         });
     }
 
+    /**
+     * Configura los listeners de clic para los botones
+     * Asigna las acciones a realizar cuando se presionan los botones
+     */
     private void setupClickListeners() {
         btnCreateFirstRequest.setOnClickListener(v -> {
             if (usuarioActual != null && (usuarioActual.getRolid() == 2 || usuarioActual.getRolid() == 3)) {
                 Intent intent = new Intent(this, SolicitudDonacionC.class);
                 startActivity(intent);
             } else {
-                Toast.makeText(this, "Solo receptores pueden crear solicitudes", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.solo_receptores_pueden_crear_solicitudes, Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -197,24 +208,29 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
             mostrarDialogoFiltroBusqueda();
         });
 
-        // NUEVO: Click listener para filtro de ubicación
         btnFilterLocation.setOnClickListener(v -> {
             if (filtroUbicacionActivo) {
-                // Desactivar filtro de ubicación
                 desactivarFiltroUbicacion();
             } else {
-                // Activar filtro de ubicación
                 activarFiltroUbicacion();
             }
         });
     }
 
+    /**
+     * Muestra el diálogo de filtro de búsqueda
+     * Permite al usuario aplicar filtros por texto y tipo de sangre
+     */
     private void mostrarDialogoFiltroBusqueda() {
         FiltroBusquedaDialog dialog = new FiltroBusquedaDialog(this, this);
         dialog.setFiltrosActuales(currentQuery, currentTipoSangreId);
         dialog.show();
     }
 
+    /**
+     * Configura la navegación inferior de la aplicación
+     * Define las acciones para cada ítem del menú de navegación
+     */
     private void setupBottomNavigation() {
         actualizarNavegacionSegunRol();
         bottomNavigation.setOnItemSelectedListener(item -> {
@@ -228,7 +244,7 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
                     intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                     startActivity(intent);
                 } else {
-                    Toast.makeText(this, "Solo receptores pueden crear solicitudes", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.solo_receptores_pueden_crear_solicitudes, Toast.LENGTH_SHORT).show();
                 }
                 return true;
             } else if (itemId == R.id.nav_notificaciones) {
@@ -257,6 +273,12 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
         bottomNavigation.setSelectedItemId(R.id.nav_inicio);
     }
 
+    /**
+     * Maneja los resultados de las solicitudes de permisos
+     * @param requestCode Código de la solicitud de permisos
+     * @param permissions Permisos solicitados
+     * @param grantResults Resultados de la concesión de permisos
+     */
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -264,62 +286,46 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
         if (requestCode == PERMISSION_REQUEST_LOCATION) {
             if (grantResults.length > 0 &&
                     grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                // Permiso concedido, obtener ubicación
                 obtenerUbicacionYFiltrar();
             } else {
                 Toast.makeText(this,
-                        "Se necesitan permisos de ubicación para usar esta función",
+                        R.string.permisos_de_ubicacion,
                         Toast.LENGTH_LONG).show();
             }
         } else {
-            // Manejar otros permisos (notificaciones)
             if (NotificationPermissionManager.handlePermissionResult(requestCode, grantResults)) {
                 if (AppNotificationManager.areNotificationsEnabled(this)) {
                     AppNotificationManager.startNotificationService(this);
                 }
-                Toast.makeText(this, "Notificaciones activadas", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.notificaciones_activadas, Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(this, "Las notificaciones estarán desactivadas", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, R.string.las_notificaciones_estaran_desactivadas, Toast.LENGTH_LONG).show();
             }
         }
     }
 
+    /**
+     * Carga las solicitudes de donación desde la API
+     * Aplica filtros si están activos, de lo contrario carga todas las solicitudes activas
+     */
     private void loadSolicitudes() {
-        // Si hay filtros activos, usar búsqueda filtrada
         if (!currentQuery.isEmpty() || currentTipoSangreId != -1) {
             cargarSolicitudesConFiltros();
         } else {
-            Log.d("FeedDonacion", "🔄 Cargando todas las solicitudes...");
-
             ApiService.getSolicitudesActivas(new ApiService.ListCallback<SolicitudDonacion>() {
                 @Override
                 public void onSuccess(List<SolicitudDonacion> solicitudes) {
-                    Log.d("FeedDonacion", "✅ Solicitudes cargadas: " + (solicitudes != null ? solicitudes.size() : 0));
-
                     runOnUiThread(() -> {
                         if (solicitudes != null && !solicitudes.isEmpty()) {
-                            // Log detallado
-                            for (SolicitudDonacion solicitud : solicitudes) {
-                                Log.d("FeedDonacion",
-                                        "📋 ID: " + solicitud.getSolicitudid() +
-                                                " | UsuarioID: " + solicitud.getUsuarioid() +
-                                                " | Título: " + solicitud.getTitulo() +
-                                                " | Imagen: " + (solicitud.getImagenUrl() != null ? "SI" : "NO"));
-                            }
-
                             adapter.updateData(solicitudes);
                             showSolicitudesList();
-
-                            // FORZAR ACTUALIZACIÓN INMEDIATA después de cargar datos
                             forceImmediateRedraw();
 
-                            // Forzar otra actualización después de 1 segundo para asegurar
                             new Handler().postDelayed(() -> {
                                 forceImmediateRedraw();
                             }, 1000);
 
                         } else {
-                            Log.d("FeedDonacion", "📭 No hay solicitudes activas");
                             showEmptyState();
                         }
                     });
@@ -327,16 +333,17 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
 
                 @Override
                 public void onError(String error) {
-                    Log.e("FeedDonacion", "❌ Error cargando solicitudes: " + error);
                     runOnUiThread(() -> showEmptyState());
                 }
             });
         }
     }
 
+    /**
+     * Carga las solicitudes aplicando los filtros activos
+     * Realiza búsqueda por texto y/o tipo de sangre
+     */
     private void cargarSolicitudesConFiltros() {
-        Log.d("FeedDonacion", "🔍 Cargando solicitudes con filtros - Query: '" + currentQuery + "', TipoSangre: " + currentTipoSangreId);
-
         showLoadingState();
 
         ApiService.buscarSolicitudes(currentQuery,
@@ -344,18 +351,13 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
                 new ApiService.ListCallback<SolicitudDonacion>() {
                     @Override
                     public void onSuccess(List<SolicitudDonacion> solicitudes) {
-                        Log.d("FeedDonacion", "✅ Solicitudes filtradas cargadas: " + (solicitudes != null ? solicitudes.size() : 0));
-
                         runOnUiThread(() -> {
                             if (solicitudes != null && !solicitudes.isEmpty()) {
                                 adapter.updateData(solicitudes);
                                 showSolicitudesList();
                                 forceImmediateRedraw();
-
-                                // Mostrar mensaje de resultados
                                 mostrarMensajeResultados(solicitudes.size());
                             } else {
-                                Log.d("FeedDonacion", "📭 No hay solicitudes que coincidan con los filtros");
                                 showEmptyState();
                                 personalizarMensajeEmptyStateConFiltros();
                             }
@@ -364,53 +366,78 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
 
                     @Override
                     public void onError(String error) {
-                        Log.e("FeedDonacion", "❌ Error cargando solicitudes filtradas: " + error);
                         runOnUiThread(() -> {
                             showEmptyState();
-                            Toast.makeText(FeedDonacion.this, "Error al buscar solicitudes", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(FeedDonacion.this, R.string.error_al_buscar_solicitudes, Toast.LENGTH_SHORT).show();
                         });
                     }
                 });
     }
 
+    /**
+     * Muestra un mensaje con la cantidad de resultados encontrados
+     * @param cantidad Número de solicitudes encontradas
+     */
     private void mostrarMensajeResultados(int cantidad) {
-        StringBuilder mensaje = new StringBuilder("Se encontraron " + cantidad + " solicitudes");
+        String mensaje;
 
-        if (!currentQuery.isEmpty()) {
-            mensaje.append(" con '").append(currentQuery).append("'");
+        if (!currentQuery.isEmpty() && currentTipoSangreId != -1) {
+            // Caso: ambos filtros activos (query + tipo sangre)
+            String tipoSangre = convertirTipoSangreIdANombre(currentTipoSangreId);
+            mensaje = getString(R.string.resultados_ambos_filtros, cantidad, currentQuery, tipoSangre);
+        } else if (!currentQuery.isEmpty()) {
+            // Caso: solo query de búsqueda
+            mensaje = getString(R.string.resultados_solo_query, cantidad, currentQuery);
+        } else if (currentTipoSangreId != -1) {
+            // Caso: solo tipo sangre
+            String tipoSangre = convertirTipoSangreIdANombre(currentTipoSangreId);
+            mensaje = getString(R.string.resultados_solo_sangre, cantidad, tipoSangre);
+        } else {
+            // Caso: sin filtros - solo cantidad
+            mensaje = getString(R.string.resultados_sin_filtros, cantidad);
         }
 
-        if (currentTipoSangreId != -1) {
-            if (!currentQuery.isEmpty()) {
-                mensaje.append(" y");
-            }
-            mensaje.append(" de tipo ").append(convertirTipoSangreIdANombre(currentTipoSangreId));
-        }
-
-        Toast.makeText(this, mensaje.toString(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Personaliza el mensaje del estado vacío cuando hay filtros activos
+     * Muestra información específica sobre los filtros aplicados
+     */
     private void personalizarMensajeEmptyStateConFiltros() {
         TextView emptyStateTitle = findViewById(R.id.text_empty_title);
         TextView emptyStateMessage = findViewById(R.id.text_empty_message);
 
         if (emptyStateTitle != null && emptyStateMessage != null) {
-            emptyStateTitle.setText("No se encontraron resultados");
+            emptyStateTitle.setText(R.string.no_se_encontraron_resultados);
 
-            StringBuilder mensaje = new StringBuilder("No hay solicitudes que coincidan con ");
+            String mensaje;
 
             if (!currentQuery.isEmpty() && currentTipoSangreId != -1) {
-                mensaje.append("'").append(currentQuery).append("' y tipo de sangre ").append(convertirTipoSangreIdANombre(currentTipoSangreId));
+                // Caso: ambos filtros activos
+                String tipoSangre = convertirTipoSangreIdANombre(currentTipoSangreId);
+                mensaje = getString(R.string.empty_state_ambos_filtros, currentQuery, tipoSangre);
             } else if (!currentQuery.isEmpty()) {
-                mensaje.append("'").append(currentQuery).append("'");
+                // Caso: solo query
+                mensaje = getString(R.string.empty_state_solo_query, currentQuery);
             } else if (currentTipoSangreId != -1) {
-                mensaje.append("el tipo de sangre ").append(convertirTipoSangreIdANombre(currentTipoSangreId));
+                // Caso: solo tipo sangre
+                String tipoSangre = convertirTipoSangreIdANombre(currentTipoSangreId);
+                mensaje = getString(R.string.empty_state_solo_sangre, tipoSangre);
+            } else {
+                // Caso: sin filtros
+                mensaje = getString(R.string.empty_state_sin_filtros);
             }
 
-            emptyStateMessage.setText(mensaje.toString());
+            emptyStateMessage.setText(mensaje);
         }
     }
 
+    /**
+     * Convierte un ID de tipo de sangre a su nombre correspondiente
+     * @param tipoSangreId ID del tipo de sangre
+     * @return Nombre del tipo de sangre (A+, A-, B+, etc.)
+     */
     private String convertirTipoSangreIdANombre(int tipoSangreId) {
         switch (tipoSangreId) {
             case 1: return "A+";
@@ -427,115 +454,142 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
 
     // ========== IMPLEMENTACIÓN DE FILTROBUSQUEDALISTENER ==========
 
+    /**
+     * Se ejecuta cuando se aplican filtros desde el diálogo de búsqueda
+     * @param query Texto de búsqueda
+     * @param tipoSangreId ID del tipo de sangre seleccionado
+     */
     @Override
     public void onAplicarFiltros(String query, int tipoSangreId) {
         currentQuery = query;
         currentTipoSangreId = tipoSangreId;
-
-        // Mostrar indicador de filtros activos
         mostrarIndicadorFiltros();
-
-        // Cargar solicitudes con filtros
         cargarSolicitudesConFiltros();
     }
 
+    /**
+     * Se ejecuta cuando se limpian los filtros desde el diálogo de búsqueda
+     * Restablece los filtros y carga todas las solicitudes
+     */
     @Override
     public void onLimpiarFiltros() {
         currentQuery = "";
         currentTipoSangreId = -1;
-
-        // Ocultar indicador de filtros
         ocultarIndicadorFiltros();
-
-        // Cargar todas las solicitudes
         loadSolicitudes();
-
-        Toast.makeText(this, "Filtros limpiados", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, R.string.filtros_limpiados, Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Muestra indicadores visuales de que hay filtros activos
+     * Cambia el color y texto del título
+     */
     private void mostrarIndicadorFiltros() {
-        StringBuilder filtros = new StringBuilder("Filtros activos: ");
         boolean tieneFiltros = false;
+        String mensajeFiltros = "";
 
-        if (!currentQuery.isEmpty()) {
-            filtros.append("'").append(currentQuery).append("'");
+        if (!currentQuery.isEmpty() && currentTipoSangreId != -1) {
+            // Ambos filtros
+            String tipoSangre = convertirTipoSangreIdANombre(currentTipoSangreId);
+            mensajeFiltros = getString(R.string.ambos_filtros_activos, currentQuery, tipoSangre);
             tieneFiltros = true;
-        }
-
-        if (currentTipoSangreId != -1) {
-            if (tieneFiltros) filtros.append(", ");
-            filtros.append(convertirTipoSangreIdANombre(currentTipoSangreId));
+        } else if (!currentQuery.isEmpty()) {
+            // Solo query
+            mensajeFiltros = getString(R.string.solo_query_activo, currentQuery);
+            tieneFiltros = true;
+        } else if (currentTipoSangreId != -1) {
+            // Solo tipo sangre
+            String tipoSangre = convertirTipoSangreIdANombre(currentTipoSangreId);
+            mensajeFiltros = getString(R.string.solo_sangre_activo, tipoSangre);
             tieneFiltros = true;
         }
 
         if (tieneFiltros) {
-            // Cambiar el título para mostrar filtros activos
-            textTitle.setText("Solicitudes Filtradas");
+            textTitle.setText(mensajeFiltros);
             textTitle.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
         }
     }
 
+    /**
+     * Oculta los indicadores de filtros activos
+     * Restablece el título a su estado normal
+     */
     private void ocultarIndicadorFiltros() {
-        textTitle.setText("Solicitudes de Donación");
+        textTitle.setText(R.string.solicitudes_de_donaci_n);
         textTitle.setTextColor(getResources().getColor(android.R.color.black));
     }
 
+    /**
+     * Inicia la actualización automática agresiva del feed
+     * Actualiza la vista cada 0.5 segundos para mantener los datos frescos
+     */
     private void startAggressiveAutoRefresh() {
         autoRefreshHandler = new Handler();
         autoRefreshRunnable = new Runnable() {
             @Override
             public void run() {
-                System.out.println("💥 FEED: ACTUALIZACIÓN AUTOMÁTICA FORZADA");
                 forceImmediateRedraw();
                 autoRefreshHandler.postDelayed(this, AUTO_REFRESH_INTERVAL);
             }
         };
-        // Iniciar inmediatamente y repetir cada 0.5 segundos
         autoRefreshHandler.post(autoRefreshRunnable);
     }
 
+    /**
+     * Fuerza el redibujado inmediato de la interfaz
+     * Actualiza el adapter y solicita nuevo layout del RecyclerView
+     */
     private void forceImmediateRedraw() {
         if (adapter != null) {
-            // Método 1: Notificar cambio completo
             adapter.notifyDataSetChanged();
-
-            // Método 2: Invalidar el RecyclerView
             rvSolicitudes.invalidate();
-
-            // Método 3: Forzar re-draw
             rvSolicitudes.post(new Runnable() {
                 @Override
                 public void run() {
                     rvSolicitudes.requestLayout();
                 }
             });
-
-            System.out.println("🎯 FEED: Vistas forzadas a redibujarse");
         }
     }
 
+    /**
+     * Detiene la actualización automática del feed
+     * Elimina los callbacks pendientes para evitar fugas de memoria
+     */
     private void stopAutoRefresh() {
         if (autoRefreshHandler != null && autoRefreshRunnable != null) {
             autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
-            System.out.println("⏹️ FEED: Auto-refresh detenido");
         }
     }
 
+    /**
+     * Muestra el estado de carga (oculta lista y estado vacío)
+     */
     private void showLoadingState() {
         rvSolicitudes.setVisibility(View.GONE);
         layoutEmptyState.setVisibility(View.GONE);
     }
 
+    /**
+     * Muestra la lista de solicitudes (oculta estado vacío)
+     */
     private void showSolicitudesList() {
         rvSolicitudes.setVisibility(View.VISIBLE);
         layoutEmptyState.setVisibility(View.GONE);
     }
 
+    /**
+     * Muestra el estado vacío (oculta lista de solicitudes)
+     */
     private void showEmptyState() {
         rvSolicitudes.setVisibility(View.GONE);
         layoutEmptyState.setVisibility(View.VISIBLE);
     }
 
+    /**
+     * Navega a la actividad de login
+     * Limpia el stack de actividades
+     */
     private void navigateToLogin() {
         Intent intent = new Intent(this, Login.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -543,58 +597,64 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
         finish();
     }
 
+    /**
+     * Método del ciclo de vida que se ejecuta al reanudar la actividad
+     * Recarga datos y reactiva la actualización automática
+     */
     @Override
     protected void onResume() {
         super.onResume();
-        System.out.println("🔄 FeedDonacion onResume - Activando modo agresivo");
-
         usuarioActual = SharedPreferencesManager.getCurrentUser(this);
         actualizarNavegacionSegunRol();
-
-        // Recargar solicitudes cuando la actividad se reanude
         loadSolicitudes();
-
-        // Reactivar actualización automática
         startAggressiveAutoRefresh();
-
-        // Asegurar que la navegación muestre el ítem correcto
         bottomNavigation.setSelectedItemId(R.id.nav_inicio);
 
-        // Forzar una actualización extra después de 2 segundos
         new Handler().postDelayed(() -> {
             forceImmediateRedraw();
         }, 2000);
     }
 
+    /**
+     * Método del ciclo de vida que se ejecuta al pausar la actividad
+     * Detiene la actualización automática para ahorrar recursos
+     */
     @Override
     protected void onPause() {
         super.onPause();
-        System.out.println("⏸️ FeedDonacion onPause");
         stopAutoRefresh();
     }
 
+    /**
+     * Método del ciclo de vida que se ejecuta al destruir la actividad
+     * Limpia recursos y detiene la actualización automática
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        System.out.println("🗑️ FeedDonacion onDestroy");
         stopAutoRefresh();
     }
 
+    /**
+     * Método del ciclo de vida que se ejecuta al detener la actividad
+     * Detiene la actualización automática
+     */
     @Override
     protected void onStop() {
         super.onStop();
-        System.out.println("🛑 FeedDonacion onStop");
         stopAutoRefresh();
     }
 
     // ========== MÉTODOS PARA FILTRO POR UBICACIÓN ==========
 
+    /**
+     * Activa el filtro por ubicación
+     * Verifica permisos y obtiene la ubicación del usuario
+     */
     private void activarFiltroUbicacion() {
-        // Verificar permisos de ubicación
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
             if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) !=
                     android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                // Solicitar permisos
                 requestPermissions(
                         new String[]{
                                 android.Manifest.permission.ACCESS_FINE_LOCATION,
@@ -606,32 +666,33 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
             }
         }
 
-        // Si ya tiene permisos, obtener ubicación
         obtenerUbicacionYFiltrar();
     }
 
+    /**
+     * Obtiene la ubicación del usuario y aplica el filtro
+     * Utiliza el GPS o red para obtener la ubicación actual
+     */
     private void obtenerUbicacionYFiltrar() {
         showLoadingState();
-        Toast.makeText(this, "Obteniendo tu ubicación...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, R.string.obteniendo_ubicacion, Toast.LENGTH_SHORT).show();
 
         try {
             android.location.LocationManager locationManager =
                     (android.location.LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
             if (locationManager == null) {
-                Toast.makeText(this, "Error al acceder al servicio de ubicación", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.error_al_acceder_al_servicio_de_ubicacion, Toast.LENGTH_SHORT).show();
                 loadSolicitudes();
                 return;
             }
 
-            // Verificar permisos nuevamente
             if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) !=
                     android.content.pm.PackageManager.PERMISSION_GRANTED) {
                 loadSolicitudes();
                 return;
             }
 
-            // Intentar obtener la última ubicación conocida primero
             android.location.Location lastLocation =
                     locationManager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER);
 
@@ -641,16 +702,13 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
             }
 
             if (lastLocation != null) {
-                // CORREGIDO: Usar getLongitude() en lugar de getLongitud()
                 procesarUbicacion(lastLocation.getLatitude(), lastLocation.getLongitude());
             } else {
-                // Solicitar ubicación actual
                 locationManager.requestSingleUpdate(
                         android.location.LocationManager.GPS_PROVIDER,
                         new android.location.LocationListener() {
                             @Override
                             public void onLocationChanged(android.location.Location location) {
-                                // CORREGIDO: Usar getLongitude() en lugar de getLongitud()
                                 procesarUbicacion(location.getLatitude(), location.getLongitude());
                             }
 
@@ -663,7 +721,7 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
                             @Override
                             public void onProviderDisabled(String provider) {
                                 Toast.makeText(FeedDonacion.this,
-                                        "Por favor activa el GPS", Toast.LENGTH_LONG).show();
+                                        R.string.por_favor_activa_el_gps, Toast.LENGTH_LONG).show();
                                 loadSolicitudes();
                             }
                         },
@@ -672,16 +730,17 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
             }
 
         } catch (Exception e) {
-            Log.e("FeedDonacion", "Error obteniendo ubicación: " + e.getMessage());
-            Toast.makeText(this, "Error al obtener ubicación", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.error_al_obtener_ubicacion, Toast.LENGTH_SHORT).show();
             loadSolicitudes();
         }
     }
 
+    /**
+     * Procesa la ubicación obtenida y la guarda en la base de datos
+     * @param latitud Latitud obtenida
+     * @param longitud Longitud obtenida
+     */
     private void procesarUbicacion(double latitud, double longitud) {
-        Log.d("FeedDonacion", "📍 Ubicación obtenida: " + latitud + ", " + longitud);
-
-        // Guardar ubicación en la base de datos
         if (usuarioActual != null) {
             ApiService.updateUserLocation(
                     usuarioActual.getUsuarioid(),
@@ -690,21 +749,14 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
                     new ApiService.ApiCallback<Usuario>() {
                         @Override
                         public void onSuccess(Usuario usuarioActualizado) {
-                            Log.d("FeedDonacion", "✅ Ubicación guardada en BD");
-
-                            // Actualizar usuario actual en SharedPreferences
                             usuarioActual.setLatitud(latitud);
                             usuarioActual.setLongitud(longitud);
                             SharedPreferencesManager.saveCurrentUser(FeedDonacion.this, usuarioActual);
-
-                            // Filtrar solicitudes cercanas
                             filtrarSolicitudesCercanas(latitud, longitud);
                         }
 
                         @Override
                         public void onError(String error) {
-                            Log.e("FeedDonacion", "❌ Error guardando ubicación: " + error);
-                            // Continuar con el filtro aunque falle el guardado
                             filtrarSolicitudesCercanas(latitud, longitud);
                         }
                     }
@@ -714,6 +766,11 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
         }
     }
 
+    /**
+     * Filtra las solicitudes cercanas a la ubicación del usuario
+     * @param latitud Latitud del usuario
+     * @param longitud Longitud del usuario
+     */
     private void filtrarSolicitudesCercanas(double latitud, double longitud) {
         final double RADIO_KM = 3.5;
 
@@ -730,8 +787,8 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
                                 actualizarBotonUbicacion();
 
                                 Toast.makeText(FeedDonacion.this,
-                                        "Se encontraron " + solicitudes.size() +
-                                                " solicitudes",
+                                        getString(R.string.se_encontraron) + solicitudes.size() +
+                                                getString(R.string.solicitudes),
                                         Toast.LENGTH_LONG).show();
 
                                 forceImmediateRedraw();
@@ -747,47 +804,55 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
 
                     @Override
                     public void onError(String error) {
-                        Log.e("FeedDonacion", "❌ Error filtrando por ubicación: " + error);
                         runOnUiThread(() -> {
                             Toast.makeText(FeedDonacion.this,
-                                    "Error al filtrar por ubicación", Toast.LENGTH_SHORT).show();
+                                    R.string.error_filtrar_ubicacion, Toast.LENGTH_SHORT).show();
                             loadSolicitudes();
                         });
                     }
                 });
     }
 
+    /**
+     * Desactiva el filtro por ubicación
+     * Recarga todas las solicitudes sin filtros de ubicación
+     */
     private void desactivarFiltroUbicacion() {
         filtroUbicacionActivo = false;
         actualizarBotonUbicacion();
-        loadSolicitudes(); // Recargar todas las solicitudes
-        Toast.makeText(this, "Filtro de ubicación desactivado", Toast.LENGTH_SHORT).show();
+        loadSolicitudes();
+        Toast.makeText(this, R.string.filtro_ubicacion_desactivado, Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Actualiza la apariencia del botón de ubicación según su estado
+     * Cambia color e indica visualmente si el filtro está activo
+     */
     private void actualizarBotonUbicacion() {
         if (filtroUbicacionActivo) {
             btnFilterLocation.setColorFilter(getResources().getColor(android.R.color.holo_red_dark));
-            textTitle.setText("Solicitudes Cercanas");
+            textTitle.setText(R.string.solicitudes_cercanas);
             textTitle.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
         } else {
             btnFilterLocation.setColorFilter(getResources().getColor(android.R.color.black));
             if (currentQuery.isEmpty() && currentTipoSangreId == -1) {
-                textTitle.setText("Solicitudes de Donación");
+                textTitle.setText(R.string.solicitudes_donacion);
                 textTitle.setTextColor(getResources().getColor(android.R.color.black));
             }
         }
     }
 
+    /**
+     * Personaliza el mensaje del estado vacío cuando el filtro de ubicación está activo
+     * Informa al usuario que no hay solicitudes en su área cercana
+     */
     private void personalizarMensajeEmptyStateUbicacion() {
         TextView emptyStateTitle = findViewById(R.id.text_empty_title);
         TextView emptyStateMessage = findViewById(R.id.text_empty_message);
 
         if (emptyStateTitle != null && emptyStateMessage != null) {
-            emptyStateTitle.setText("No hay solicitudes cercanas");
-            emptyStateMessage.setText("No se encontraron solicitudes activas en un radio de 3.5 km de tu ubicación.");
+            emptyStateTitle.setText(R.string.no_hay_solicitudes_cercanas);
+            emptyStateMessage.setText(R.string.no_solicitudes_en_km);
         }
     }
-
-
-
 }

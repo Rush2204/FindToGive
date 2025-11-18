@@ -13,8 +13,8 @@
         android:id="@+id/text_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Solicitudes de Donación"
-        android:textSize="24sp"
+        android:text="@string/solicitudes_de_donaci_n"
+        android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="@android:color/black"
         android:layout_marginTop="24dp"
@@ -27,7 +27,7 @@
         android:id="@+id/text_filter_indicator"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Filtros activos"
+        android:text="@string/filtros_activos"
         android:textSize="14sp"
         android:textColor="#EB255D"
         android:visibility="gone"
@@ -41,9 +41,9 @@
         android:id="@+id/btn_filter_search"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:contentDescription="Buscar o Filtrar"
+        android:contentDescription="@string/buscar_o_filtrar"
         android:layout_marginEnd="16dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="18dp"
         android:padding="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -56,9 +56,9 @@
         android:id="@+id/btn_filter_location"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:contentDescription="Filtrar por ubicación"
+        android:contentDescription="@string/filtrar_por_ubicaci_n"
         android:layout_marginEnd="0dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="18dp"
         android:padding="8dp"
         app:layout_constraintEnd_toStartOf="@+id/btn_filter_search"
         app:layout_constraintTop_toTopOf="parent"
@@ -102,7 +102,7 @@
             android:layout_height="100dp"
             android:layout_gravity="center"
             tools:src="@drawable/logo_findtogive"
-            android:contentDescription="Icono de estado vacío" />
+            android:contentDescription="@string/icono_de_estado_vac_o" />
 
         <TextView
             android:id="@+id/text_empty_title"
@@ -110,7 +110,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:gravity="center"
-            android:text="¡No hay solicitudes activas por ahora!"
+            android:text="@string/no_hay_solicitudes_activas_por_ahora"
             android:textColor="#374151"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -121,7 +121,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="Parece que todos están cubiertos. ¡Vuelve pronto o crea una si lo necesitas!"
+            android:text="@string/parece_que_todos_est_n_cubiertos_vuelve_pronto_o_crea_una_si_lo_necesitas"
             android:textColor="#6b7280"
             android:textSize="16sp" />
 
@@ -132,7 +132,7 @@
             android:layout_gravity="center"
             android:layout_marginTop="24dp"
             android:backgroundTint="#2563EB"
-            android:text="Crear Solicitud"
+            android:text="@string/crear_solicitud"
             android:textColor="@android:color/white" />
 
     </LinearLayout>

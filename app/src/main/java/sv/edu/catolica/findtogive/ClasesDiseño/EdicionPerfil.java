@@ -40,6 +40,10 @@ public class EdicionPerfil extends AppCompatActivity {
     private String nombreOriginal, apellidoOriginal, emailOriginal, telefonoOriginal;
     private int rolOriginal, tipoSangreOriginal;
 
+    /**
+     * Método principal que inicializa la actividad de edición de perfil
+     * Configura la vista y todos los componentes de la interfaz
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,6 +64,10 @@ public class EdicionPerfil extends AppCompatActivity {
         setupClickListeners();
     }
 
+    /**
+     * Inicializa todos los componentes visuales de la interfaz
+     * Obtiene referencias a los views del layout
+     */
     private void initViews() {
         // TextInputLayouts
         inputLayoutNombre = findViewById(R.id.input_layout_nombre);
@@ -83,6 +91,10 @@ public class EdicionPerfil extends AppCompatActivity {
         btnGuardarCambios = findViewById(R.id.btn_guardar_cambios);
     }
 
+    /**
+     * Carga los datos del usuario actual desde SharedPreferences
+     * Rellena los campos del formulario con la información del usuario
+     */
     private void loadUserData() {
         usuarioActual = SharedPreferencesManager.getCurrentUser(this);
 
@@ -94,16 +106,20 @@ public class EdicionPerfil extends AppCompatActivity {
             editTextTelefono.setText(usuarioActual.getTelefono());
 
             // Ubicación fija - Santa Ana, El Salvador
-            editTextUbicacion.setText("Santa Ana, El Salvador");
+            editTextUbicacion.setText(R.string.santa_ana_el_salvador);
             editTextUbicacion.setEnabled(false); // Hacer el campo no editable
-            inputLayoutUbicacion.setHint("Ubicación (Fija)");
+            inputLayoutUbicacion.setHint(R.string.ubicacion_fija);
 
         } else {
-            Toast.makeText(this, "Error: No se pudo cargar la información del usuario", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.error_cargar_info_usuario, Toast.LENGTH_SHORT).show();
             finish();
         }
     }
 
+    /**
+     * Guarda los valores originales del usuario para detectar cambios posteriores
+     * Permite comparar si hubo modificaciones en los campos
+     */
     private void guardarValoresOriginales() {
         if (usuarioActual != null) {
             nombreOriginal = usuarioActual.getNombre();
@@ -115,6 +131,10 @@ public class EdicionPerfil extends AppCompatActivity {
         }
     }
 
+    /**
+     * Configura los spinners de rol y tipo de sangre
+     * Carga las opciones desde los arrays de recursos y establece las selecciones actuales
+     */
     private void setupSpinners() {
         // Configurar spinner de roles
         ArrayAdapter<CharSequence> rolAdapter = ArrayAdapter.createFromResource(this,
@@ -135,6 +155,10 @@ public class EdicionPerfil extends AppCompatActivity {
         }
     }
 
+    /**
+     * Configura las validaciones en tiempo real para los campos de entrada
+     * Aplica filtros y validaciones mientras el usuario escribe
+     */
     private void setupInputValidations() {
         // Filtro para nombre - solo letras y espacios
         editTextNombre.addTextChangedListener(new TextWatcher() {
@@ -153,7 +177,7 @@ public class EdicionPerfil extends AppCompatActivity {
                     if (!filtered.equals(input)) {
                         editTextNombre.setText(filtered);
                         editTextNombre.setSelection(filtered.length());
-                        inputLayoutNombre.setError("Solo se permiten letras y espacios");
+                        inputLayoutNombre.setError(getString(R.string.solo_se_permiten_letras_y_espacios));
                     }
                 } else {
                     inputLayoutNombre.setError(null);
@@ -178,7 +202,7 @@ public class EdicionPerfil extends AppCompatActivity {
                     if (!filtered.equals(input)) {
                         editTextApellido.setText(filtered);
                         editTextApellido.setSelection(filtered.length());
-                        inputLayoutApellido.setError("Solo se permiten letras y espacios");
+                        inputLayoutApellido.setError(getString(R.string.solo_se_permiten_letras_y_espacios));
                     }
                 } else {
                     inputLayoutApellido.setError(null);
@@ -198,7 +222,7 @@ public class EdicionPerfil extends AppCompatActivity {
             public void afterTextChanged(Editable s) {
                 String email = s.toString().trim();
                 if (!email.isEmpty() && !isValidEmail(email)) {
-                    inputLayoutMail.setError("Ingresa un correo electrónico válido");
+                    inputLayoutMail.setError(getString(R.string.correo_valido));
                 } else {
                     inputLayoutMail.setError(null);
                 }
@@ -212,6 +236,10 @@ public class EdicionPerfil extends AppCompatActivity {
         setupErrorClearingListeners();
     }
 
+    /**
+     * Configura el formateo automático del número de teléfono
+     * Aplica el formato XXXX-XXXX mientras el usuario escribe
+     */
     private void setupTelefonoFormatting() {
         editTextTelefono.addTextChangedListener(new TextWatcher() {
             private boolean isFormatting = false;
@@ -276,7 +304,7 @@ public class EdicionPerfil extends AppCompatActivity {
                 // Validar formato en tiempo real
                 String currentText = formatted.toString();
                 if (!currentText.isEmpty() && !isValidTelefono(currentText)) {
-                    inputLayoutTelefono.setError("Formato: XXXX-XXXX (8 dígitos)");
+                    inputLayoutTelefono.setError(getString(R.string.formato_telefono));
                 } else {
                     inputLayoutTelefono.setError(null);
                 }
@@ -292,6 +320,10 @@ public class EdicionPerfil extends AppCompatActivity {
         });
     }
 
+    /**
+     * Configura listeners para limpiar mensajes de error cuando el campo recibe foco
+     * Mejora la experiencia de usuario eliminando errores al intentar corregirlos
+     */
     private void setupErrorClearingListeners() {
         editTextNombre.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) inputLayoutNombre.setError(null);
@@ -310,12 +342,20 @@ public class EdicionPerfil extends AppCompatActivity {
         });
     }
 
+    /**
+     * Configura los listeners de clic para los botones
+     * Asigna las acciones a realizar cuando se presionan los botones
+     */
     private void setupClickListeners() {
         btnGuardarCambios.setOnClickListener(v -> {
             guardarCambios();
         });
     }
 
+    /**
+     * Procesa y guarda los cambios realizados en el perfil
+     * Valida los datos, detecta cambios y actualiza en la API
+     */
     private void guardarCambios() {
         String nombre = editTextNombre.getText().toString().trim();
         String apellido = editTextApellido.getText().toString().trim();
@@ -332,7 +372,7 @@ public class EdicionPerfil extends AppCompatActivity {
 
         // Si no hay cambios, mostrar mensaje y salir
         if (camposCambiados.isEmpty()) {
-            Toast.makeText(this, "No se detectaron cambios para guardar", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.no_se_detectaron_cambios_para_guardar, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -352,7 +392,7 @@ public class EdicionPerfil extends AppCompatActivity {
         usuarioActualizado.setTiposangreid(spinnerTipoSangre.getSelectedItemPosition() + 1);
 
         // Mostrar loading
-        setGuardarButtonState(false, "Guardando...");
+        setGuardarButtonState(false, getString(R.string.guardando));
 
         // Actualizar en la base de datos
         ApiService.updateUser(usuarioActualizado, new ApiService.ApiCallback<Usuario>() {
@@ -365,7 +405,7 @@ public class EdicionPerfil extends AppCompatActivity {
                     // Crear notificaciones para los campos cambiados
                     crearNotificacionesCambios(camposCambiados);
 
-                    Toast.makeText(EdicionPerfil.this, "Perfil actualizado exitosamente", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(EdicionPerfil.this, R.string.perfil_actualizado_exitosamente, Toast.LENGTH_SHORT).show();
 
                     // Actualizar valores originales
                     guardarValoresOriginales();
@@ -379,20 +419,28 @@ public class EdicionPerfil extends AppCompatActivity {
             @Override
             public void onError(String error) {
                 runOnUiThread(() -> {
-                    setGuardarButtonState(true, "Guardar Cambios");
+                    setGuardarButtonState(true, getString(R.string.guardar_cambios));
 
                     // Detectar específicamente errores de email duplicado
                     if (isEmailDuplicateError(error)) {
-                        inputLayoutMail.setError("Este email ya está registrado");
-                        Toast.makeText(EdicionPerfil.this, "El email ya está en uso por otro usuario", Toast.LENGTH_LONG).show();
+                        inputLayoutMail.setError(getString(R.string.email_ya_registrado));
+                        Toast.makeText(EdicionPerfil.this, R.string.email_en_uso, Toast.LENGTH_LONG).show();
                     } else {
-                        Toast.makeText(EdicionPerfil.this, "Error al actualizar perfil: " + error, Toast.LENGTH_LONG).show();
+                        Toast.makeText(EdicionPerfil.this, getString(R.string.error_al_actualizar_perfil) + error, Toast.LENGTH_LONG).show();
                     }
                 });
             }
         });
     }
 
+    /**
+     * Detecta qué campos han sido modificados comparando con los valores originales
+     * @param nombre Nuevo valor del nombre
+     * @param apellido Nuevo valor del apellido
+     * @param email Nuevo valor del email
+     * @param telefono Nuevo valor del teléfono
+     * @return Lista de nombres de campos que han cambiado
+     */
     private List<String> detectarCambios(String nombre, String apellido, String email, String telefono) {
         List<String> cambios = new ArrayList<>();
 
@@ -421,16 +469,17 @@ public class EdicionPerfil extends AppCompatActivity {
             cambios.add("tipo de sangre");
         }
 
-        System.out.println("🔍 Campos cambiados detectados: " + cambios);
         return cambios;
     }
 
+    /**
+     * Crea notificaciones para los campos que han sido modificados
+     * @param camposCambiados Lista de campos que han cambiado
+     */
     private void crearNotificacionesCambios(List<String> camposCambiados) {
         if (camposCambiados.isEmpty() || usuarioActual == null) {
             return;
         }
-
-        System.out.println("🎯 Creando notificaciones para cambios en perfil");
 
         // Crear una notificación por cada campo cambiado
         for (String campo : camposCambiados) {
@@ -442,17 +491,20 @@ public class EdicionPerfil extends AppCompatActivity {
             ApiService.createNotificacion(notificacion, new ApiService.ApiCallback<Notificacion>() {
                 @Override
                 public void onSuccess(Notificacion result) {
-                    System.out.println("✅ Notificación creada para cambio en: " + campo);
                 }
 
                 @Override
                 public void onError(String error) {
-                    System.out.println("❌ Error creando notificación para " + campo + ": " + error);
                 }
             });
         }
     }
 
+    /**
+     * Genera mensajes descriptivos para las notificaciones de cambios
+     * @param campo Campo que ha sido modificado
+     * @return Mensaje descriptivo del cambio
+     */
     private String generarMensajeCambio(String campo) {
         switch (campo) {
             case "nombre":
@@ -472,6 +524,11 @@ public class EdicionPerfil extends AppCompatActivity {
         }
     }
 
+    /**
+     * Detecta si el error recibido es por duplicación de email
+     * @param error Mensaje de error recibido de la API
+     * @return true si es un error de email duplicado, false en caso contrario
+     */
     private boolean isEmailDuplicateError(String error) {
         if (error == null) return false;
 
@@ -488,6 +545,14 @@ public class EdicionPerfil extends AppCompatActivity {
                 (lowerError.contains("email") && lowerError.contains("already"));
     }
 
+    /**
+     * Valida todos los campos de entrada antes de guardar
+     * @param nombre Nombre a validar
+     * @param apellido Apellido a validar
+     * @param email Email a validar
+     * @param telefono Teléfono a validar
+     * @return true si todos los campos son válidos, false en caso contrario
+     */
     private boolean validateInputs(String nombre, String apellido, String email, String telefono) {
         boolean isValid = true;
 
@@ -544,32 +609,56 @@ public class EdicionPerfil extends AppCompatActivity {
         return isValid;
     }
 
+    /**
+     * Valida que el nombre o apellido contenga solo letras y espacios
+     * @param text Texto a validar
+     * @return true si es válido, false en caso contrario
+     */
     private boolean isValidNombreApellido(String text) {
         // Solo letras (incluyendo acentos) y espacios
         String nombrePattern = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$";
         return text.matches(nombrePattern);
     }
 
+    /**
+     * Valida el formato de email usando expresión regular
+     * @param email Email a validar
+     * @return true si el formato es válido, false en caso contrario
+     */
     private boolean isValidEmail(String email) {
         String emailPattern = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$";
         return email.matches(emailPattern);
     }
 
+    /**
+     * Valida el formato del teléfono (XXXX-XXXX)
+     * @param telefono Número de teléfono a validar
+     * @return true si el formato es válido, false en caso contrario
+     */
     private boolean isValidTelefono(String telefono) {
         // Formato: 4 dígitos + guión + 4 dígitos
         String telefonoPattern = "\\d{4}-\\d{4}";
         return telefono.matches(telefonoPattern);
     }
 
+    /**
+     * Cambia el estado del botón de guardar (habilitado/deshabilitado)
+     * @param enabled true para habilitar, false para deshabilitar
+     * @param text Texto a mostrar en el botón
+     */
     private void setGuardarButtonState(boolean enabled, String text) {
         btnGuardarCambios.setEnabled(enabled);
         btnGuardarCambios.setText(text);
     }
 
+    /**
+     * Método del ciclo de vida que se ejecuta al reanudar la actividad
+     * Restaura el estado del botón de guardar
+     */
     @Override
     protected void onResume() {
         super.onResume();
         // Restaurar estado del botón si vuelve a esta actividad
-        setGuardarButtonState(true, "Guardar Cambios");
+        setGuardarButtonState(true, getString(R.string.guardar_cambios));
     }
 }

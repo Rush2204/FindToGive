@@ -65,7 +65,7 @@ public class FiltroBusquedaDialog extends Dialog {
 
         // Crear array con opción "Todos"
         String[] opcionesSpinner = new String[tiposSangre.length + 1];
-        opcionesSpinner[0] = "Todos los tipos";
+        opcionesSpinner[0] = getContext().getString(R.string.todos_los_tipos);
         System.arraycopy(tiposSangre, 0, opcionesSpinner, 1, tiposSangre.length);
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
@@ -115,7 +115,7 @@ public class FiltroBusquedaDialog extends Dialog {
         String tipoSangreSeleccionado = spinnerTipoSangre.getSelectedItem().toString();
 
         int tipoSangreId = -1;
-        if (!tipoSangreSeleccionado.equals("Todos los tipos")) {
+        if (!tipoSangreSeleccionado.equals(getContext().getString(R.string.todos_los_tipos))) {
             tipoSangreId = convertirTipoSangreNombreAId(tipoSangreSeleccionado);
         }
 

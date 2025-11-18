@@ -11,7 +11,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Filtrar Historial"
+        android:text="@string/filtrar_historiall"
         android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="@android:color/black"
@@ -23,7 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:hint="Estado de la solicitud">
+        android:hint="@string/estado_de_la_solicitud">
 
         <Spinner
             android:id="@+id/spinner_estado"
@@ -37,7 +37,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
-        android:hint="Tu rol en la solicitud">
+        android:hint="@string/tu_rol_en_la_solicitud">
 
         <Spinner
             android:id="@+id/spinner_rol"
@@ -59,7 +59,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
-            android:text="Limpiar"
+            android:text="@string/limpiar"
             android:backgroundTint="@android:color/darker_gray"
             android:textColor="@android:color/white" />
 
@@ -69,7 +69,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:text="Aplicar"
+            android:text="@string/aplicar"
             android:backgroundTint="#C50A0A"
             android:textColor="@android:color/white" />
 

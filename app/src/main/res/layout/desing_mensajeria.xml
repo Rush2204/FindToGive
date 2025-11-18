@@ -17,7 +17,7 @@
         android:padding="8dp"
         android:onClick="back"
         android:src="@drawable/ico_arrow_back"
-        android:contentDescription="boton de retroceso"
+        android:contentDescription="@string/boton_de_retroceso"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -26,7 +26,7 @@
         android:id="@+id/text_title_mensajeria"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Mensajería"
+        android:text="@string/mensajer_a"
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="@android:color/black"
@@ -70,13 +70,13 @@
             android:layout_height="100dp"
             android:src="@drawable/ico_cleaning"
             android:visibility="visible"
-            android:contentDescription="Icono de Mensajes Vacíos" />
+            android:contentDescription="@string/icono_de_mensajes_vac_os" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="¡Aún no tienes chats activos!"
+            android:text="@string/a_n_no_tienes_chats_activos"
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="#374151"
@@ -86,7 +86,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Los chats aparecerán aquí cuando respondas o inicies una solicitud de donación."
+            android:text="@string/los_chats_aparecer_n_aqu_cuando_respondas_o_inicies_una_solicitud_de_donaci_n"
             android:textSize="16sp"
             android:textColor="#6b7280"
             android:gravity="center" />

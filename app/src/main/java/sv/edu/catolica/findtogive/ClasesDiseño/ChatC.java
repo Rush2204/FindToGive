@@ -5,11 +5,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,7 +33,7 @@ import sv.edu.catolica.findtogive.R;
 public class ChatC extends AppCompatActivity {
 
     private TextView textChatName;
-    private ImageView btnBack;
+
     private RecyclerView recyclerViewChat;
     private EditText editTextMessage;
     private ImageButton btnSend;
@@ -44,7 +42,7 @@ public class ChatC extends AppCompatActivity {
     private int solicitudId;
     private int otroUsuarioId;
     private String chatNombre;
-    private String estadoSolicitud; // Para controlar el estado
+    private String estadoSolicitud;
 
     private List<Mensaje> mensajesList;
     private MensajesAdapter mensajesAdapter;
@@ -55,9 +53,12 @@ public class ChatC extends AppCompatActivity {
     private static final long POLLING_INTERVAL = 1000;
     private SharedPreferences notificacionPrefs;
 
-    // NUEVO: Control para saber si ya se marcaron los mensajes como leídos
     private boolean mensajesMarcadosComoLeidos = false;
 
+    /**
+     * Método principal que inicializa la actividad del chat
+     * Configura la vista, inicializa componentes y comienza la funcionalidad del chat
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -73,33 +74,33 @@ public class ChatC extends AppCompatActivity {
 
         initializeViews();
 
-        // ✅ CORRECTO: Marcar mensajes como leídos SOLO cuando se abre el chat por primera vez
         if (!mensajesMarcadosComoLeidos) {
             marcarMensajesComoLeidos();
             mensajesMarcadosComoLeidos = true;
         }
 
-        // VERIFICAR ESTADO DE LA SOLICITUD INMEDIATAMENTE - MEJORADO
         verificarEstadoSolicitud();
-
         setupRecyclerView();
         loadMensajes();
         startPolling();
     }
 
+    /**
+     * Inicializa todos los componentes visuales de la interfaz
+     * Obtiene referencias a los views y configura los listeners de eventos
+     */
     private void initializeViews() {
         textChatName = findViewById(R.id.text_chat_name);
-        btnBack = findViewById(R.id.btn_back);
+
         recyclerViewChat = findViewById(R.id.recycler_view_chat);
         editTextMessage = findViewById(R.id.edit_text_message);
         btnSend = findViewById(R.id.btn_send);
 
-        // Obtener datos del intent
         chatId = getIntent().getIntExtra("chat_id", -1);
         solicitudId = getIntent().getIntExtra("solicitud_id", -1);
         otroUsuarioId = getIntent().getIntExtra("otro_usuario_id", -1);
         chatNombre = getIntent().getStringExtra("chat_nombre");
-        estadoSolicitud = getIntent().getStringExtra("solicitud_estado"); // NUEVO
+        estadoSolicitud = getIntent().getStringExtra("solicitud_estado");
 
         usuarioActual = SharedPreferencesManager.getCurrentUser(this);
 
@@ -110,98 +111,87 @@ public class ChatC extends AppCompatActivity {
         setupEditTextPaste();
     }
 
-    // NUEVO MÉTODO: Configurar el EditText para permitir pegar
+    /**
+     * Configura el EditText para permitir funcionalidades de pegar texto
+     * Habilita el menú contextual nativo de Android para copiar y pegar
+     */
     private void setupEditTextPaste() {
-        // Esto habilita el menú contextual nativo de Android (copiar, pegar, etc.)
         editTextMessage.setCustomSelectionActionModeCallback(new android.view.ActionMode.Callback() {
             @Override
             public boolean onCreateActionMode(android.view.ActionMode mode, android.view.Menu menu) {
-                // El menú contextual se crea automáticamente con las opciones estándar
                 return true;
             }
 
             @Override
             public boolean onPrepareActionMode(android.view.ActionMode mode, android.view.Menu menu) {
-                // Permitir que todas las opciones del menú estén disponibles
                 return true;
             }
 
             @Override
             public boolean onActionItemClicked(android.view.ActionMode mode, android.view.MenuItem item) {
-                return false; // Dejar que el sistema maneje las acciones
+                return false;
             }
 
             @Override
             public void onDestroyActionMode(android.view.ActionMode mode) {
-                // Limpieza si es necesaria
             }
         });
 
-        // También puedes agregar un LongClickListener para mostrar un mensaje personalizado
         editTextMessage.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                // Mostrar un Toast informativo (opcional)
                 if (editTextMessage.getText().toString().isEmpty()) {
-                    Toast.makeText(ChatC.this, "Mantén presionado para pegar", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ChatC.this, R.string.pegar_texto, Toast.LENGTH_SHORT).show();
                 }
-                return false; // Dejar que el sistema maneje el long click normalmente
+                return false;
             }
         });
     }
 
-    // NUEVO MÉTODO: Verificar estado de la solicitud - MEJORADO
+    /**
+     * Verifica el estado actual de la solicitud de donación
+     * Bloquea el envío de mensajes si la solicitud no está activa
+     */
     private void verificarEstadoSolicitud() {
-        Log.d("ChatC", "🔍 Verificando estado de solicitud: " + estadoSolicitud);
-
-        // Si ya viene el estado del intent, usarlo inmediatamente
         if (estadoSolicitud != null && !"activa".equals(estadoSolicitud)) {
-            Log.d("ChatC", "🚫 Estado no activo detectado desde intent: " + estadoSolicitud);
             bloquearEnvioMensajes();
             return;
         }
 
-        // Si no viene el estado o viene como activa, consultar a la API para confirmar
         if (solicitudId != -1) {
             consultarEstadoSolicitud();
         }
     }
 
-    // NUEVO MÉTODO: Consultar estado de la solicitud desde la API - MEJORADO
+    /**
+     * Consulta el estado de la solicitud desde la API
+     * Obtiene información actualizada sobre el estado de la solicitud de donación
+     */
     private void consultarEstadoSolicitud() {
-        Log.d("ChatC", "🔍 Consultando estado de solicitud ID: " + solicitudId);
-
-        // Usar el método específico para obtener la solicitud por ID
         ApiService.getSolicitudById(solicitudId, new ApiService.ApiCallback<SolicitudDonacion>() {
             @Override
             public void onSuccess(SolicitudDonacion solicitud) {
                 if (solicitud != null) {
                     estadoSolicitud = solicitud.getEstado();
-                    Log.d("ChatC", "✅ Estado obtenido de API: " + estadoSolicitud);
-
                     runOnUiThread(() -> {
                         if (!"activa".equals(estadoSolicitud)) {
-                            Log.d("ChatC", "🚫 Bloqueando mensajes - Estado: " + estadoSolicitud);
                             bloquearEnvioMensajes();
-                        } else {
-                            Log.d("ChatC", "✅ Estado activo - Mensajes permitidos");
                         }
                     });
-                } else {
-                    Log.e("ChatC", "❌ Solicitud no encontrada");
                 }
             }
 
             @Override
             public void onError(String error) {
-                Log.e("ChatC", "❌ Error consultando estado de solicitud: " + error);
-                // Si hay error, intentar con el método alternativo
                 consultarEstadoSolicitudAlternativo();
             }
         });
     }
 
-    // MÉTODO ALTERNATIVO: Consultar estado desde todas las solicitudes del usuario
+    /**
+     * Método alternativo para consultar el estado de la solicitud
+     * Busca entre todas las solicitudes del usuario cuando el método principal falla
+     */
     private void consultarEstadoSolicitudAlternativo() {
         ApiService.getSolicitudesByUsuarioId(usuarioActual.getUsuarioid(), new ApiService.ListCallback<SolicitudDonacion>() {
             @Override
@@ -210,8 +200,6 @@ public class ChatC extends AppCompatActivity {
                     for (SolicitudDonacion solicitud : solicitudes) {
                         if (solicitud.getSolicitudid() == solicitudId) {
                             estadoSolicitud = solicitud.getEstado();
-                            Log.d("ChatC", "✅ Estado obtenido (alternativo): " + estadoSolicitud);
-
                             runOnUiThread(() -> {
                                 if (!"activa".equals(estadoSolicitud)) {
                                     bloquearEnvioMensajes();
@@ -225,18 +213,18 @@ public class ChatC extends AppCompatActivity {
 
             @Override
             public void onError(String error) {
-                Log.e("ChatC", "❌ Error en consulta alternativa: " + error);
             }
         });
     }
 
-    // MÉTODO: Bloquear envío de mensajes - MEJORADO
+    /**
+     * Bloquea la interfaz para enviar mensajes cuando la solicitud no está activa
+     * Deshabilita el EditText y botón de enviar, mostrando el estado actual
+     */
     private void bloquearEnvioMensajes() {
         runOnUiThread(() -> {
-            Log.d("ChatC", "🔒 Bloqueando interfaz de mensajes");
-
             editTextMessage.setEnabled(false);
-            editTextMessage.setHint("Chat cerrado - Solicitud " +
+            editTextMessage.setHint(getString(R.string.chat_cerrado_solicitud) +
                     ("completada".equals(estadoSolicitud) ? "completada ✅" : "cancelada ❌"));
             editTextMessage.setBackgroundColor(0xFFF0F0F0);
 
@@ -244,17 +232,14 @@ public class ChatC extends AppCompatActivity {
             btnSend.setAlpha(0.3f);
             btnSend.setClickable(false);
 
-            // Mostrar mensaje informativo
             String mensajeEstado = "completada".equals(estadoSolicitud) ?
                     "completada ✅" : "cancelada ❌";
             Toast.makeText(this,
-                    "Esta solicitud está " + mensajeEstado + ". Solo puedes ver los mensajes.",
+                    getString(R.string.esta_solicitud) + mensajeEstado + getString(R.string.solo_puedes_ver_los_mensajes),
                     Toast.LENGTH_LONG).show();
 
-            // Actualizar título para mostrar estado
             if (textChatName != null) {
                 String tituloActual = textChatName.getText().toString();
-                // Solo agregar el estado si no está ya en el título
                 if (!tituloActual.contains("(" + estadoSolicitud + ")")) {
                     textChatName.setText(tituloActual + " (" + estadoSolicitud + ")");
                 }
@@ -262,14 +247,16 @@ public class ChatC extends AppCompatActivity {
         });
     }
 
+    /**
+     * Configura el RecyclerView para mostrar la lista de mensajes
+     * Inicializa el adapter y establece el layout manager
+     */
     private void setupRecyclerView() {
         mensajesList = new ArrayList<>();
-        // Pasar el otroUsuarioId al adapter
         mensajesAdapter = new MensajesAdapter(mensajesList, usuarioActual.getUsuarioid(), otroUsuarioId);
         recyclerViewChat.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewChat.setAdapter(mensajesAdapter);
 
-        // Precargar la información del otro usuario ANTES de cargar los mensajes
         precargarOtroUsuario();
 
         mensajesAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
@@ -281,37 +268,40 @@ public class ChatC extends AppCompatActivity {
         });
     }
 
+    /**
+     * Precarga la información del otro usuario participante en el chat
+     * Actualiza el título del chat con el nombre real del usuario
+     */
     private void precargarOtroUsuario() {
         if (otroUsuarioId == -1) return;
 
         ApiService.getUsuarioById(otroUsuarioId, new ApiService.ApiCallback<Usuario>() {
             @Override
             public void onSuccess(Usuario usuario) {
-                // Precargar el usuario en el adapter
                 mensajesAdapter.precargarUsuario(usuario);
-                // Actualizar el título del chat con el nombre real
                 if (usuario != null) {
                     String nombreCompleto = usuario.getNombre() + " " + usuario.getApellido();
                     textChatName.setText(nombreCompleto);
 
-                    // Si está bloqueado, actualizar título con estado
                     if (estadoSolicitud != null && !"activa".equals(estadoSolicitud)) {
                         textChatName.setText(nombreCompleto + " (" + estadoSolicitud + ")");
                     }
                 }
-                System.out.println("✅ Usuario precargado en chat: " + usuario.getNombre());
             }
 
             @Override
             public void onError(String error) {
-                System.out.println("❌ Error precargando usuario: " + error);
             }
         });
     }
 
+    /**
+     * Carga los mensajes del chat desde la API
+     * Actualiza la lista de mensajes en el adapter
+     */
     private void loadMensajes() {
         if (chatId == -1) {
-            Toast.makeText(this, "Error: ID de chat inválido", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.error_id_chat_invalido, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -320,13 +310,11 @@ public class ChatC extends AppCompatActivity {
             public void onSuccess(List<Mensaje> mensajes) {
                 runOnUiThread(() -> {
                     if (mensajes != null) {
-                        // Verificar si hay mensajes nuevos
                         if (hayMensajesNuevos(mensajes)) {
                             mensajesAdapter.actualizarMensajes(mensajes);
                             if (!mensajes.isEmpty()) {
                                 recyclerViewChat.scrollToPosition(mensajes.size() - 1);
                             }
-                            System.out.println("🔄 Mensajes actualizados: " + mensajes.size());
                         }
                     }
                 });
@@ -335,12 +323,16 @@ public class ChatC extends AppCompatActivity {
             @Override
             public void onError(String error) {
                 runOnUiThread(() -> {
-                    System.out.println("❌ Error cargando mensajes: " + error);
                 });
             }
         });
     }
 
+    /**
+     * Verifica si hay mensajes nuevos comparando con la lista actual
+     * @param nuevosMensajes Lista de mensajes recién obtenidos
+     * @return true si hay mensajes nuevos, false en caso contrario
+     */
     private boolean hayMensajesNuevos(List<Mensaje> nuevosMensajes) {
         if (mensajesList.size() != nuevosMensajes.size()) {
             return true;
@@ -355,6 +347,10 @@ public class ChatC extends AppCompatActivity {
         return !mensajesList.isEmpty() || !nuevosMensajes.isEmpty();
     }
 
+    /**
+     * Inicia el polling para actualizar mensajes periódicamente
+     * Consulta la API cada cierto intervalo para obtener nuevos mensajes
+     */
     private void startPolling() {
         pollingHandler = new Handler();
         pollingRunnable = new Runnable() {
@@ -367,32 +363,36 @@ public class ChatC extends AppCompatActivity {
         pollingHandler.postDelayed(pollingRunnable, POLLING_INTERVAL);
     }
 
-    // ❌ ELIMINADO: El método verificarYMarcarMensajesNoLeidos() que causaba el problema
-
+    /**
+     * Detiene el polling de mensajes
+     * Elimina los callbacks pendientes para evitar fugas de memoria
+     */
     private void stopPolling() {
         if (pollingHandler != null && pollingRunnable != null) {
             pollingHandler.removeCallbacks(pollingRunnable);
         }
     }
 
+    /**
+     * Envía un nuevo mensaje al chat
+     * Valida el contenido y estado antes de enviar a la API
+     */
     private void enviarMensaje() {
-        // VERIFICAR SI ESTÁ BLOQUEADO ANTES DE ENVIAR - CORRECCIÓN CRÍTICA
         if (estadoSolicitud != null && !"activa".equals(estadoSolicitud)) {
-            Log.d("ChatC", "🚫 Intento de enviar mensaje bloqueado - Estado: " + estadoSolicitud);
             Toast.makeText(this,
-                    "No puedes enviar mensajes en solicitudes " + estadoSolicitud,
+                    getString(R.string.no_puedes_enviar_mensajes_en_solicitudes) + estadoSolicitud,
                     Toast.LENGTH_SHORT).show();
             return;
         }
 
         String contenido = editTextMessage.getText().toString().trim();
         if (contenido.isEmpty()) {
-            Toast.makeText(this, "Escribe un mensaje", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.escribe_un_mensaje, Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (chatId == -1) {
-            Toast.makeText(this, "Error: No se puede enviar el mensaje", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.error_no_se_puede_enviar_el_mensaje, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -412,17 +412,21 @@ public class ChatC extends AppCompatActivity {
             @Override
             public void onError(String error) {
                 runOnUiThread(() -> {
-                    Toast.makeText(ChatC.this, "Error enviando mensaje: " + error, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ChatC.this, getString(R.string.error_enviando_mensaje) + error, Toast.LENGTH_SHORT).show();
                 });
             }
         });
     }
 
+    /**
+     * Verifica si el mensaje actual es el primero del usuario en este chat
+     * Crea una notificación si es el primer mensaje
+     * @param mensaje Mensaje recién enviado
+     */
     private void verificarSiEsPrimerMensaje(Mensaje mensaje) {
         boolean yaNotificado = notificacionPrefs.getBoolean("chat_" + chatId, false);
 
         if (yaNotificado) {
-            System.out.println("⏭️ Chat " + chatId + " ya fue notificado, omitiendo...");
             return;
         }
 
@@ -435,10 +439,8 @@ public class ChatC extends AppCompatActivity {
                             .count();
 
                     if (mensajesDelUsuario == 1) {
-                        System.out.println("🎉 ¡Es el primer mensaje del usuario! Creando notificación...");
                         crearNotificacionNuevaConversacion();
                     } else {
-                        System.out.println("ℹ️ No es el primer mensaje del usuario (" + mensajesDelUsuario + " mensajes), no se crea notificación");
                         notificacionPrefs.edit().putBoolean("chat_" + chatId, true).apply();
                     }
                 }
@@ -446,12 +448,14 @@ public class ChatC extends AppCompatActivity {
 
             @Override
             public void onError(String error) {
-                System.out.println("❌ Error verificando mensajes: " + error);
             }
         });
     }
 
-    // ✅ MÉTODO MODIFICADO: Marcar mensajes como leídos SOLO cuando se abre el chat
+    /**
+     * Marca todos los mensajes del chat como leídos
+     * Actualiza el estado en la API y localmente
+     */
     private void marcarMensajesComoLeidos() {
         if (chatId == -1 || usuarioActual == null) {
             return;
@@ -460,98 +464,101 @@ public class ChatC extends AppCompatActivity {
         ApiService.updateMensajesLeidos(chatId, usuarioActual.getUsuarioid(), new ApiService.ApiCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
-                Log.d("ChatC", "✅ Mensajes marcados como leídos para chat: " + chatId);
-
-                // Actualizar la lista local de mensajes para reflejar el cambio
                 actualizarEstadoLeidoLocalmente();
             }
 
             @Override
             public void onError(String error) {
-                Log.e("ChatC", "❌ Error marcando mensajes como leídos: " + error);
             }
         });
     }
 
-    // NUEVO MÉTODO: Actualizar estado leído en la lista local
+    /**
+     * Actualiza localmente el estado de los mensajes a "leído"
+     * Sincroniza la interfaz con el estado actualizado de la API
+     */
     private void actualizarEstadoLeidoLocalmente() {
         if (mensajesList != null && mensajesAdapter != null) {
-            // Usar el nuevo método del adapter
             mensajesAdapter.marcarTodosComoLeidos();
         }
     }
 
+    /**
+     * Crea una notificación para el otro usuario indicando nueva conversación
+     * Solo se ejecuta una vez por chat para evitar notificaciones duplicadas
+     */
     private void crearNotificacionNuevaConversacion() {
         boolean yaNotificado = notificacionPrefs.getBoolean("chat_" + chatId, false);
         if (yaNotificado) {
-            System.out.println("🚫 Notificación cancelada - chat " + chatId + " ya notificado");
             return;
         }
 
         String nombreUsuarioActual = usuarioActual.getNombre() + " " + usuarioActual.getApellido();
-        String titulo = "Tienes un nuevo mensaje";
-        String mensajeNotificacion = nombreUsuarioActual + " quiere hablar contigo";
-
-        System.out.println("🎯 Creando notificación ÚNICA para chat: " + chatId);
+        String titulo = getString(R.string.tienes_un_nuevo_mensaje);
+        String mensajeNotificacion = nombreUsuarioActual + getString(R.string.quiere_hablar_contigo);
 
         Notificacion notificacion = new Notificacion(otroUsuarioId, titulo, mensajeNotificacion);
 
         ApiService.createNotificacion(notificacion, new ApiService.ApiCallback<Notificacion>() {
             @Override
             public void onSuccess(Notificacion result) {
-                System.out.println("✅ Notificación ÚNICA creada para chat: " + chatId);
-
                 SharedPreferences.Editor editor = notificacionPrefs.edit();
                 editor.putBoolean("chat_" + chatId, true);
                 editor.apply();
-
-                System.out.println("📝 Chat " + chatId + " marcado como notificado");
             }
 
             @Override
             public void onError(String error) {
-                System.out.println("❌ Error creando notificación: " + error);
             }
         });
     }
 
+    /**
+     * Método del ciclo de vida que se ejecuta al destruir la actividad
+     * Limpia recursos y detiene el polling
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();
         stopPolling();
     }
 
+    /**
+     * Método del ciclo de vida que se ejecuta al pausar la actividad
+     * Detiene temporalmente el polling para ahorrar recursos
+     */
     @Override
     protected void onPause() {
         super.onPause();
         stopPolling();
     }
 
+    /**
+     * Método del ciclo de vida que se ejecuta al reanudar la actividad
+     * Reinicia el polling y carga los mensajes actualizados
+     */
     @Override
     protected void onResume() {
         super.onResume();
         startPolling();
         loadMensajes();
-
-        // ❌ ELIMINADO: No marcar mensajes como leídos automáticamente en onResume
-        // Esto causaba que los mensajes se marcaran como leídos sin que el usuario los viera
     }
 
+    /**
+     * Maneja la navegación hacia atrás desde el chat
+     * Preserva información de filtrado para la actividad de mensajería
+     * @param view Vista que disparó el evento
+     */
     public void back(View view) {
         Intent intent = new Intent(ChatC.this, Mensajeria.class);
 
         int solicitudId = getIntent().getIntExtra("solicitud_id", -1);
-        System.out.println("🔙 Navegando hacia atrás - Solicitud ID: " + solicitudId);
 
         if (solicitudId != -1) {
             intent.putExtra("filter_by_solicitud", true);
             intent.putExtra("solicitud_id", solicitudId);
-            System.out.println("🎯 Filtro aplicado para solicitud: " + solicitudId);
-        } else {
-            System.out.println("ℹ️ Sin filtro - Mostrando todos los chats");
         }
 
-        // IMPORTANTE: Limpiar el stack para evitar acumulación de actividades
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
         finish();

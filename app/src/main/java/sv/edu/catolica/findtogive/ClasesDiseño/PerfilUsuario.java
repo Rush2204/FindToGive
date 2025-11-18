@@ -50,6 +50,10 @@ public class PerfilUsuario extends AppCompatActivity {
 
     private ActivityResultLauncher<String> pickImageLauncher;
 
+    /**
+     * Método principal que inicializa la actividad del perfil de usuario
+     * Configura la vista, navegación y carga los datos del usuario
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,6 +73,10 @@ public class PerfilUsuario extends AppCompatActivity {
         setupClickListeners();
     }
 
+    /**
+     * Inicializa todos los componentes visuales de la interfaz
+     * Obtiene referencias a los views del layout
+     */
     private void initViews() {
         imgProfile = findViewById(R.id.img_profile);
         textUserName = findViewById(R.id.text_user_name);
@@ -83,6 +91,10 @@ public class PerfilUsuario extends AppCompatActivity {
         bottomNavigation = findViewById(R.id.bottom_navigation_bar);
     }
 
+    /**
+     * Configura la navegación inferior de la aplicación
+     * Define las acciones para cada ítem del menú de navegación
+     */
     private void setupBottomNavigation() {
         actualizarNavegacionSegunRol();
 
@@ -100,7 +112,7 @@ public class PerfilUsuario extends AppCompatActivity {
                     intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
                     startActivity(intent);
                 } else {
-                    Toast.makeText(this, "Solo receptores pueden crear solicitudes", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.solo_receptores_pueden_crear_solicitudes, Toast.LENGTH_SHORT).show();
                     return false;
                 }
                 return true;
@@ -115,7 +127,6 @@ public class PerfilUsuario extends AppCompatActivity {
                 startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_perfil) {
-                // Ya estamos en perfil
                 return true;
             }
             return false;
@@ -128,6 +139,10 @@ public class PerfilUsuario extends AppCompatActivity {
         bottomNavigation.setSelectedItemId(R.id.nav_perfil);
     }
 
+    /**
+     * Configura el selector de imágenes para cambiar la foto de perfil
+     * Utiliza Activity Result API para manejar la selección de imágenes
+     */
     private void setupImagePicker() {
         pickImageLauncher = registerForActivityResult(
                 new ActivityResultContracts.GetContent(),
@@ -139,6 +154,10 @@ public class PerfilUsuario extends AppCompatActivity {
         );
     }
 
+    /**
+     * Carga los datos del usuario desde SharedPreferences
+     * Verifica que el usuario esté autenticado antes de mostrar los datos
+     */
     private void loadUserData() {
         usuarioActual = SharedPreferencesManager.getCurrentUser(this);
 
@@ -146,51 +165,39 @@ public class PerfilUsuario extends AppCompatActivity {
             displayUserData();
             actualizarNavegacionSegunRol();
 
-            // Actualizar visibilidad del ítem "Crear" en la navegación
             if (usuarioActual.getRolid() == 1) {
                 bottomNavigation.getMenu().findItem(R.id.nav_crear).setVisible(false);
             }
         } else {
-            Toast.makeText(this, "Error: No se pudo cargar la información del usuario", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.error_cargar_info_usuario, Toast.LENGTH_SHORT).show();
             finish();
         }
     }
 
+    /**
+     * Muestra los datos del usuario en la interfaz
+     * Rellena todos los campos con la información del usuario actual
+     */
     private void displayUserData() {
-        // Nombre completo
         textUserName.setText(usuarioActual.getNombreCompleto());
-
-        // Email
         textDisplayEmail.setText(usuarioActual.getEmail());
-
-        // Edad
-        textDisplayAge.setText(usuarioActual.getEdad() + " años");
-
-        // Teléfono
+        textDisplayAge.setText(getString(R.string.edad_formato_perfil, usuarioActual.getEdad()));
         textDisplayPhone.setText(usuarioActual.getTelefono() != null ?
-                usuarioActual.getTelefono() : "No especificado");
-
-        // Ubicación
+                usuarioActual.getTelefono() : getString(R.string.no_especificado));
         textDisplayLocation.setText(usuarioActual.getUbicacion() != null ?
-                usuarioActual.getUbicacion() : "No especificada");
-
-        // Tipo de sangre
+                usuarioActual.getUbicacion() : getString(R.string.no_especificada));
         textBloodTypeBadge.setText(obtenerTipoSangreCompleto(usuarioActual.getTiposangreid()));
-
-        // Rol
         textDisplayRol.setText(obtenerRolCompleto(usuarioActual.getRolid()));
 
-        // Foto de perfil
         loadProfileImage();
     }
 
+    /**
+     * Carga la imagen de perfil del usuario usando Glide
+     * Muestra imagen por defecto si no hay URL de imagen disponible
+     */
     private void loadProfileImage() {
-        System.out.println("🔄 Cargando imagen de perfil. URL: " +
-                (usuarioActual != null ? usuarioActual.getFotoUrl() : "usuario null"));
-
         if (usuarioActual != null && usuarioActual.getFotoUrl() != null && !usuarioActual.getFotoUrl().isEmpty()) {
-            System.out.println("✅ URL de imagen válida, cargando con Glide: " + usuarioActual.getFotoUrl());
-
             Glide.with(this)
                     .load(usuarioActual.getFotoUrl())
                     .apply(RequestOptions.circleCropTransform())
@@ -200,8 +207,6 @@ public class PerfilUsuario extends AppCompatActivity {
                         @Override
                         public boolean onLoadFailed(@Nullable GlideException e, Object model,
                                                     Target<Drawable> target, boolean isFirstResource) {
-                            System.out.println("❌ Error Glide al cargar imagen: " +
-                                    (e != null ? e.getMessage() : "Desconocido"));
                             return false;
                         }
 
@@ -209,66 +214,66 @@ public class PerfilUsuario extends AppCompatActivity {
                         public boolean onResourceReady(Drawable resource, Object model,
                                                        Target<Drawable> target, DataSource dataSource,
                                                        boolean isFirstResource) {
-                            System.out.println("✅ Imagen cargada exitosamente con Glide");
                             return false;
                         }
                     })
                     .into(imgProfile);
         } else {
-            System.out.println("ℹ️ Usando imagen por defecto");
             imgProfile.setImageResource(R.drawable.logo_findtogive);
         }
     }
+
+    /**
+     * Configura los listeners de clic para los botones
+     * Asigna las acciones a realizar cuando se presionan los botones
+     */
     private void setupClickListeners() {
-        // Botón para editar foto
         findViewById(R.id.btn_edit_photo).setOnClickListener(v -> {
             pickImageLauncher.launch("image/*");
         });
 
-        // Botón para editar perfil
         btnEditProfile.setOnClickListener(v -> {
             Intent intent = new Intent(PerfilUsuario.this, EdicionPerfil.class);
             startActivity(intent);
         });
 
-        // Botón para cerrar sesión
         btnLogout.setOnClickListener(v -> {
             logoutUser();
         });
     }
 
+    /**
+     * Sube la imagen de perfil seleccionada al servidor
+     * @param imageUri URI de la imagen seleccionada
+     */
     private void uploadProfileImage(Uri imageUri) {
-        // Mostrar indicador de carga en la imagen
         imgProfile.setImageResource(R.drawable.logo_findtogive);
 
         StorageService.uploadProfileImage(this, imageUri, usuarioActual.getUsuarioid(),
                 new StorageService.UploadCallback() {
                     @Override
                     public void onSuccess(String imageUrl) {
-                        System.out.println("✅ URL de imagen obtenida: " + imageUrl);
-
-                        // En lugar de usar toJsonForUpdate, crearemos el JSON manualmente
-                        // para asegurarnos que solo actualizamos foto_url
                         updateOnlyPhotoUrl(imageUrl);
                     }
 
                     @Override
                     public void onError(String error) {
                         runOnUiThread(() -> {
-                            loadProfileImage(); // Recargar imagen original
-                            System.out.println("❌ Error al subir imagen: " + error);
-                            Toast.makeText(PerfilUsuario.this, "Error al subir imagen: " + error, Toast.LENGTH_SHORT).show();
+                            loadProfileImage();
+                            Toast.makeText(PerfilUsuario.this, getString(R.string.error_subir_imagen, error), Toast.LENGTH_SHORT).show();
                         });
                     }
                 });
     }
 
+    /**
+     * Actualiza solo la URL de la foto de perfil en la base de datos
+     * @param imageUrl Nueva URL de la imagen de perfil
+     */
     private void updateOnlyPhotoUrl(String imageUrl) {
         CompletableFuture.runAsync(() -> {
             try {
-                // Crear JSON manualmente SOLO con foto_url
                 String json = "{\"foto_url\":\"" + imageUrl + "\"}";
-                System.out.println("📤 JSON específico para foto_url: " + json);
 
                 RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
 
@@ -284,55 +289,46 @@ public class PerfilUsuario extends AppCompatActivity {
                         .build();
 
                 try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
-                    System.out.println("📨 Response code: " + response.code());
-
                     if (response.isSuccessful() && response.body() != null) {
-                        String responseBody = response.body().string();
-                        System.out.println("✅ UPDATE foto_url exitoso: " + responseBody);
-
                         runOnUiThread(() -> {
-                            // Actualizar el usuario local con la nueva foto
                             usuarioActual.setFotoUrl(imageUrl);
-
-                            // Actualizar SharedPreferences
                             SharedPreferencesManager.saveUser(PerfilUsuario.this, usuarioActual);
-
-                            // Actualizar la imagen en la UI
                             loadProfileImage();
-                            Toast.makeText(PerfilUsuario.this, "Foto de perfil actualizada", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(PerfilUsuario.this, R.string.foto_perfil_actualizada, Toast.LENGTH_SHORT).show();
                         });
                     } else {
                         String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
-                        System.out.println("❌ Error en UPDATE foto_url: " + response.code() + " - " + errorBody);
-
                         runOnUiThread(() -> {
-                            loadProfileImage(); // Recargar imagen original
-                            Toast.makeText(PerfilUsuario.this, "Error al actualizar foto: " + response.code(), Toast.LENGTH_SHORT).show();
+                            loadProfileImage();
+                            Toast.makeText(PerfilUsuario.this, getString(R.string.error_al_actualizar_foto) + response.code(), Toast.LENGTH_SHORT).show();
                         });
                     }
                 }
 
             } catch (Exception e) {
-                System.out.println("❌ Exception en updateOnlyPhotoUrl: " + e.getMessage());
                 runOnUiThread(() -> {
-                    loadProfileImage(); // Recargar imagen original
-                    Toast.makeText(PerfilUsuario.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    loadProfileImage();
+                    Toast.makeText(PerfilUsuario.this, getString(R.string.error_generico, e.getMessage()), Toast.LENGTH_SHORT).show();
                 });
             }
         });
     }
 
-    // NUEVO MÉTODO: Actualizar la navegación según el rol
+    /**
+     * Actualiza la navegación inferior según el rol del usuario
+     * Oculta el ítem de creación para usuarios donantes
+     */
     private void actualizarNavegacionSegunRol() {
         if (usuarioActual != null) {
             boolean esDonante = usuarioActual.getRolid() == 1;
             bottomNavigation.getMenu().findItem(R.id.nav_crear).setVisible(!esDonante);
-
-            System.out.println("🔄 Navegación actualizada - Rol: " + usuarioActual.getRolid() +
-                    ", Mostrar 'Crear': " + !esDonante);
         }
     }
 
+    /**
+     * Cierra la sesión del usuario y redirige al login
+     * Limpia todos los datos de sesión almacenados
+     */
     private void logoutUser() {
         SharedPreferencesManager.logout(this);
         Intent intent = new Intent(this, Login.class);
@@ -341,6 +337,11 @@ public class PerfilUsuario extends AppCompatActivity {
         finish();
     }
 
+    /**
+     * Convierte un ID de tipo de sangre a su nombre correspondiente
+     * @param tiposangreid ID del tipo de sangre
+     * @return Nombre completo del tipo de sangre
+     */
     private String obtenerTipoSangreCompleto(int tiposangreid) {
         switch (tiposangreid) {
             case 1: return "A+";
@@ -351,28 +352,35 @@ public class PerfilUsuario extends AppCompatActivity {
             case 6: return "AB-";
             case 7: return "O+";
             case 8: return "O-";
-            default: return "Desconocido";
+            default: return getString(R.string.desconocido);
         }
     }
 
+    /**
+     * Convierte un ID de rol a su nombre correspondiente
+     * @param rolid ID del rol
+     * @return Nombre completo del rol
+     */
     private String obtenerRolCompleto(int rolid) {
         switch (rolid) {
-            case 1: return "Donante";
-            case 2: return "Receptor";
-            case 3: return "Donante y Receptor";
-            default: return "Usuario";
+            case 1: return getString(R.string.donante);
+            case 2: return getString(R.string.receptor);
+            case 3: return getString(R.string.rol_donante_receptor);
+            default: return getString(R.string.rol_usuario);
         }
     }
 
+    /**
+     * Método del ciclo de vida que se ejecuta al reanudar la actividad
+     * Recarga los datos del usuario y actualiza la navegación
+     */
     @Override
     protected void onResume() {
         super.onResume();
-        // Recargar datos del usuario actualizado
         Usuario usuarioActualizado = SharedPreferencesManager.getCurrentUser(this);
         if (usuarioActualizado != null) {
             usuarioActual = usuarioActualizado;
             displayUserData();
-
             actualizarNavegacionSegunRol();
         }
         bottomNavigation.setSelectedItemId(R.id.nav_perfil);
