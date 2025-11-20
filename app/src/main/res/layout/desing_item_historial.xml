@@ -88,14 +88,6 @@
                 android:textSize="14sp"
                 tools:text="Fecha: 15/Mayo/2025" />
 
-            <TextView
-                android:id="@+id/text_place_donation"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="#6b7280"
-                android:textSize="14sp"
-                tools:text="Lugar: Cruz Roja Salvadoreña" />
 
             <TextView
                 android:id="@+id/text_typeb_donation"
@@ -105,6 +97,15 @@
                 android:textColor="#6b7280"
                 android:textSize="14sp"
                 tools:text="Tipo de sangre: O+" />
+
+            <TextView
+                android:id="@+id/text_place_donation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="#6b7280"
+                android:textSize="14sp"
+                tools:text="Lugar: Cruz Roja Salvadoreña" />
 
         </LinearLayout>
 

@@ -21,6 +21,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -328,11 +329,58 @@ public class HistorialDonaciones extends AppCompatActivity implements
             return;
         }
 
-        for (Chat chat : chatsDelUsuario) {
-            verificarMensajesNoLeidosEnChat(chat, false);
-        }
+        final int[] chatsVerificados = {0};
+        final int totalChats = chatsDelUsuario.size();
+        final boolean[] huboCambios = {false};
 
-        actualizarUIconMensajesNoLeidos();
+        for (Chat chat : chatsDelUsuario) {
+            ApiService.getMensajesByChat(chat.getChatid(), new ApiService.ListCallback<Mensaje>() {
+                @Override
+                public void onSuccess(List<Mensaje> mensajes) {
+                    runOnUiThread(() -> {
+                        if (mensajes != null) {
+                            boolean tieneMensajesNoLeidos = false;
+
+                            for (Mensaje mensaje : mensajes) {
+                                if (!mensaje.isLeido() && mensaje.getEmisorioid() != usuarioActual.getUsuarioid()) {
+                                    tieneMensajesNoLeidos = true;
+                                    break;
+                                }
+                            }
+
+                            // Verificar si cambió el estado
+                            boolean estadoAnterior = mensajesNoLeidosPorSolicitud.getOrDefault(chat.getSolicitudid(), false);
+                            if (estadoAnterior != tieneMensajesNoLeidos) {
+                                huboCambios[0] = true;
+                            }
+
+                            mensajesNoLeidosPorSolicitud.put(chat.getSolicitudid(), tieneMensajesNoLeidos);
+                        }
+
+                        chatsVerificados[0]++;
+                        if (chatsVerificados[0] == totalChats && huboCambios[0]) {
+                            aplicarFiltros(); // Reordenar solo si hubo cambios
+                        }
+                    });
+                }
+
+                @Override
+                public void onError(String error) {
+                    runOnUiThread(() -> {
+                        boolean estadoAnterior = mensajesNoLeidosPorSolicitud.getOrDefault(chat.getSolicitudid(), false);
+                        if (estadoAnterior != false) {
+                            huboCambios[0] = true;
+                        }
+                        mensajesNoLeidosPorSolicitud.put(chat.getSolicitudid(), false);
+
+                        chatsVerificados[0]++;
+                        if (chatsVerificados[0] == totalChats && huboCambios[0]) {
+                            aplicarFiltros(); // Reordenar solo si hubo cambios
+                        }
+                    });
+                }
+            });
+        }
     }
 
     private void loadChatsDelUsuario() {
@@ -532,6 +580,22 @@ public class HistorialDonaciones extends AppCompatActivity implements
                 solicitudesFiltradas.add(solicitud);
             }
         }
+
+        // ORDENAR: Primero las que tienen mensajes no leídos, luego las demás
+        solicitudesFiltradas.sort((s1, s2) -> {
+            boolean s1TieneMensajesNoLeidos = mensajesNoLeidosPorSolicitud.getOrDefault(s1.getSolicitudid(), false);
+            boolean s2TieneMensajesNoLeidos = mensajesNoLeidosPorSolicitud.getOrDefault(s2.getSolicitudid(), false);
+
+            if (s1TieneMensajesNoLeidos && !s2TieneMensajesNoLeidos) {
+                return -1; // s1 va primero
+            } else if (!s1TieneMensajesNoLeidos && s2TieneMensajesNoLeidos) {
+                return 1; // s2 va primero
+            } else {
+                // Si ambas tienen o no tienen mensajes no leídos, mantener orden original
+                return 0;
+            }
+        });
+        //Collections.reverse(solicitudesFiltradas);
 
         if (historialAdapter != null) {
             historialAdapter.actualizarListaSolicitudes(solicitudesFiltradas);
