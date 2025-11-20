@@ -393,7 +393,7 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
 
             btnChatear.setOnClickListener(v -> abrirChat(solicitud));
             itemView.setOnClickListener(v -> {
-                Toast.makeText(context, "Abriendo detalles de: " + solicitud.getTitulo(), Toast.LENGTH_SHORT).show();
+
             });
         }
 
@@ -515,6 +515,9 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
          * Carga la imagen adjunta de la solicitud usando Glide con manejo de errores
          * y transformaciones para mejor visualización
          */
+        /**
+         * Carga la imagen adjunta con transformaciones que no recortan
+         */
         private void cargarImagenAdjunta(SolicitudDonacion solicitud) {
             if (solicitud.getImagenUrl() != null && !solicitud.getImagenUrl().isEmpty()) {
                 imgAdjunta.setVisibility(View.VISIBLE);
@@ -524,13 +527,14 @@ public class SolicitudesAdapter extends RecyclerView.Adapter<SolicitudesAdapter.
                         .apply(new RequestOptions()
                                 .placeholder(R.drawable.logo_findtogive)
                                 .error(R.drawable.logo_findtogive)
-                                .transform(new CenterCrop(), new RoundedCorners(16))
-                                .override(600, 400)
+                                .fitCenter() // Escala para caber sin recortar
+                                .override(1000, 1000) // Tamaño máximo pero mantiene proporciones
                         )
                         .listener(new RequestListener<Drawable>() {
                             @Override
                             public boolean onLoadFailed(@Nullable GlideException e, Object model,
                                                         Target<Drawable> target, boolean isFirstResource) {
+                                runOnUiThread(() -> imgAdjunta.setVisibility(View.GONE));
                                 return false;
                             }
 

@@ -166,6 +166,59 @@ public class MensajesAdapter extends RecyclerView.Adapter<MensajesAdapter.Mensaj
         }
     }
 
+    /**
+     * Actualiza el estado de leído de múltiples mensajes
+     */
+    public void actualizarEstadosLeido(Map<Integer, Boolean> estadosLeido) {
+        boolean cambios = false;
+
+        for (int i = 0; i < mensajesList.size(); i++) {
+            Mensaje mensaje = mensajesList.get(i);
+            Boolean nuevoEstado = estadosLeido.get(mensaje.getMensajeid());
+
+            if (nuevoEstado != null && mensaje.isLeido() != nuevoEstado) {
+                mensaje.setLeido(nuevoEstado);
+                notifyItemChanged(i);
+                cambios = true;
+            }
+        }
+
+        if (cambios) {
+            notifyDataSetChanged();
+        }
+    }
+
+    /**
+     * Sincroniza la lista local con una lista actualizada del servidor
+     */
+    public void sincronizarMensajes(List<Mensaje> mensajesActualizados) {
+        Map<Integer, Mensaje> mensajesMap = new HashMap<>();
+        for (Mensaje mensaje : mensajesActualizados) {
+            mensajesMap.put(mensaje.getMensajeid(), mensaje);
+        }
+
+        // Actualizar mensajes existentes
+        for (int i = 0; i < mensajesList.size(); i++) {
+            Mensaje mensajeLocal = mensajesList.get(i);
+            Mensaje mensajeActualizado = mensajesMap.get(mensajeLocal.getMensajeid());
+
+            if (mensajeActualizado != null) {
+                // Actualizar solo si hay cambios
+                if (mensajeLocal.isLeido() != mensajeActualizado.isLeido()) {
+                    mensajeLocal.setLeido(mensajeActualizado.isLeido());
+                    notifyItemChanged(i);
+                }
+                // Remover del mapa para saber cuáles quedan por agregar
+                mensajesMap.remove(mensajeLocal.getMensajeid());
+            }
+        }
+
+        // Agregar nuevos mensajes (si los hay)
+        for (Mensaje nuevoMensaje : mensajesMap.values()) {
+            agregarMensaje(nuevoMensaje);
+        }
+    }
+
     public class MensajeViewHolder extends RecyclerView.ViewHolder {
 
         private TextView textMessageContent;

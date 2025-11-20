@@ -3,6 +3,7 @@ package sv.edu.catolica.findtogive.ConfiguracionFuncionalidad;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,14 +17,13 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 import sv.edu.catolica.findtogive.Modelado.SolicitudDonacion;
 import sv.edu.catolica.findtogive.Modelado.Usuario;
 import sv.edu.catolica.findtogive.Modelado.Chat;
-import sv.edu.catolica.findtogive.Modelado.Mensaje;
 import sv.edu.catolica.findtogive.Modelado.HospitalUbicacion;
 import sv.edu.catolica.findtogive.R;
 
@@ -51,8 +51,7 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
     private Map<Integer, Boolean> solicitudTieneMensajesNoLeidos;
     private Map<Integer, List<Chat>> chatsPorSolicitud;
     private Map<Integer, Boolean> esDonantePorSolicitud;
-
-    private static Map<Integer, HospitalUbicacion> hospitalesCache = new HashMap<>();
+    private Map<Integer, HospitalUbicacion> hospitalesMap;
 
     public HistorialAdapter(List<SolicitudDonacion> solicitudList,
                             OnItemDeleteListener deleteListener,
@@ -66,21 +65,7 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
         this.solicitudTieneMensajesNoLeidos = new HashMap<>();
         this.chatsPorSolicitud = new HashMap<>();
         this.esDonantePorSolicitud = new HashMap<>();
-    }
-
-    /**
-     * Limpia el cache estático de hospitales, útil para liberar memoria
-     * o forzar recarga de datos
-     */
-    public static void limpiarCacheHospitales() {
-        hospitalesCache.clear();
-    }
-
-    /**
-     * Retorna estadísticas del cache de hospitales para monitoreo
-     */
-    public static String obtenerEstadisticasCache() {
-        return "Hospitales en cache: " + hospitalesCache.size();
+        this.hospitalesMap = new HashMap<>();
     }
 
     /**
@@ -92,8 +77,6 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
 
     /**
      * Actualiza la información de chats y mensajes no leídos para las solicitudes.
-     * Organiza los chats por solicitud y determina el rol del usuario (donante/receptor)
-     * en cada una de ellas
      */
     public void actualizarInfoChats(List<Chat> chatsDelUsuario, Map<Integer, Boolean> mensajesNoLeidosPorSolicitud) {
         this.chatsPorSolicitud.clear();
@@ -121,70 +104,75 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
 
     /**
      * Carga todos los hospitales necesarios para las solicitudes en la lista.
-     * Optimiza las peticiones agrupando hospitales únicos y usando cache
+     * Similar a la implementación de SolicitudesAdapter
      */
     public void cargarTodosLosHospitales() {
         if (solicitudList == null || solicitudList.isEmpty()) {
             return;
         }
 
+        // Identificar hospitales únicos que necesitan ser cargados
         Map<Integer, List<Integer>> hospitalIdsMap = new HashMap<>();
         for (int i = 0; i < solicitudList.size(); i++) {
             SolicitudDonacion solicitud = solicitudList.get(i);
             int hospitalId = solicitud.getHospitalid();
 
-            if (solicitud.getHospital() == null && !hospitalesCache.containsKey(hospitalId)) {
+            if (!hospitalesMap.containsKey(hospitalId)) {
                 if (!hospitalIdsMap.containsKey(hospitalId)) {
                     hospitalIdsMap.put(hospitalId, new ArrayList<>());
                 }
                 hospitalIdsMap.get(hospitalId).add(i);
-            } else if (solicitud.getHospital() == null && hospitalesCache.containsKey(hospitalId)) {
-                solicitud.setHospital(hospitalesCache.get(hospitalId));
             }
         }
 
         if (hospitalIdsMap.isEmpty()) {
-            notifyDataSetChanged();
             return;
         }
 
+        // Cargar cada hospital único
         for (Map.Entry<Integer, List<Integer>> entry : hospitalIdsMap.entrySet()) {
             int hospitalId = entry.getKey();
             List<Integer> posiciones = entry.getValue();
-            cargarHospitalUnico(hospitalId, posiciones);
+            cargarHospitalIndividual(hospitalId, posiciones);
         }
     }
 
     /**
-     * Carga un hospital específico desde la API y actualiza todas las solicitudes
-     * que lo referencian. Guarda el resultado en cache para uso futuro
+     * Carga un hospital individual y actualiza todas las posiciones que lo referencian
      */
-    private void cargarHospitalUnico(int hospitalId, List<Integer> posiciones) {
+    private void cargarHospitalIndividual(int hospitalId, List<Integer> posiciones) {
         ApiService.getHospitalById(hospitalId, new ApiService.ApiCallback<HospitalUbicacion>() {
             @Override
             public void onSuccess(HospitalUbicacion hospital) {
-                hospitalesCache.put(hospitalId, hospital);
+                hospitalesMap.put(hospitalId, hospital);
 
-                for (int position : posiciones) {
-                    if (position >= 0 && position < solicitudList.size()) {
-                        solicitudList.get(position).setHospital(hospital);
-                        notifyItemChanged(position);
+                // Actualizar todas las solicitudes que usan este hospital
+                runOnUiThread(() -> {
+                    for (int position : posiciones) {
+                        if (position >= 0 && position < solicitudList.size()) {
+                            // Actualizar la solicitud en la lista
+                            solicitudList.get(position).setHospital(hospital);
+                            notifyItemChanged(position);
+                        }
                     }
-                }
+                });
             }
 
             @Override
             public void onError(String error) {
+                // Crear un hospital genérico como fallback
                 HospitalUbicacion hospitalGenerico = new HospitalUbicacion();
                 hospitalGenerico.setNombre(context.getString(R.string.hospital));
-                hospitalesCache.put(hospitalId, hospitalGenerico);
+                hospitalesMap.put(hospitalId, hospitalGenerico);
 
-                for (int position : posiciones) {
-                    if (position >= 0 && position < solicitudList.size()) {
-                        solicitudList.get(position).setHospital(hospitalGenerico);
-                        notifyItemChanged(position);
+                runOnUiThread(() -> {
+                    for (int position : posiciones) {
+                        if (position >= 0 && position < solicitudList.size()) {
+                            solicitudList.get(position).setHospital(hospitalGenerico);
+                            notifyItemChanged(position);
+                        }
                     }
-                }
+                });
             }
         });
     }
@@ -199,7 +187,6 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
 
     /**
      * Determina si el usuario actual es donante en una solicitud específica.
-     * Primero verifica si es el creador, luego consulta la información de chats
      */
     private boolean esDonanteEnSolicitud(int solicitudId) {
         for (SolicitudDonacion solicitud : solicitudList) {
@@ -216,7 +203,7 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
     }
 
     /**
-     * Crea y retorna una nueva instancia de HistorialViewHolder inflando el layout del item
+     * Crea y retorna una nueva instancia de HistorialViewHolder
      */
     @NonNull
     @Override
@@ -229,7 +216,6 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
 
     /**
      * Vincula los datos de la solicitud en la posición especificada con el ViewHolder.
-     * Incluye manejo de errores robusto para prevenir crashes
      */
     @Override
     public void onBindViewHolder(@NonNull HistorialViewHolder holder, int position) {
@@ -239,13 +225,9 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
 
         try {
             SolicitudDonacion solicitud = solicitudList.get(position);
-
-            if (solicitud.getHospital() == null && hospitalesCache.containsKey(solicitud.getHospitalid())) {
-                solicitud.setHospital(hospitalesCache.get(solicitud.getHospitalid()));
-            }
-
             holder.bind(solicitud, position);
         } catch (Exception e) {
+            // Manejar error silenciosamente
         }
     }
 
@@ -258,39 +240,35 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
     }
 
     /**
-     * Notifica cambios en el dataset de manera segura con manejo de excepciones
-     */
-    public void notifyDataChanged() {
-        try {
-            notifyDataSetChanged();
-        } catch (Exception e) {
-        }
-    }
-
-    /**
-     * Actualiza completamente la lista de solicitudes, asigna hospitales desde cache
-     * y programa la carga de hospitales faltantes
+     * Actualiza completamente la lista de solicitudes
      */
     public void actualizarListaSolicitudes(List<SolicitudDonacion> nuevasSolicitudes) {
         try {
             this.solicitudList.clear();
             if (nuevasSolicitudes != null) {
                 this.solicitudList.addAll(nuevasSolicitudes);
-
-                for (SolicitudDonacion solicitud : this.solicitudList) {
-                    if (solicitud.getHospital() == null && hospitalesCache.containsKey(solicitud.getHospitalid())) {
-                        solicitud.setHospital(hospitalesCache.get(solicitud.getHospitalid()));
-                    }
-                }
             }
 
-            notifyDataChanged();
+            notifyDataSetChanged();
 
-            new android.os.Handler().postDelayed(() -> {
+            // Cargar hospitales después de un pequeño delay
+            new Handler().postDelayed(() -> {
                 cargarTodosLosHospitales();
             }, 100);
 
         } catch (Exception e) {
+            // Manejar error silenciosamente
+        }
+    }
+
+    /**
+     * Ejecuta una acción en el hilo principal de la UI
+     */
+    private void runOnUiThread(Runnable action) {
+        if (context instanceof android.app.Activity) {
+            ((android.app.Activity) context).runOnUiThread(action);
+        } else {
+            new Handler(android.os.Looper.getMainLooper()).post(action);
         }
     }
 
@@ -320,16 +298,15 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
         }
 
         /**
-         * Vincula todos los datos de la solicitud a los elementos de la vista,
-         * configurando la información básica, iconos, mensajes y botones
+         * Vincula todos los datos de la solicitud a los elementos de la vista
          */
         public void bind(SolicitudDonacion solicitud, int position) {
             textTypeDonation.setText(solicitud.getTitulo() != null ? solicitud.getTitulo() : context.getString(R.string.sin_titulo));
-            textDateDonation.setText(context.getString(R.string.fecha_prefix) + formatearFecha(solicitud.getFechaPublicacion()));
+            textDateDonation.setText(context.getString(R.string.fecha_prefix) + " " + formatearFecha(solicitud.getFechaPublicacion()));
 
             configurarUbicacionHospital(solicitud, position);
 
-            textTypebDonation.setText(context.getString(R.string.tipo_sangre_prefix) + obtenerTipoSangre(solicitud.getTiposangreid()));
+            textTypebDonation.setText(context.getString(R.string.tipo_sangre_prefix) + " " + obtenerTipoSangre(solicitud.getTiposangreid()));
 
             configurarIconoRol(solicitud.getSolicitudid());
 
@@ -343,14 +320,14 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
         }
 
         /**
-         * Configura la visualización de la ubicación del hospital, haciendo el texto
-         * clickeable si hay un enlace disponible para abrir en Google Maps
+         * Configura la visualización de la ubicación del hospital
          */
         private void configurarUbicacionHospital(SolicitudDonacion solicitud, int position) {
-            HospitalUbicacion hospital = solicitud.getHospital();
+            HospitalUbicacion hospital = hospitalesMap.get(solicitud.getHospitalid());
 
-            if (hospital != null && hospital.getNombre() != null && !hospital.getNombre().equals(context.getString(R.string.hospital))) {
-                textPlaceDonation.setText(context.getString(R.string.hospital_prefix) + hospital.getNombre());
+            if (hospital != null) {
+                // Tenemos el hospital cargado, mostrar información
+                textPlaceDonation.setText(context.getString(R.string.hospital_prefix) + " " + hospital.getNombre());
 
                 if (hospital.getLink() != null && !hospital.getLink().isEmpty()) {
                     textPlaceDonation.setTextColor(ContextCompat.getColor(itemView.getContext(), android.R.color.holo_blue_dark));
@@ -366,58 +343,52 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                     textPlaceDonation.setFocusable(false);
                 }
             } else {
+                // Hospital no cargado aún, mostrar estado de carga
                 textPlaceDonation.setText(context.getString(R.string.cargando_hospital));
                 textPlaceDonation.setTextColor(ContextCompat.getColor(itemView.getContext(), android.R.color.darker_gray));
                 textPlaceDonation.setClickable(false);
                 textPlaceDonation.setFocusable(false);
 
-                if (hospital == null || hospital.getNombre() == null || hospital.getNombre().equals(context.getString(R.string.hospital))) {
-                    cargarHospitalIndividual(solicitud.getHospitalid(), position);
+                // Forzar carga del hospital si no está en el mapa
+                if (!hospitalesMap.containsKey(solicitud.getHospitalid())) {
+                    cargarHospitalIndividualForzado(solicitud.getHospitalid(), position);
                 }
             }
         }
 
         /**
-         * Carga un hospital individual desde la API o cache para una posición específica
+         * Carga agresivamente un hospital individual
          */
-        private void cargarHospitalIndividual(int hospitalId, int position) {
-            if (hospitalesCache.containsKey(hospitalId)) {
-                HospitalUbicacion hospital = hospitalesCache.get(hospitalId);
-                if (position >= 0 && position < solicitudList.size()) {
-                    solicitudList.get(position).setHospital(hospital);
-                    notifyItemChanged(position);
-                }
-                return;
-            }
-
+        private void cargarHospitalIndividualForzado(int hospitalId, int position) {
             ApiService.getHospitalById(hospitalId, new ApiService.ApiCallback<HospitalUbicacion>() {
                 @Override
                 public void onSuccess(HospitalUbicacion hospital) {
-                    hospitalesCache.put(hospitalId, hospital);
-
-                    if (position >= 0 && position < solicitudList.size()) {
-                        solicitudList.get(position).setHospital(hospital);
-                        notifyItemChanged(position);
-                    }
+                    hospitalesMap.put(hospitalId, hospital);
+                    runOnUiThread(() -> {
+                        if (position >= 0 && position < solicitudList.size()) {
+                            // Verificar que todavía estamos en la misma posición
+                            if (solicitudList.get(position).getHospitalid() == hospitalId) {
+                                solicitudList.get(position).setHospital(hospital);
+                                notifyItemChanged(position);
+                            }
+                        }
+                    });
                 }
 
                 @Override
                 public void onError(String error) {
-                    HospitalUbicacion hospitalGenerico = new HospitalUbicacion();
-                    hospitalGenerico.setNombre(context.getString(R.string.hospital));
-                    hospitalesCache.put(hospitalId, hospitalGenerico);
-
-                    if (position >= 0 && position < solicitudList.size()) {
-                        solicitudList.get(position).setHospital(hospitalGenerico);
-                        notifyItemChanged(position);
-                    }
+                    // Reintentar después de un delay
+                    new Handler().postDelayed(() -> {
+                        if (position < solicitudList.size() && solicitudList.get(position).getHospitalid() == hospitalId) {
+                            cargarHospitalIndividualForzado(hospitalId, position);
+                        }
+                    }, 1000);
                 }
             });
         }
 
         /**
-         * Abre Google Maps con la ubicación del hospital, usando el enlace disponible
-         * o creando uno con las coordenadas. Maneja fallbacks si Google Maps no está instalado
+         * Abre Google Maps con la ubicación del hospital
          */
         private void abrirGoogleMaps(HospitalUbicacion hospital) {
             try {
@@ -445,8 +416,7 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
         }
 
         /**
-         * Aplica estilos visuales diferentes según el estado de la solicitud:
-         * activa (normal), completada o cancelada (atenuadas)
+         * Aplica estilos visuales diferentes según el estado de la solicitud
          */
         private void aplicarEstiloSegunEstado(String estado) {
             try {
@@ -475,11 +445,12 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                         break;
                 }
             } catch (Exception e) {
+                // Manejar error silenciosamente
             }
         }
 
         /**
-         * Configura el icono que indica si el usuario es donante o receptor en esta solicitud
+         * Configura el icono que indica si el usuario es donante o receptor
          */
         private void configurarIconoRol(int solicitudId) {
             try {
@@ -493,12 +464,12 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                     imgRolIcon.setContentDescription(context.getString(R.string.receptor));
                 }
             } catch (Exception e) {
+                // Manejar error silenciosamente
             }
         }
 
         /**
-         * Muestra u oculta el indicador de mensajes nuevos según si la solicitud
-         * tiene mensajes no leídos
+         * Muestra u oculta el indicador de mensajes nuevos
          */
         private void configurarIndicadorMensajes(int solicitudId) {
             try {
@@ -515,8 +486,7 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
         }
 
         /**
-         * Configura la visibilidad y comportamiento de los botones de completar y eliminar
-         * según el estado de la solicitud y si el usuario es el creador
+         * Configura la visibilidad y comportamiento de los botones
          */
         private void configurarBotones(SolicitudDonacion solicitud, int position) {
             try {
@@ -558,6 +528,7 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                         break;
                 }
             } catch (Exception e) {
+                // Manejar error silenciosamente
             }
         }
 
@@ -572,11 +543,12 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                     }
                 });
             } catch (Exception e) {
+                // Manejar error silenciosamente
             }
         }
 
         /**
-         * Formatea una fecha en formato ISO a un formato legible en español (día/mes/año)
+         * Formatea una fecha en formato ISO a un formato legible en español
          */
         private String formatearFecha(String fecha) {
             if (fecha == null || fecha.isEmpty()) {
@@ -594,6 +566,7 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
                     return dia + "/" + mes + "/" + año;
                 }
             } catch (Exception e) {
+                // Manejar error silenciosamente
             }
 
             return context.getString(R.string.fecha_invalida);
@@ -609,7 +582,7 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
         }
 
         /**
-         * Convierte un ID de tipo de sangre a su representación textual (A+, B-, etc.)
+         * Convierte un ID de tipo de sangre a su representación textual
          */
         private String obtenerTipoSangre(int tiposangreid) {
             Map<Integer, String> tiposSangre = new HashMap<>();

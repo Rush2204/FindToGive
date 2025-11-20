@@ -63,7 +63,7 @@
     <string name="solicitudes_cercanas">Demandes à proximité</string>
     <string name="solicitudes_donacion">Demandes de don</string>
     <string name="no_hay_solicitudes_cercanas">Aucune demande à proximité</string>
-    <string name="no_solicitudes_en_km">Aucune demande active trouvée dans un rayon de 3,5 km de votre localisation.</string>
+    <string name="no_solicitudes_en_km">Aucune demande active trouvée dans un rayon de 3 km de votre localisation.</string>
 
     <!--    HistorialDonaciones-->
     <string name="debe_iniciar_sesion">Vous devez vous connecter.</string>

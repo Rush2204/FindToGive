@@ -3,6 +3,7 @@ package sv.edu.catolica.findtogive.ClasesDiseño;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -29,6 +30,7 @@ import java.util.Set;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.ApiService;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.HistorialAdapter;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.HistorialFiltroDialog;
+import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.HistorialRealtimeService;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.SharedPreferencesManager;
 import sv.edu.catolica.findtogive.Modelado.Chat;
 import sv.edu.catolica.findtogive.Modelado.Mensaje;
@@ -39,7 +41,8 @@ import sv.edu.catolica.findtogive.R;
 public class HistorialDonaciones extends AppCompatActivity implements
         HistorialAdapter.OnItemDeleteListener,
         HistorialAdapter.OnItemCompleteListener,
-        HistorialFiltroDialog.HistorialFiltroListener {
+        HistorialFiltroDialog.HistorialFiltroListener,
+        HistorialRealtimeService.HistorialListener {
 
     private RecyclerView recyclerViewHistorial;
     private LinearLayout layoutEmptyStateHistory;
@@ -66,11 +69,18 @@ public class HistorialDonaciones extends AppCompatActivity implements
 
     private Handler mensajesNoLeidosHandler;
     private Runnable mensajesNoLeidosRunnable;
-    private static final long MENSAJES_CHECK_INTERVAL = 2000;
+    private static final long MENSAJES_CHECK_INTERVAL = 3000; // 3 segundos
+
+    // Servicio de tiempo real para historial
+    private HistorialRealtimeService historialRealtimeService;
+
+    // Control para evitar recargas múltiples
+    private boolean isLoadingData = false;
+    private long lastDataLoadTime = 0;
+    private static final long MIN_LOAD_INTERVAL = 10000; // 10 segundos mínimo entre recargas
 
     /**
      * Método principal que inicializa la actividad del historial de donaciones
-     * Configura la vista, verifica autenticación y carga los datos iniciales
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,31 +103,44 @@ public class HistorialDonaciones extends AppCompatActivity implements
 
         mensajesNoLeidosPorSolicitud = new HashMap<>();
 
+        // Inicializar servicio de tiempo real
+        historialRealtimeService = HistorialRealtimeService.getInstance();
+
         initializeViews();
         setupRecyclerView();
         setupBottomNavigation();
         setupClickListeners();
 
         actualizarTituloPorDefecto();
-        loadChatsDelUsuario();
+
+        // Cargar datos iniciales
+        loadInitialData();
 
         startAggressiveAutoRefresh();
         startMensajesNoLeidosChecker();
     }
 
     /**
-     * Método del ciclo de vida que se ejecuta al reanudar la actividad
-     * Reactiva las actualizaciones automáticas y verifica mensajes no leídos
+     * Carga los datos iniciales una sola vez
      */
+    private void loadInitialData() {
+        if (isLoadingData) return;
+
+        isLoadingData = true;
+        showLoadingState();
+
+        loadChatsDelUsuario();
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
 
-        verificarTodosLosMensajesNoLeidos();
+        // Registrar listener del servicio de tiempo real
+        historialRealtimeService.agregarListener(this);
 
-        if (usuarioActual != null) {
-            loadChatsDelUsuario();
-        }
+        // Verificar mensajes no leídos sin recargar todo
+        verificarTodosLosMensajesNoLeidos();
 
         if (bottomNavigation != null) {
             bottomNavigation.setSelectedItemId(R.id.nav_historial);
@@ -125,34 +148,31 @@ public class HistorialDonaciones extends AppCompatActivity implements
 
         startAggressiveAutoRefresh();
         startMensajesNoLeidosChecker();
+
+        // Forzar carga de hospitales si es necesario
+        if (historialAdapter != null) {
+            new Handler().postDelayed(() -> {
+                historialAdapter.cargarTodosLosHospitales();
+            }, 1000);
+        }
     }
 
-    /**
-     * Método del ciclo de vida que se ejecuta al pausar la actividad
-     * Detiene las actualizaciones automáticas para ahorrar recursos
-     */
     @Override
     protected void onPause() {
         super.onPause();
+        historialRealtimeService.removerListener(this);
         stopAutoRefresh();
         stopMensajesNoLeidosChecker();
     }
 
-    /**
-     * Método del ciclo de vida que se ejecuta al destruir la actividad
-     * Limpia recursos y detiene todos los handlers
-     */
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        historialRealtimeService.removerListener(this);
         stopAutoRefresh();
         stopMensajesNoLeidosChecker();
     }
 
-    /**
-     * Inicializa todos los componentes visuales de la interfaz
-     * Obtiene referencias a los views del layout
-     */
     private void initializeViews() {
         recyclerViewHistorial = findViewById(R.id.recycler_view_historial);
         layoutEmptyStateHistory = findViewById(R.id.layout_empty_state_history);
@@ -168,10 +188,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
         solicitudesCompletadas = new HashSet<>();
     }
 
-    /**
-     * Actualiza el título por defecto de la actividad
-     * Muestra "Solicitudes Activas" cuando no hay filtros aplicados
-     */
     private void actualizarTituloPorDefecto() {
         if ("activa".equals(currentEstado) && "todas".equals(currentRol)) {
             textTitleHistorial.setText(R.string.solicitudes_activas);
@@ -179,10 +195,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
         }
     }
 
-    /**
-     * Configura el RecyclerView para mostrar la lista del historial
-     * Inicializa el adapter y establece el layout manager
-     */
     private void setupRecyclerView() {
         historialAdapter = new HistorialAdapter(solicitudList, this, this, usuarioActual);
         historialAdapter.setOnItemClickListener(new HistorialAdapter.OnItemClickListener() {
@@ -194,41 +206,26 @@ public class HistorialDonaciones extends AppCompatActivity implements
         recyclerViewHistorial.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewHistorial.setAdapter(historialAdapter);
 
-        recyclerViewHistorial.post(new Runnable() {
-            @Override
-            public void run() {
-                if (historialAdapter != null) {
-                    historialAdapter.notifyDataSetChanged();
-                    forceImmediateRedraw();
-                }
+        // Forzar carga de hospitales después de un delay
+        recyclerViewHistorial.postDelayed(() -> {
+            if (historialAdapter != null) {
+                historialAdapter.cargarTodosLosHospitales();
             }
-        });
+        }, 500);
     }
 
-    /**
-     * Configura los listeners de clic para los botones
-     * Asigna las acciones a realizar cuando se presionan los botones
-     */
     private void setupClickListeners() {
         btnFilterHistorial.setOnClickListener(v -> {
             mostrarDialogoFiltroHistorial();
         });
     }
 
-    /**
-     * Muestra el diálogo de filtro del historial
-     * Permite al usuario aplicar filtros por estado y rol
-     */
     private void mostrarDialogoFiltroHistorial() {
         HistorialFiltroDialog dialog = new HistorialFiltroDialog(this, this);
         dialog.setFiltrosActuales(currentEstado, currentRol);
         dialog.show();
     }
 
-    /**
-     * Configura la navegación inferior de la aplicación
-     * Define las acciones para cada ítem del menú de navegación
-     */
     private void setupBottomNavigation() {
         if (bottomNavigation == null) return;
 
@@ -273,8 +270,7 @@ public class HistorialDonaciones extends AppCompatActivity implements
     }
 
     /**
-     * Inicia la actualización automática agresiva del historial
-     * Actualiza la vista cada 0.5 segundos para mantener los datos frescos
+     * Actualización agresiva solo de UI, no de datos
      */
     private void startAggressiveAutoRefresh() {
         autoRefreshHandler = new Handler();
@@ -288,37 +284,22 @@ public class HistorialDonaciones extends AppCompatActivity implements
         autoRefreshHandler.post(autoRefreshRunnable);
     }
 
-    /**
-     * Fuerza el redibujado inmediato de la interfaz
-     * Actualiza el adapter y solicita nuevo layout del RecyclerView
-     */
     private void forceImmediateRedraw() {
         if (historialAdapter != null) {
-            historialAdapter.notifyDataSetChanged();
+            // Solo actualizar la vista, no los datos
             recyclerViewHistorial.invalidate();
-            recyclerViewHistorial.post(new Runnable() {
-                @Override
-                public void run() {
-                    recyclerViewHistorial.requestLayout();
-                }
+            recyclerViewHistorial.post(() -> {
+                recyclerViewHistorial.requestLayout();
             });
         }
     }
 
-    /**
-     * Detiene la actualización automática del historial
-     * Elimina los callbacks pendientes para evitar fugas de memoria
-     */
     private void stopAutoRefresh() {
         if (autoRefreshHandler != null && autoRefreshRunnable != null) {
             autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
         }
     }
 
-    /**
-     * Inicia la verificación periódica de mensajes no leídos
-     * Verifica cada 2 segundos si hay mensajes nuevos en los chats
-     */
     private void startMensajesNoLeidosChecker() {
         if (mensajesNoLeidosHandler != null) {
             mensajesNoLeidosHandler.removeCallbacks(mensajesNoLeidosRunnable);
@@ -328,6 +309,7 @@ public class HistorialDonaciones extends AppCompatActivity implements
         mensajesNoLeidosRunnable = new Runnable() {
             @Override
             public void run() {
+                // Solo verificar mensajes, no recargar datos completos
                 verificarTodosLosMensajesNoLeidos();
                 mensajesNoLeidosHandler.postDelayed(this, MENSAJES_CHECK_INTERVAL);
             }
@@ -335,20 +317,12 @@ public class HistorialDonaciones extends AppCompatActivity implements
         mensajesNoLeidosHandler.postDelayed(mensajesNoLeidosRunnable, MENSAJES_CHECK_INTERVAL);
     }
 
-    /**
-     * Detiene la verificación de mensajes no leídos
-     * Elimina los callbacks pendientes del handler
-     */
     private void stopMensajesNoLeidosChecker() {
         if (mensajesNoLeidosHandler != null && mensajesNoLeidosRunnable != null) {
             mensajesNoLeidosHandler.removeCallbacks(mensajesNoLeidosRunnable);
         }
     }
 
-    /**
-     * Verifica TODOS los mensajes no leídos de forma eficiente
-     * Recorre todos los chats del usuario y verifica mensajes no leídos
-     */
     private void verificarTodosLosMensajesNoLeidos() {
         if (usuarioActual == null || chatsDelUsuario.isEmpty()) {
             return;
@@ -361,20 +335,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
         actualizarUIconMensajesNoLeidos();
     }
 
-    /**
-     * Fuerza la verificación manual de mensajes no leídos
-     * Útil cuando se necesita una actualización inmediata
-     */
-    public void forzarVerificacionMensajesNoLeidos() {
-        if (usuarioActual != null && !chatsDelUsuario.isEmpty()) {
-            cargarMensajesNoLeidos();
-        }
-    }
-
-    /**
-     * Carga los chats del usuario para el filtro de donante
-     * Obtiene todos los chats en los que participa el usuario actual
-     */
     private void loadChatsDelUsuario() {
         ApiService.getChatsByUsuario(usuarioActual.getUsuarioid(), new ApiService.ListCallback<Chat>() {
             @Override
@@ -398,13 +358,7 @@ public class HistorialDonaciones extends AppCompatActivity implements
         });
     }
 
-    /**
-     * Carga TODAS las solicitudes relevantes: las del usuario + las de otros donde tiene chats
-     * Combina solicitudes propias con aquellas donde el usuario participa como donante
-     */
     private void loadTodasLasSolicitudesRelevantes() {
-        showLoadingState();
-
         ApiService.getSolicitudesByUsuarioId(usuarioActual.getUsuarioid(), new ApiService.ListCallback<SolicitudDonacion>() {
             @Override
             public void onSuccess(List<SolicitudDonacion> misSolicitudes) {
@@ -428,10 +382,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
         });
     }
 
-    /**
-     * Carga las solicitudes de otros usuarios donde el usuario actual tiene chats
-     * Obtiene las solicitudes en las que el usuario participa como donante
-     */
     private void cargarSolicitudesDeOtrosUsuarios() {
         Set<Integer> solicitudIdsDeOtros = new HashSet<>();
 
@@ -442,7 +392,7 @@ public class HistorialDonaciones extends AppCompatActivity implements
         }
 
         if (solicitudIdsDeOtros.isEmpty()) {
-            aplicarFiltros();
+            finalizarCargaDatos();
             return;
         }
 
@@ -459,7 +409,7 @@ public class HistorialDonaciones extends AppCompatActivity implements
         }
 
         if (solicitudIdsUnicos.isEmpty()) {
-            aplicarFiltros();
+            finalizarCargaDatos();
             return;
         }
 
@@ -487,7 +437,7 @@ public class HistorialDonaciones extends AppCompatActivity implements
 
                         solicitudesCargadas[0]++;
                         if (solicitudesCargadas[0] == totalSolicitudes) {
-                            aplicarFiltros();
+                            finalizarCargaDatos();
                         }
                     });
                 }
@@ -497,7 +447,7 @@ public class HistorialDonaciones extends AppCompatActivity implements
                     runOnUiThread(() -> {
                         solicitudesCargadas[0]++;
                         if (solicitudesCargadas[0] == totalSolicitudes) {
-                            aplicarFiltros();
+                            finalizarCargaDatos();
                         }
                     });
                 }
@@ -506,10 +456,21 @@ public class HistorialDonaciones extends AppCompatActivity implements
     }
 
     /**
-     * Método auxiliar para cargar una solicitud por ID
-     * @param solicitudId ID de la solicitud a cargar
-     * @param callback Callback para manejar el resultado
+     * Finaliza la carga de datos y aplica filtros
      */
+    private void finalizarCargaDatos() {
+        isLoadingData = false;
+        lastDataLoadTime = System.currentTimeMillis();
+        aplicarFiltros();
+
+        // Cargar hospitales inmediatamente después de aplicar filtros
+        new Handler().postDelayed(() -> {
+            if (historialAdapter != null) {
+                historialAdapter.cargarTodosLosHospitales();
+            }
+        }, 100);
+    }
+
     private void cargarSolicitudPorId(int solicitudId, ApiService.ApiCallback<SolicitudDonacion> callback) {
         ApiService.getSolicitudById(solicitudId, new ApiService.ApiCallback<SolicitudDonacion>() {
             @Override
@@ -524,11 +485,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
         });
     }
 
-    /**
-     * Busca una solicitud en la lista de solicitudes activas como fallback
-     * @param solicitudId ID de la solicitud a buscar
-     * @param callback Callback para manejar el resultado
-     */
     private void buscarSolicitudEnActivas(int solicitudId, ApiService.ApiCallback<SolicitudDonacion> callback) {
         ApiService.getSolicitudesActivas(new ApiService.ListCallback<SolicitudDonacion>() {
             @Override
@@ -551,10 +507,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
         });
     }
 
-    /**
-     * Aplica los filtros actuales a la lista de solicitudes
-     * Filtra por estado y rol según las selecciones del usuario
-     */
     private void aplicarFiltros() {
         List<SolicitudDonacion> solicitudesFiltradas = new ArrayList<>();
 
@@ -584,18 +536,12 @@ public class HistorialDonaciones extends AppCompatActivity implements
         if (historialAdapter != null) {
             historialAdapter.actualizarListaSolicitudes(solicitudesFiltradas);
             historialAdapter.actualizarInfoChats(chatsDelUsuario, mensajesNoLeidosPorSolicitud);
-            forceImmediateRedraw();
         }
 
         updateUIState();
         mostrarIndicadorFiltros();
     }
 
-    /**
-     * Verifica si el usuario es DONANTE en la solicitud específica
-     * @param solicitudId ID de la solicitud a verificar
-     * @return true si el usuario es donante en la solicitud, false en caso contrario
-     */
     private boolean esDonanteEnSolicitud(int solicitudId) {
         for (Chat chat : chatsDelUsuario) {
             if (chat.getSolicitudid() == solicitudId &&
@@ -606,10 +552,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
         return false;
     }
 
-    /**
-     * Muestra indicadores visuales de que hay filtros activos
-     * Actualiza el texto del indicador y el título según los filtros aplicados
-     */
     private void mostrarIndicadorFiltros() {
         StringBuilder filtros = new StringBuilder();
         boolean tieneFiltros = false;
@@ -635,49 +577,25 @@ public class HistorialDonaciones extends AppCompatActivity implements
         }
     }
 
-    /**
-     * Convierte un estado de solicitud a su nombre legible
-     * @param estado Estado de la solicitud
-     * @return Nombre legible del estado
-     */
     private String convertirEstadoANombre(String estado) {
         switch (estado) {
-            case "activa":
-                return getString(R.string.estado_activas);
-            case "completada":
-                return getString(R.string.estado_completadas);
-            case "cancelada":
-                return getString(R.string.estado_canceladas);
-            case "todas":
-                return getString(R.string.estado_todas);
-            default:
-                return estado;
+            case "activa": return getString(R.string.estado_activas);
+            case "completada": return getString(R.string.estado_completadas);
+            case "cancelada": return getString(R.string.estado_canceladas);
+            case "todas": return getString(R.string.estado_todas);
+            default: return estado;
         }
     }
 
-    /**
-     * Convierte un rol a su nombre legible
-     * @param rol Rol del usuario
-     * @return Nombre legible del rol
-     */
     private String convertirRolANombre(String rol) {
         switch (rol) {
-            case "receptor":
-                return getString(R.string.rol_receptor);
-            case "donante":
-                return getString(R.string.rol_donante);
-            case "todas":
-                return getString(R.string.rol_todos);
-            default:
-                return rol;
+            case "receptor": return getString(R.string.rol_receptor);
+            case "donante": return getString(R.string.rol_donante);
+            case "todas": return getString(R.string.rol_todos);
+            default: return rol;
         }
     }
 
-    /**
-     * Se ejecuta cuando se aplican filtros desde el diálogo
-     * @param estado Estado seleccionado para filtrar
-     * @param rol Rol seleccionado para filtrar
-     */
     @Override
     public void onAplicarFiltros(String estado, String rol) {
         currentEstado = estado;
@@ -686,10 +604,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
         Toast.makeText(this, R.string.filtros_aplicados, Toast.LENGTH_SHORT).show();
     }
 
-    /**
-     * Se ejecuta cuando se limpian los filtros desde el diálogo
-     * Restablece los filtros a sus valores por defecto
-     */
     @Override
     public void onLimpiarFiltros() {
         currentEstado = "activa";
@@ -698,11 +612,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
         Toast.makeText(this, R.string.filtros_limpiados, Toast.LENGTH_SHORT).show();
     }
 
-    /**
-     * Navega a la mensajería filtrando por una solicitud específica
-     * @param solicitudId ID de la solicitud seleccionada
-     * @param estadoSolicitud Estado actual de la solicitud
-     */
     private void navigateToMensajeriaWithFilter(int solicitudId, String estadoSolicitud) {
         Intent intent = new Intent(this, Mensajeria.class);
         intent.putExtra("filter_by_solicitud", true);
@@ -711,11 +620,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
         startActivity(intent);
     }
 
-    /**
-     * Se ejecuta cuando se hace clic en eliminar una solicitud
-     * @param solicitud Solicitud a eliminar
-     * @param position Posición en la lista
-     */
     @Override
     public void onDeleteClick(SolicitudDonacion solicitud, int position) {
         if (solicitud.getUsuarioid() != usuarioActual.getUsuarioid()) {
@@ -728,11 +632,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
                 .show();
     }
 
-    /**
-     * Se ejecuta cuando se hace clic en completar una solicitud
-     * @param solicitud Solicitud a completar
-     * @param position Posición en la lista
-     */
     @Override
     public void onCompleteClick(SolicitudDonacion solicitud, int position) {
         if (solicitud.getUsuarioid() != usuarioActual.getUsuarioid()) {
@@ -745,11 +644,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
                 .show();
     }
 
-    /**
-     * Elimina una solicitud del historial cambiando su estado a "cancelada"
-     * @param solicitud Solicitud a cancelar
-     * @param position Posición en la lista
-     */
     private void eliminarDelHistorial(SolicitudDonacion solicitud, int position) {
         showLoadingState();
 
@@ -757,7 +651,17 @@ public class HistorialDonaciones extends AppCompatActivity implements
             @Override
             public void onSuccess(SolicitudDonacion result) {
                 runOnUiThread(() -> {
-                    loadChatsDelUsuario();
+                    historialRealtimeService.notificarCambioEstado(solicitud.getSolicitudid(), "cancelada");
+
+                    // Actualizar localmente sin recargar todo
+                    for (SolicitudDonacion s : todasLasSolicitudes) {
+                        if (s.getSolicitudid() == solicitud.getSolicitudid()) {
+                            s.setEstado("cancelada");
+                            break;
+                        }
+                    }
+                    aplicarFiltros();
+
                     Snackbar.make(recyclerViewHistorial, R.string.solicitud_cancelada, Snackbar.LENGTH_SHORT).show();
                 });
             }
@@ -772,10 +676,38 @@ public class HistorialDonaciones extends AppCompatActivity implements
         });
     }
 
-    /**
-     * Carga información de mensajes no leídos para cada solicitud
-     * Verifica en todos los chats si hay mensajes pendientes de leer
-     */
+    private void completarDelHistorial(SolicitudDonacion solicitud, int position) {
+        showLoadingState();
+
+        ApiService.updateSolicitudEstado(solicitud.getSolicitudid(), "completada", new ApiService.ApiCallback<SolicitudDonacion>() {
+            @Override
+            public void onSuccess(SolicitudDonacion result) {
+                runOnUiThread(() -> {
+                    historialRealtimeService.notificarCambioEstado(solicitud.getSolicitudid(), "completada");
+
+                    // Actualizar localmente sin recargar todo
+                    for (SolicitudDonacion s : todasLasSolicitudes) {
+                        if (s.getSolicitudid() == solicitud.getSolicitudid()) {
+                            s.setEstado("completada");
+                            break;
+                        }
+                    }
+                    aplicarFiltros();
+
+                    Snackbar.make(recyclerViewHistorial, R.string.solicitud_completada, Snackbar.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                runOnUiThread(() -> {
+                    Toast.makeText(HistorialDonaciones.this, getString(R.string.error_al_completar_solicitud) + error, Toast.LENGTH_LONG).show();
+                    updateUIState();
+                });
+            }
+        });
+    }
+
     private void cargarMensajesNoLeidos() {
         if (usuarioActual == null) return;
 
@@ -790,11 +722,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
         }, 1000);
     }
 
-    /**
-     * Verifica mensajes no leídos en un chat específico
-     * @param chat Chat a verificar
-     * @param updateUIInmediato Si debe actualizar la UI inmediatamente
-     */
     private void verificarMensajesNoLeidosEnChat(Chat chat, boolean updateUIInmediato) {
         if (chat == null) return;
 
@@ -804,16 +731,17 @@ public class HistorialDonaciones extends AppCompatActivity implements
                 runOnUiThread(() -> {
                     if (mensajes != null) {
                         boolean tieneMensajesNoLeidos = false;
-                        int contadorNoLeidos = 0;
 
                         for (Mensaje mensaje : mensajes) {
                             if (!mensaje.isLeido() && mensaje.getEmisorioid() != usuarioActual.getUsuarioid()) {
                                 tieneMensajesNoLeidos = true;
-                                contadorNoLeidos++;
+                                break;
                             }
                         }
 
                         mensajesNoLeidosPorSolicitud.put(chat.getSolicitudid(), tieneMensajesNoLeidos);
+
+                        historialRealtimeService.notificarNuevosMensajes(chat.getSolicitudid(), tieneMensajesNoLeidos);
 
                         if (updateUIInmediato) {
                             actualizarUIconMensajesNoLeidos();
@@ -834,72 +762,70 @@ public class HistorialDonaciones extends AppCompatActivity implements
         });
     }
 
-    /**
-     * Actualiza la UI con la información de mensajes no leídos
-     * Notifica al adapter sobre los cambios en los mensajes no leídos
-     */
     private void actualizarUIconMensajesNoLeidos() {
         if (historialAdapter != null) {
             historialAdapter.actualizarInfoChats(chatsDelUsuario, mensajesNoLeidosPorSolicitud);
-            forceImmediateRedraw();
         }
     }
 
-    /**
-     * Completa una solicitud del historial cambiando su estado a "completada"
-     * @param solicitud Solicitud a completar
-     * @param position Posición en la lista
-     */
-    private void completarDelHistorial(SolicitudDonacion solicitud, int position) {
-        showLoadingState();
+    // ========== IMPLEMENTACIÓN DE HISTORIALREALTIMESERVICE ==========
 
-        ApiService.updateSolicitudEstado(solicitud.getSolicitudid(), "completada", new ApiService.ApiCallback<SolicitudDonacion>() {
-            @Override
-            public void onSuccess(SolicitudDonacion result) {
-                runOnUiThread(() -> {
-                    loadChatsDelUsuario();
-                    Snackbar.make(recyclerViewHistorial, R.string.solicitud_completada, Snackbar.LENGTH_SHORT).show();
-                });
-            }
-
-            @Override
-            public void onError(String error) {
-                runOnUiThread(() -> {
-                    Toast.makeText(HistorialDonaciones.this, getString(R.string.error_al_completar_solicitud) + error, Toast.LENGTH_LONG).show();
-                    updateUIState();
-                });
+    @Override
+    public void onSolicitudActualizada(SolicitudDonacion solicitud) {
+        runOnUiThread(() -> {
+            // Actualizar silenciosamente sin recargar todo
+            for (int i = 0; i < todasLasSolicitudes.size(); i++) {
+                if (todasLasSolicitudes.get(i).getSolicitudid() == solicitud.getSolicitudid()) {
+                    todasLasSolicitudes.set(i, solicitud);
+                    aplicarFiltros();
+                    break;
+                }
             }
         });
     }
 
-    /**
-     * Muestra el estado de carga (oculta lista y estado vacío)
-     */
+    @Override
+    public void onSolicitudEstadoCambiado(int solicitudId, String nuevoEstado) {
+        runOnUiThread(() -> {
+            // Actualizar solo el estado
+            for (SolicitudDonacion solicitud : todasLasSolicitudes) {
+                if (solicitud.getSolicitudid() == solicitudId) {
+                    solicitud.setEstado(nuevoEstado);
+                    aplicarFiltros();
+                    break;
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onNuevosMensajes(int solicitudId, boolean tieneMensajesNoLeidos) {
+        runOnUiThread(() -> {
+            mensajesNoLeidosPorSolicitud.put(solicitudId, tieneMensajesNoLeidos);
+            actualizarUIconMensajesNoLeidos();
+        });
+    }
+
+    @Override
+    public void onError(String error) {
+        Log.e("HistorialRealtime", error);
+    }
+
     private void showLoadingState() {
         recyclerViewHistorial.setVisibility(View.GONE);
         layoutEmptyStateHistory.setVisibility(View.GONE);
     }
 
-    /**
-     * Muestra la lista de donaciones (oculta estado vacío)
-     */
     private void showDonationList() {
         recyclerViewHistorial.setVisibility(View.VISIBLE);
         layoutEmptyStateHistory.setVisibility(View.GONE);
     }
 
-    /**
-     * Muestra el estado vacío (oculta lista de donaciones)
-     */
     private void showEmptyState() {
         recyclerViewHistorial.setVisibility(View.GONE);
         layoutEmptyStateHistory.setVisibility(View.VISIBLE);
     }
 
-    /**
-     * Actualiza el estado de la UI según si hay datos o no
-     * Muestra lista o estado vacío según la cantidad de solicitudes
-     */
     private void updateUIState() {
         if (solicitudList.isEmpty()) {
             showEmptyState();
@@ -908,10 +834,6 @@ public class HistorialDonaciones extends AppCompatActivity implements
         }
     }
 
-    /**
-     * Navega a la actividad de login
-     * Limpia el stack de actividades
-     */
     private void navigateToLogin() {
         Intent intent = new Intent(this, Login.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

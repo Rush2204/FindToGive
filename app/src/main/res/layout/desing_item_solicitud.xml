@@ -81,9 +81,11 @@
         <ImageView
             android:id="@+id/img_adjunta"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:scaleType="centerCrop"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:maxHeight="500dp"
             android:background="#f5f5f5"
             android:visibility="gone"
             android:contentDescription="@string/imagen_adjunta"

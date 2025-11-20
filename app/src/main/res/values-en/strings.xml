@@ -63,7 +63,7 @@
     <string name="solicitudes_cercanas">Nearby Requests</string>
     <string name="solicitudes_donacion">Donation Requests</string>
     <string name="no_hay_solicitudes_cercanas">No nearby requests</string>
-    <string name="no_solicitudes_en_km">No active requests found within 3.5 km of your location.</string>
+    <string name="no_solicitudes_en_km">No active requests found within 3 km of your location.</string>
 
     <!--    HistorialDonaciones-->
     <string name="debe_iniciar_sesion">You must log in.</string>

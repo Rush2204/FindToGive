@@ -61,7 +61,7 @@
     <string name="solicitudes_cercanas">Solicitudes Cercanas</string>
     <string name="solicitudes_donacion">Solicitudes de Donación</string>
     <string name="no_hay_solicitudes_cercanas">No hay solicitudes cercanas</string>
-    <string name="no_solicitudes_en_km">No se encontraron solicitudes activas en un radio de 3.5 km de tu ubicación.</string>
+    <string name="no_solicitudes_en_km">No se encontraron solicitudes activas en un radio de 3 km de tu ubicación.</string>
 <!--    HistorialDonaciones-->
     <string name="debe_iniciar_sesion">Debe iniciar sesión.</string>
     <string name="solicitudes_activas">Solicitudes Activas</string>

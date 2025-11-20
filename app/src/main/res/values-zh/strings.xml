@@ -63,7 +63,7 @@
     <string name="solicitudes_cercanas">附近请求</string>
     <string name="solicitudes_donacion">献血请求</string>
     <string name="no_hay_solicitudes_cercanas">附近没有请求</string>
-    <string name="no_solicitudes_en_km">在您位置3.5公里半径内未找到活跃请求。</string>
+    <string name="no_solicitudes_en_km">在您位置3公里半径内未找到活跃请求。</string>
 
     <!--    HistorialDonaciones-->
     <string name="debe_iniciar_sesion">您必须登录。</string>

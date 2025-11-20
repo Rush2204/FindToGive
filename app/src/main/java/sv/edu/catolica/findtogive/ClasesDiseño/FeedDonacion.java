@@ -463,7 +463,6 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
     public void onAplicarFiltros(String query, int tipoSangreId) {
         currentQuery = query;
         currentTipoSangreId = tipoSangreId;
-        mostrarIndicadorFiltros();
         cargarSolicitudesConFiltros();
     }
 
@@ -475,48 +474,8 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
     public void onLimpiarFiltros() {
         currentQuery = "";
         currentTipoSangreId = -1;
-        ocultarIndicadorFiltros();
         loadSolicitudes();
         Toast.makeText(this, R.string.filtros_limpiados, Toast.LENGTH_SHORT).show();
-    }
-
-    /**
-     * Muestra indicadores visuales de que hay filtros activos
-     * Cambia el color y texto del título
-     */
-    private void mostrarIndicadorFiltros() {
-        boolean tieneFiltros = false;
-        String mensajeFiltros = "";
-
-        if (!currentQuery.isEmpty() && currentTipoSangreId != -1) {
-            // Ambos filtros
-            String tipoSangre = convertirTipoSangreIdANombre(currentTipoSangreId);
-            mensajeFiltros = getString(R.string.ambos_filtros_activos, currentQuery, tipoSangre);
-            tieneFiltros = true;
-        } else if (!currentQuery.isEmpty()) {
-            // Solo query
-            mensajeFiltros = getString(R.string.solo_query_activo, currentQuery);
-            tieneFiltros = true;
-        } else if (currentTipoSangreId != -1) {
-            // Solo tipo sangre
-            String tipoSangre = convertirTipoSangreIdANombre(currentTipoSangreId);
-            mensajeFiltros = getString(R.string.solo_sangre_activo, tipoSangre);
-            tieneFiltros = true;
-        }
-
-        if (tieneFiltros) {
-            textTitle.setText(mensajeFiltros);
-            textTitle.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
-        }
-    }
-
-    /**
-     * Oculta los indicadores de filtros activos
-     * Restablece el título a su estado normal
-     */
-    private void ocultarIndicadorFiltros() {
-        textTitle.setText(R.string.solicitudes_de_donaci_n);
-        textTitle.setTextColor(getResources().getColor(android.R.color.black));
     }
 
     /**
@@ -772,7 +731,7 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
      * @param longitud Longitud del usuario
      */
     private void filtrarSolicitudesCercanas(double latitud, double longitud) {
-        final double RADIO_KM = 3.5;
+        final double RADIO_KM = 3;
 
         ApiService.getSolicitudesCercanas(latitud, longitud, RADIO_KM,
                 new ApiService.ListCallback<SolicitudDonacion>() {
@@ -831,14 +790,8 @@ public class FeedDonacion extends AppCompatActivity implements FiltroBusquedaDia
     private void actualizarBotonUbicacion() {
         if (filtroUbicacionActivo) {
             btnFilterLocation.setColorFilter(getResources().getColor(android.R.color.holo_red_dark));
-            textTitle.setText(R.string.solicitudes_cercanas);
-            textTitle.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
         } else {
             btnFilterLocation.setColorFilter(getResources().getColor(android.R.color.black));
-            if (currentQuery.isEmpty() && currentTipoSangreId == -1) {
-                textTitle.setText(R.string.solicitudes_donacion);
-                textTitle.setTextColor(getResources().getColor(android.R.color.black));
-            }
         }
     }
 

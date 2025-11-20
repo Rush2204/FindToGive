@@ -346,14 +346,20 @@ public class Mensajeria extends AppCompatActivity {
                         String contenido = ultimoMensaje.getContenido();
                         String fechaEnvio = ultimoMensaje.getFechaEnvio();
                         int ultimoMensajeId = ultimoMensaje.getMensajeid();
+                        boolean leido = ultimoMensaje.isLeido();
 
                         chatsAdapter.actualizarChatSiEsNecesario(chatId, contenido, fechaEnvio, ultimoMensajeId);
+
+                        // Actualizar también el estado de leído en la vista de lista
+                        // Esto asegura que las "palomitas" se actualicen
+                        chatsAdapter.notifyDataSetChanged();
                     }
                 });
             }
 
             @Override
             public void onError(String error) {
+                // Manejar error silenciosamente
             }
         });
     }

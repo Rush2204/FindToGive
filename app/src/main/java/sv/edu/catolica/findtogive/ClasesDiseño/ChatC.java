@@ -19,7 +19,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.ApiService;
 import sv.edu.catolica.findtogive.ConfiguracionFuncionalidad.MensajesAdapter;
@@ -54,6 +56,10 @@ public class ChatC extends AppCompatActivity {
     private SharedPreferences notificacionPrefs;
 
     private boolean mensajesMarcadosComoLeidos = false;
+    private boolean actividadActiva = true;
+    private Handler estadoLeidoHandler;
+    private Runnable estadoLeidoRunnable;
+    private static final long ESTADO_LEIDO_INTERVAL = 2000; // 2 segundos
 
     /**
      * Método principal que inicializa la actividad del chat
@@ -83,6 +89,7 @@ public class ChatC extends AppCompatActivity {
         setupRecyclerView();
         loadMensajes();
         startPolling();
+        setupEstadoLeidoPolling();
     }
 
     /**
@@ -109,6 +116,96 @@ public class ChatC extends AppCompatActivity {
         btnSend.setOnClickListener(v -> enviarMensaje());
 
         setupEditTextPaste();
+    }
+
+    /**
+     * Configura el polling para actualizar el estado de leído
+     */
+    private void setupEstadoLeidoPolling() {
+        estadoLeidoHandler = new Handler();
+        estadoLeidoRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (actividadActiva) {
+                    verificarYMarcarMensajesLeidos();
+                    cargarMensajesActualizados();
+                }
+                estadoLeidoHandler.postDelayed(this, ESTADO_LEIDO_INTERVAL);
+            }
+        };
+        estadoLeidoHandler.postDelayed(estadoLeidoRunnable, ESTADO_LEIDO_INTERVAL);
+    }
+
+    /**
+     * Verifica y marca mensajes como leídos si es necesario
+     */
+    private void verificarYMarcarMensajesLeidos() {
+        if (chatId == -1 || usuarioActual == null) return;
+
+        // Verificar si hay mensajes no leídos del otro usuario
+        boolean hayMensajesNoLeidos = false;
+        for (Mensaje mensaje : mensajesList) {
+            if (mensaje.getEmisorioid() != usuarioActual.getUsuarioid() && !mensaje.isLeido()) {
+                hayMensajesNoLeidos = true;
+                break;
+            }
+        }
+
+        if (hayMensajesNoLeidos) {
+            marcarMensajesComoLeidos();
+        }
+    }
+
+    /**
+     * Carga mensajes actualizados para refrescar estados de leído
+     */
+    private void cargarMensajesActualizados() {
+        ApiService.getMensajesByChat(chatId, new ApiService.ListCallback<Mensaje>() {
+            @Override
+            public void onSuccess(List<Mensaje> mensajesActualizados) {
+                runOnUiThread(() -> {
+                    if (mensajesActualizados != null) {
+                        actualizarEstadosLeido(mensajesActualizados);
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                // Silenciar errores de polling
+            }
+        });
+    }
+
+    /**
+     * Actualiza los estados de leído en la lista local
+     */
+    private void actualizarEstadosLeido(List<Mensaje> mensajesActualizados) {
+        boolean cambios = false;
+
+        // Crear mapa para búsqueda rápida
+        Map<Integer, Mensaje> mensajesActualizadosMap = new HashMap<>();
+        for (Mensaje mensaje : mensajesActualizados) {
+            mensajesActualizadosMap.put(mensaje.getMensajeid(), mensaje);
+        }
+
+        // Actualizar estados en la lista local
+        for (int i = 0; i < mensajesList.size(); i++) {
+            Mensaje mensajeLocal = mensajesList.get(i);
+            Mensaje mensajeActualizado = mensajesActualizadosMap.get(mensajeLocal.getMensajeid());
+
+            if (mensajeActualizado != null &&
+                    mensajeLocal.isLeido() != mensajeActualizado.isLeido()) {
+                mensajeLocal.setLeido(mensajeActualizado.isLeido());
+                mensajesAdapter.notifyItemChanged(i);
+                cambios = true;
+            }
+        }
+
+        if (cambios) {
+            // Forzar redibujado del adapter
+            mensajesAdapter.notifyDataSetChanged();
+        }
     }
 
     /**
@@ -461,10 +558,15 @@ public class ChatC extends AppCompatActivity {
             return;
         }
 
-        ApiService.updateMensajesLeidos(chatId, usuarioActual.getUsuarioid(), new ApiService.ApiCallback<Void>() {
+        ApiService.updateMensajesLeidos(chatId, usuarioActual.getUsuarioid(), new ApiService.ApiCallback<Integer>() {
             @Override
-            public void onSuccess(Void result) {
-                actualizarEstadoLeidoLocalmente();
+            public void onSuccess(Integer mensajesActualizados) {
+                if (mensajesActualizados > 0) {
+                    runOnUiThread(() -> {
+                        // Actualizar localmente
+                        mensajesAdapter.marcarTodosComoLeidos();
+                    });
+                }
             }
 
             @Override
@@ -514,34 +616,40 @@ public class ChatC extends AppCompatActivity {
     }
 
     /**
+     * Método del ciclo de vida que se ejecuta al reanudar la actividad
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        actividadActiva = true;
+
+        // Marcar como leídos inmediatamente al entrar
+        new Handler().postDelayed(() -> {
+            marcarMensajesComoLeidos();
+        }, 500);
+    }
+
+    /**
+     * Método del ciclo de vida que se ejecuta al pausar la actividad
+     */
+    @Override
+    protected void onPause() {
+        super.onPause();
+        actividadActiva = false;
+    }
+
+    /**
      * Método del ciclo de vida que se ejecuta al destruir la actividad
      * Limpia recursos y detiene el polling
      */
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        actividadActiva = false;
+        if (estadoLeidoHandler != null && estadoLeidoRunnable != null) {
+            estadoLeidoHandler.removeCallbacks(estadoLeidoRunnable);
+        }
         stopPolling();
-    }
-
-    /**
-     * Método del ciclo de vida que se ejecuta al pausar la actividad
-     * Detiene temporalmente el polling para ahorrar recursos
-     */
-    @Override
-    protected void onPause() {
-        super.onPause();
-        stopPolling();
-    }
-
-    /**
-     * Método del ciclo de vida que se ejecuta al reanudar la actividad
-     * Reinicia el polling y carga los mensajes actualizados
-     */
-    @Override
-    protected void onResume() {
-        super.onResume();
-        startPolling();
-        loadMensajes();
     }
 
     /**

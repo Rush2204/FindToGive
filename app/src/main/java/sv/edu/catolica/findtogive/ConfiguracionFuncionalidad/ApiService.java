@@ -578,10 +578,18 @@ public class ApiService {
                         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
                 String fechaActual = java.time.LocalDateTime.now().format(formatter);
 
+
+                String contenidoEscapado = mensaje.getContenido()
+                        .replace("\\", "\\\\")
+                        .replace("\"", "\\\"")
+                        .replace("\n", "\\n")
+                        .replace("\r", "\\r")
+                        .replace("\t", "\\t");
+
                 String json = "{" +
                         "\"chatid\":" + mensaje.getChatid() + "," +
                         "\"emisorioid\":" + mensaje.getEmisorioid() + "," +
-                        "\"contenido\":\"" + mensaje.getContenido() + "\"," +
+                        "\"contenido\":\"" + contenidoEscapado + "\"," +
                         "\"fecha_envio\":\"" + fechaActual + "\"," +
                         "\"leido\":false" +
                         "}";
@@ -609,7 +617,8 @@ public class ApiService {
                             callback.onError("Mensaje creado pero no retornado");
                         }
                     } else {
-                        callback.onError("Error al crear mensaje: " + response.code());
+                        String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
+                        callback.onError("Error al crear mensaje: " + response.code() + " - " + errorBody);
                     }
                 }
             } catch (Exception e) {
@@ -1047,18 +1056,19 @@ public class ApiService {
     }
 
     /**
-     * Marca los mensajes de un chat como leídos
+     * Marca los mensajes de un chat como leídos de manera más eficiente
      * @param chatId ID del chat
      * @param usuarioActualId ID del usuario actual
      * @param callback Callback para manejar el resultado
      */
-    public static void updateMensajesLeidos(int chatId, int usuarioActualId, ApiCallback<Void> callback) {
+    public static void updateMensajesLeidos(int chatId, int usuarioActualId, ApiCallback<Integer> callback) {
         CompletableFuture.runAsync(() -> {
             try {
                 String json = "{\"leido\":true}";
 
                 RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
 
+                // Marcar solo mensajes del otro usuario que no estén leídos
                 String url = SupabaseClient.URLs.mensaje() +
                         "?chatid=eq." + chatId +
                         "&emisorioid=neq." + usuarioActualId +
@@ -1070,12 +1080,21 @@ public class ApiService {
                         .addHeader("Authorization", SupabaseClient.Headers.getAuthHeader())
                         .addHeader("apikey", SupabaseClient.Headers.getApiKeyHeader())
                         .addHeader("Content-Type", "application/json")
-                        .addHeader("Prefer", "return=minimal")
+                        .addHeader("Prefer", "return=representation")
                         .build();
 
                 try (Response response = SupabaseClient.getHttpClient().newCall(request).execute()) {
                     if (response.isSuccessful()) {
-                        callback.onSuccess(null);
+                        // Obtener cuántos mensajes se actualizaron
+                        if (response.body() != null) {
+                            String responseBody = response.body().string();
+                            Type listType = new TypeToken<List<Mensaje>>(){}.getType();
+                            List<Mensaje> mensajesActualizados = gson.fromJson(responseBody, listType);
+                            int cantidadActualizada = mensajesActualizados != null ? mensajesActualizados.size() : 0;
+                            callback.onSuccess(cantidadActualizada);
+                        } else {
+                            callback.onSuccess(0);
+                        }
                     } else {
                         String errorBody = response.body() != null ? response.body().string() : "Sin detalles";
                         callback.onError("Error al marcar mensajes como leídos: " + response.code());
@@ -1086,5 +1105,33 @@ public class ApiService {
                 callback.onError("Error: " + e.getMessage());
             }
         });
+    }
+
+    /**
+     * Obtiene la cantidad de mensajes no leídos en un chat para un usuario
+     */
+    public static void getMensajesNoLeidosCount(int chatId, int usuarioId, ApiCallback<Integer> callback) {
+        String url = SupabaseClient.URLs.mensaje() +
+                "?chatid=eq." + chatId +
+                "&emisorioid=neq." + usuarioId +
+                "&leido=eq.false" +
+                "&select=count";
+
+        getSingle(url, new TypeToken<List<Map<String, Integer>>>(){}.getType(),
+                new ApiCallback<Map<String, Integer>>() {
+                    @Override
+                    public void onSuccess(Map<String, Integer> result) {
+                        if (result != null && result.containsKey("count")) {
+                            callback.onSuccess(result.get("count"));
+                        } else {
+                            callback.onSuccess(0);
+                        }
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        callback.onError(error);
+                    }
+                });
     }
 }
